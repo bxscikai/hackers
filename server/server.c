@@ -49,10 +49,10 @@ str_echo(int sockfd)
   char *buf;
   
   while (1) {
-    // MISSING AND IMPORTANT LINE HERE
-    // Hard coded solution, not sure if it works
-    len = 200;
-    n = sizeof(int);
+
+    // MISSING AND IMPORTANT LINE HERE HACK
+    // extern ssize_t net_readn(FDType fd, void *vptr, size_t n);
+    n = net_readn(sockfd, &len, sizeof(int));
 
     if (n != sizeof(int)) {
       fprintf(stderr, "%s: ERROR failed to read len: %d!=%d"

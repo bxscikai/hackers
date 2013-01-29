@@ -167,7 +167,9 @@ int
 doSend(void)
 {
   int len=0, nlen=0;
-  int n;
+
+  // HACK
+  int n = sizeof(int);
   char *str, buf[BUFLEN];
  
   VPRINTF("BEGIN %d\n", globals.connected);
