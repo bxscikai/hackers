@@ -180,9 +180,9 @@ net_writen(FDType fd, const void *vptr, size_t n)
       	nwritten = 0;
         /* Call write() again because this call did not succeed because it was interrupted. However, if you try again, it will probably work. */
         #ifndef __APPLE__
-            if ( (nwritten = send(fd, ptr, nleft, MSG_NOSIGNAL)) <= 0) {
+            nwritten = send(fd, ptr, nleft, MSG_NOSIGNAL);
         #else
-            if ( (nwritten = write(fd, ptr, nleft)) <= 0) {
+            nwritten = write(fd, ptr, nleft);
         #endif
       }
       else
@@ -222,7 +222,8 @@ net_readn(FDType fd, void *vptr, size_t n)
 #ifndef __APPLE__      
         nread = recv(fd, ptr, nleft, MSG_NOSIGNAL);
 #else
-        nread = read(fd, ptr, nleft));
+        nread = read(fd, ptr, nleft);
+#endif
       }
       else
 	       return(-1);

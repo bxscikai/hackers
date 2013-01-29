@@ -101,7 +101,7 @@ main(int argc, char **argv)
 
 // extern int     net_setup_listen_socket(FDType *fd, PortType *port);
 
-  if (!net_setup_listen_socket()) {
+  if (!net_setup_listen_socket(&listenfd, &port)) {
     fprintf(stderr, "net_setup_listen_socket FAILED!\n");
     exit(-1);
   }
