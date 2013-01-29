@@ -110,7 +110,7 @@ doConnect(void)
   VPRINTF("BEGIN: %s\n", globals.in.data);
 
   if (globals.connected==1) {
-    fprintf(stderr, "Connected", args);
+    fprintf(stderr, "Connected");
   } else {
     // be sure you understand what the next two lines are doing
     for (i=0; i<len; i++) if (globals.in.data[i]==':') globals.in.data[i]=' ';
@@ -118,13 +118,13 @@ doConnect(void)
      &globals.port);
     
     if (strlen(globals.server)==0 || globals.port==0) {
-      fprintf(stderr, "Unable to connect to server", args);
+      fprintf(stderr, "Unable to connect to server");
     } else {
       VPRINTF("connecting to: server=%s port=%d...", 
         globals.server, globals.port);
-      if (net_setup_connection(probably need to pass proper args here)<0) {
-  fprintf(stderr, " failed NOT connected server=%s port=%d\n", 
-    globals.server, globals.port);
+      if (net_setup_connection(&globals.serverFD, globals.server ,globals.port)<0) {
+        fprintf(stderr, " failed NOT connected server=%s port=%d\n", 
+          globals.server, globals.port);
       } else {
   globals.connected=1;
   VPRINTF("connected serverFD=%d\n", globals.serverFD);
@@ -208,13 +208,13 @@ doCmd(void)
 
   if (strlen(globals.in.data)==0) return rc;
   else if (strncmp(globals.in.data, "connect", 
-		   sizeof("connect")-1)==0) rc = add a call to the right func
+		   sizeof("connect")-1)==0) rc = doConnect();
   else if (strncmp(globals.in.data, "send", 
-		   sizeof("send")-1)==0) rc = add a call to the right func
+		   sizeof("send")-1)==0) rc = doSend();
   else if (strncmp(globals.in.data, "quit", 
-		   sizeof("quit")-1)==0) rc = add a call to the right func
+		   sizeof("quit")-1)==0) rc = doQuit();
   else if (strncmp(globals.in.data, "verbose", 
-		   sizeof("verbose")-1)==0) rc = add a call to the right func
+		   sizeof("verbose")-1)==0) rc = doVerbose();
   else printf("Unknown Command\n");
 
   return rc;
@@ -230,7 +230,7 @@ main(int argc, char **argv)
   while (1) {
     if (prompt(menu)>=0) rc=doCmd(); else rc=-1;
     if (rc<0) break;
-    What do you think the next line is for
+    //What do you think the next line is for
     if (rc==1) menu=1; else menu=0;
   }
 
