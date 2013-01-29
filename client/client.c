@@ -62,7 +62,7 @@ getInput()
   int len;
   char *ret;
 
-  STUDY THIS CODE AND EXPLAIN WHAT IT DOES AND WHY IN YOUR LOG FILE
+  //STUDY THIS CODE AND EXPLAIN WHAT IT DOES AND WHY IN YOUR LOG FILE
 
   // to make debugging easier we zero the data of the buffer
   bzero(globals.in.data, sizeof(globals.in.data));
@@ -110,26 +110,24 @@ doConnect(void)
   VPRINTF("BEGIN: %s\n", globals.in.data);
 
   if (globals.connected==1) {
-    Add some code here ... probably a useful error message to stderr
-      eg. fprintf(stderr, "some string ...", args);
+    fprintf(stderr, "Connected", args);
   } else {
     // be sure you understand what the next two lines are doing
     for (i=0; i<len; i++) if (globals.in.data[i]==':') globals.in.data[i]=' ';
     sscanf(globals.in.data, "%*s %" XSTR(STRLEN) "s %d", globals.server,
-	   &globals.port);
+     &globals.port);
     
     if (strlen(globals.server)==0 || globals.port==0) {
-      Add some code here ... probably a useful error message to stderr
-      eg. fprintf(stderr, "some string ...", args);
+      fprintf(stderr, "Unable to connect to server", args);
     } else {
       VPRINTF("connecting to: server=%s port=%d...", 
-	      globals.server, globals.port);
+        globals.server, globals.port);
       if (net_setup_connection(probably need to pass proper args here)<0) {
-	fprintf(stderr, " failed NOT connected server=%s port=%d\n", 
-		globals.server, globals.port);
+  fprintf(stderr, " failed NOT connected server=%s port=%d\n", 
+    globals.server, globals.port);
       } else {
-	globals.connected=1;
-	VPRINTF("connected serverFD=%d\n", globals.serverFD);
+  globals.connected=1;
+  VPRINTF("connected serverFD=%d\n", globals.serverFD);
       }
     }
   }
@@ -144,7 +142,7 @@ sendStr(char *str, int fd)
   int len=0, nlen=0;
   char *buf;
   
-  STUDY THIS FUNCTION AND EXPAIN IN YOUR LOG FILE WHAT IT DOES AND HOW
+  //STUDY THIS FUNCTION AND EXPAIN IN YOUR LOG FILE WHAT IT DOES AND HOW
 
   len = strlen(str);
   if (len==0) return 1;
