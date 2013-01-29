@@ -1,0 +1,14 @@
+
+*.o
+
+*.a
+
+*.a
+
+.DS_Store
+
+*.o
+
+lib/dummy.o
+
+lib/libdagame.a
