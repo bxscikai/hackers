@@ -4,3 +4,9 @@ Attendees: Tiffany, Chenkai, Eric
 Questions:
 ToDo:
 Comment/Notes:
+
+getInput() function in client.c clears the current data in the globals struct.
+In then receives input from the user via the keyboard and removes all newline characters from the user input. In then stores the input in the globals.in.data field and retrns the length of the input.
+
+sendStr(char *str, int fd) function in client.c tries to send the the str specified to the fd that is passed in. It uses the net_writen function in net.c to accomplish this.
+
