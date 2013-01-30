@@ -51,18 +51,22 @@ str_echo(int sockfd)
   while (1) {
 
     // MISSING AND IMPORTANT LINE HERE HACK
-    // extern ssize_t net_readn(FDType fd, void *vptr, size_t n);
     n = net_readn(sockfd, &len, sizeof(int));
+
+    // fprintf(stderr, "Our intSize: %d ourDataLength:%d\n", n, len);
 
     if (n != sizeof(int)) {
       fprintf(stderr, "%s: ERROR failed to read len: %d!=%d"
 	      " ... closing connection\n", __func__, n, (int)sizeof(int));
+    fprintf(stderr, "Failed Length Test, Our intSize: %d", n);
       break;
     } 
     
     // The next line converts 16 and 32 bit between network byte order and
     // host byte order.
     len = ntohl(len);
+    fprintf(stderr, "Passed Length Test, Our intSize: %d ourDataLength: %d\n", n, len);
+
     if (len) {
       buf = (char *)malloc(len);
       n = net_readn(sockfd, buf, len);

@@ -217,6 +217,8 @@ net_readn(FDType fd, void *vptr, size_t n)
     if ( (nread = read(fd, ptr, nleft)) < 0) {
 #endif
       if (errno == EINTR) {
+
+        // fprintf(stderr, "Interrupted, trying again...\n");
 	      nread = 0;              
         /* and call read() again */
 #ifndef __APPLE__      
@@ -225,15 +227,27 @@ net_readn(FDType fd, void *vptr, size_t n)
         nread = read(fd, ptr, nleft);
 #endif
       }
-      else
+      else {
+        // fprintf(stderr, "Didnt work and gave up...\n");
 	       return(-1);
-    } else if (nread == 0)
+      }
+    } 
+
+        else if (nread == 0) {
+      // fprintf(stderr, "Nothing was read...\n");
       break;                          /* EOF */
+    }
+
+    // fprintf(stderr, "nread value: %d\n", nread);
 
     nleft -= nread;
     // MISSING LINE OF CODE HERE
     ptr+= nread;
   }
+
+  // fprintf(stderr, "returning: %d - %d\n", n, nleft);
+
+
   return(n - nleft);              /* return >= 0 */
 }
 /* end readn */

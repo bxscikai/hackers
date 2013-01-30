@@ -1,0 +1,6 @@
+for ((i=0;i<100;i++))
+do 
+   sh cfile.sh client/client $server /etc/services & 
+   sh cfile.sh client/client $server & 
+   sh cfile.sh client/client $server /etc/shells  &  
+done
