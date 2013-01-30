@@ -23,6 +23,9 @@ typeset -r USAGE="$0 <client> <server:port> [file]"
 
 client=$1
 server=$2
+# client="155.41.103.45"
+# server="56170" 
+
 file=$3
 
 if [[ -z $client || ! -e $client || ! -x $client ]]

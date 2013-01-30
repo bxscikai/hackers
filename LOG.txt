@@ -8,9 +8,9 @@ Comment/Notes:
 <Client.c>
 
 getInput() function in client.c clears the current data in the globals struct.
-In then receives input from the user via the keyboard and removes all newline characters from the user input. In then stores the input in the globals.in.data field and retrns the length of the input.
+In then receives input from the user via the keyboard and removes all newline characters from the user input. In then stores the input in the globals.in.data field and returns the length of the input.
 
-sendStr(char *str, int fd) function in client.c tries to send the the str specified to the fd that is passed in. It uses the net_writen function in net.c to accomplish this.
+sendStr(char *str, int fd) function in client.c tries to send the the str specified to the fd that is passed in. The function does this in three passes. During the first pass, it encodes the length of the data to send to the server and verifies the server receives the valid number of bytes (sizeof(int)). During the second pass, it sends the length of the bytes again but this time verifies that this value is what the server received, during the third pass, it actually writes the bytes of data to the server as well as the number of bytes being sent.
 
 Notes:
 
@@ -18,5 +18,3 @@ Notes:
 are working. Went to office hours for further questions regarding the assignment.
 
 1/30 - Met up at the GSU again, made some minor tweaks and completed log file.
-
-
