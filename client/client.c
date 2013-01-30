@@ -233,6 +233,8 @@ main(int argc, char **argv)
     if (prompt(menu)>=0) rc=doCmd(); else rc=-1;
     if (rc<0) break;
     //What do you think the next line is for
+    //The next line is for checking the user input and finding out which menu
+    //option the user chose
     if (rc==1) menu=1; else menu=0;
   }
 
