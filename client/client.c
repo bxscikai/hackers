@@ -28,7 +28,7 @@
 
 #include "../lib/net.h"
 
-#define TEAMNAME 
+#define TEAMNAME Hackers 
 
 #define BUFLEN 16384
 #define STRLEN 80
