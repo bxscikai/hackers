@@ -1,5 +1,5 @@
-#ifndef __DA_GAME_NET_H__
-#define __DA_GAME_NET_H__
+#ifndef __DAGAME_PROTOCOL_UTILS_H__
+#define __DAGAME_PROTOCOL_UTILS_H__
 /******************************************************************************
 * Copyright (C) 2011 by Jonathan Appavoo, Boston University
 *
@@ -22,17 +22,15 @@
 * THE SOFTWARE.
 *****************************************************************************/
 
-typedef int FDType;
-typedef int PortType;
+extern int PROTO_DEBUG;
 
-#define LISTENQ 1024
+extern void proto_dump_mt(Proto_Msg_Types type);
+extern void proto_dump_pstate(Proto_Player_State *ps);
+extern void proto_dump_gstate(Proto_Game_State *gs);
+extern void proto_dump_msghdr(Proto_Msg_Hdr *hdr);
 
-extern int     net_setup_listen_socket(FDType *fd, PortType *port);
-extern int     net_setup_connection(FDType *fd, char *host, PortType port);
-extern int     net_listen(FDType fd);
-extern int     net_accept(FDType fd);
-
-extern ssize_t net_writen(FDType fd, const void *vptr, size_t n);
-extern ssize_t net_readn(FDType fd, void *vptr, size_t n);
+static inline  void proto_debug_on(void) { PROTO_DEBUG = 1; }
+static inline void proto_debug_off(void) { PROTO_DEBUG = 0; }
+static inline int  proto_debug(void) {return PROTO_DEBUG; }
 
 #endif
