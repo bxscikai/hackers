@@ -29,12 +29,12 @@
 typedef struct {
   FDType fd;
   void *extra;   // space to attach session specific data
-  int slen;
-  int rlen;
-  Proto_Msg_Hdr shdr;
-  Proto_Msg_Hdr rhdr;
-  char sbuf[PROTO_SESSION_BUF_SIZE];
-  char rbuf[PROTO_SESSION_BUF_SIZE];
+  int slen;   // send length
+  int rlen;   // reply length
+  Proto_Msg_Hdr shdr; // sender header
+  Proto_Msg_Hdr rhdr; // receive header
+  char sbuf[PROTO_SESSION_BUF_SIZE]; // send buffer
+  char rbuf[PROTO_SESSION_BUF_SIZE]; // reply buffer
 } Proto_Session;
 
 // Define Proto_MT_Handler type as a pointer to a function that returns
@@ -53,19 +53,19 @@ extern void proto_session_hdr_unmarshall(Proto_Session *s, Proto_Msg_Hdr *h);
 
 extern int  proto_session_body_marshall_ll(Proto_Session *s, long long v);
 extern int  proto_session_body_unmarshall_ll(Proto_Session *s, int offset, 
-					     long long *v);
+               long long *v);
 extern int  proto_session_body_marshall_int(Proto_Session *s, int v);
 extern int  proto_session_body_unmarshall_int(Proto_Session *s, int offset, 
-					      int *v);
+                int *v);
 extern int  proto_session_body_marshall_char(Proto_Session *s, char v);
 extern int  proto_session_body_unmarshall_char(Proto_Session *s, int offset,
-					       char *v);
+                 char *v);
 extern int  proto_session_body_reserve_space(Proto_Session *s, int num, 
-					     char **space);
+               char **space);
 extern int  proto_session_body_marshall_bytes(Proto_Session *s, int num, 
-					      char *b);
+                char *b);
 extern int  proto_session_body_unmarshall_bytes(Proto_Session *s, int offset, 
-						int num, char *b);
+            int num, char *b);
 extern int  proto_session_send_msg(Proto_Session *s, int reset);
 extern int  proto_session_rcv_msg(Proto_Session *s);
 extern int  proto_session_rpc(Proto_Session *s);

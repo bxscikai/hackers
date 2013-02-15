@@ -1,3 +1,4 @@
+Proto_Session
 /******************************************************************************
 * Copyright (C) 2011 by Jonathan Appavoo, Boston University
 *
@@ -291,7 +292,7 @@ proto_session_rcv_msg(Proto_Session *s)
   proto_session_reset_receive(s);
 
   // read reply
-  // ADD CODE
+  ////////// ADD CODE //////////
   int bytesRead = net_readn(s->fd, &s->rhdr, sizeof(Proto_Msg_Hdr)); // Read the reply header from received message
   // Make sure we read the # of bytes we expect
   if (bytesRead<sizeof(Proto_Msg_Hdr)) {
@@ -307,7 +308,7 @@ proto_session_rcv_msg(Proto_Session *s)
       " .. closing connection\n" , __func__, bytesRead, numOfBytesToRead);
     break;
   }
-
+  /////////////////////
 
   if (proto_debug()) {
     fprintf(stderr, "%p: proto_session_rcv_msg: RCVED:\n", pthread_self());

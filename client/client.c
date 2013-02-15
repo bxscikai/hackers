@@ -76,7 +76,7 @@ startConnection(Client *C, char *host, PortType port, Proto_MT_Handler h)
 #if 0
     if (h != NULL) {
       proto_client_set_event_handler(C->ph, PROTO_MT_EVENT_BASE_UPDATE, 
-				     h);
+             h);
     }
 #endif
     return 1;
@@ -149,6 +149,7 @@ doRPC(Client *C)
   int rc;
   char c;
 
+  // Enter command, h=hello, m<c> = move c steps, g = goodbye
   printf("enter (h|m<c>|g): ");
   scanf("%c", &c);
   rc=doRPCCmd(C,c);
@@ -211,12 +212,12 @@ usage(char *pgm)
   fprintf(stderr, "USAGE: %s <port|<<host port> [shell] [gui]>>\n"
            "  port     : rpc port of a game server if this is only argument\n"
            "             specified then host will default to localhost and\n"
-	   "             only the graphical user interface will be started\n"
+     "             only the graphical user interface will be started\n"
            "  host port: if both host and port are specifed then the game\n"
-	   "examples:\n" 
+     "examples:\n" 
            " %s 12345 : starts client connecting to localhost:12345\n"
-	  " %s localhost 12345 : starts client connecting to locaalhost:12345\n",
-	   pgm, pgm, pgm, pgm);
+    " %s localhost 12345 : starts client connecting to locaalhost:12345\n",
+     pgm, pgm, pgm, pgm);
  
 }
 

@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <pthread.h>
 
+#include "net.h"
 #include "protocol.h"
 #include "protocol_utils.h"
 #include "protocol_client.h"
@@ -224,6 +225,7 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
   
   return rc;
 }
+
 extern int 
 proto_client_hello(Proto_Client_Handle ch)
 {
