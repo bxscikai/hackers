@@ -50,7 +50,7 @@ struct {
   pthread_t          RPCListenTid;
   Proto_MT_Handler   session_lost_handler;
   Proto_MT_Handler   base_req_handlers[PROTO_MT_REQ_BASE_RESERVED_LAST - 
-				       PROTO_MT_REQ_BASE_RESERVED_FIRST-1];
+               PROTO_MT_REQ_BASE_RESERVED_FIRST-1];
 } Proto_Server;
 
 extern PortType proto_server_rpcport(void) { return Proto_Server.RPCPort; }
@@ -100,9 +100,9 @@ proto_server_record_event_subscriber(int fd, int *num)
     int i;
     for (i=0; i< PROTO_SERVER_MAX_EVENT_SUBSCRIBERS; i++) {
       if (Proto_Server.EventSubscribers[i]==-1) {
-	ADD CODE
-	*num=i;
-	rc=1;
+  ADD CODE
+  *num=i;
+  rc=1;
       }
     }
   }
@@ -132,10 +132,10 @@ proto_server_event_listen(void *arg)
       fprintf(stderr, "EventListen: connfd=%d -> ", connfd);
 
       if (ADD CODE<0) {
-	fprintf(stderr, "oops no space for any more event subscribers\n");
-	close(connfd);
+  fprintf(stderr, "oops no space for any more event subscribers\n");
+  close(connfd);
       } else {
-	fprintf(stderr, "subscriber num %d\n", i);
+  fprintf(stderr, "subscriber num %d\n", i);
       }
     } 
   }
@@ -156,11 +156,11 @@ proto_server_post_event(void)
     if (Proto_Server.EventSession.fd != -1) {
       num--;
       if (ADD CODE)<0) {
-	// must have lost an event connection
-	close(Proto_Server.EventSession.fd);
-	Proto_Server.EventSubscribers[i]=-1;
-	Proto_Server.EventNumSubscribers--;
-	Proto_Server.ADD CODE
+  // must have lost an event connection
+  close(Proto_Server.EventSession.fd);
+  Proto_Server.EventSubscribers[i]=-1;
+  Proto_Server.EventNumSubscribers--;
+  Proto_Server.ADD CODE
       } 
       // FIXME: add ack message here to ensure that game is updated 
       // correctly everywhere... at the risk of making server dependent
@@ -190,12 +190,12 @@ proto_server_req_dispatcher(void * arg)
   s.fd = (FDType) arg_value;
 
   fprintf(stderr, "proto_rpc_dispatcher: %p: Started: fd=%d\n", 
-	  pthread_self(), s.fd);
+    pthread_self(), s.fd);
 
   for (;;) {
     if (proto_session_rcv_msg(&s)==1) {
       ADD CODE
-	if (hdlr(&s)<0) goto leave;
+  if (hdlr(&s)<0) goto leave;
       }
     } else {
       goto leave;
@@ -226,7 +226,7 @@ proto_server_rpc_listen(void *arg)
       fprintf(stderr, "Error: proto_server_rpc_listen accept failed (%d)\n", errno);
     } else {
       pthread_create(&tid, NULL, &proto_server_req_dispatcher,
-		     (void *)connfd);
+         (void *)connfd);
     }
   }
 }
@@ -235,9 +235,9 @@ extern int
 proto_server_start_rpc_loop(void)
 {
   if (pthread_create(&(Proto_Server.RPCListenTid), NULL, 
-		     &proto_server_rpc_listen, NULL) !=0) {
+         &proto_server_rpc_listen, NULL) !=0) {
     fprintf(stderr, 
-	    "proto_server_rpc_listen: pthread_create: create RPCListen thread failed\n");
+      "proto_server_rpc_listen: pthread_create: create RPCListen thread failed\n");
     perror("pthread_create:");
     return -3;
   }
@@ -285,7 +285,7 @@ proto_server_init(void)
   proto_session_init(&Proto_Server.EventSession);
 
   proto_server_set_session_lost_handler(
-				     proto_session_lost_default_handler);
+             proto_session_lost_default_handler);
   for (i=PROTO_MT_REQ_BASE_RESERVED_FIRST+1; 
        i<PROTO_MT_REQ_BASE_RESERVED_LAST; i++) {
     ADD CODE
@@ -301,7 +301,7 @@ proto_server_init(void)
 
 
   rc=net_setup_listen_socket(&(Proto_Server.RPCListenFD),
-			     &(Proto_Server.RPCPort));
+           &(Proto_Server.RPCPort));
 
   if (rc==0) { 
     fprintf(stderr, "prot_server_init: net_setup_listen_socket: FAILED for RPCPort\n");
@@ -311,18 +311,18 @@ proto_server_init(void)
   Proto_Server.EventPort = Proto_Server.RPCPort + 1;
 
   rc=net_setup_listen_socket(&(Proto_Server.EventListenFD),
-			     &(Proto_Server.EventPort));
+           &(Proto_Server.EventPort));
 
   if (rc==0) { 
     fprintf(stderr, "proto_server_init: net_setup_listen_socket: FAILED for EventPort=%d\n", 
-	    Proto_Server.EventPort);
+      Proto_Server.EventPort);
     return -2;
   }
 
   if (pthread_create(&(Proto_Server.EventListenTid), NULL, 
-		     &proto_server_event_listen, NULL) !=0) {
+         &proto_server_event_listen, NULL) !=0) {
     fprintf(stderr, 
-	    "proto_server_init: pthread_create: create EventListen thread failed\n");
+      "proto_server_init: pthread_create: create EventListen thread failed\n");
     perror("pthread_createt:");
     return -3;
   }

@@ -110,7 +110,7 @@ main(int argc, char **argv)
   }
 
   fprintf(stderr, "RPC Port: %d, Event Port: %d\n", proto_server_rpcport(), 
-	  proto_server_eventport());
+    proto_server_eventport());
 
   if (proto_server_start_rpc_loop()<0) {
     fprintf(stderr, "ERROR: failed to start rpc loop\n");

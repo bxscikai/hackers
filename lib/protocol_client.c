@@ -38,8 +38,8 @@ typedef struct {
   pthread_t EventHandlerTid;
   Proto_MT_Handler session_lost_handler;
   Proto_MT_Handler base_event_handlers[PROTO_MT_EVENT_BASE_RESERVED_LAST 
-				       - PROTO_MT_EVENT_BASE_RESERVED_FIRST
-				       - 1];
+               - PROTO_MT_EVENT_BASE_RESERVED_FIRST
+               - 1];
 } Proto_Client;
 
 extern Proto_Session *
@@ -63,19 +63,27 @@ proto_client_set_session_lost_handler(Proto_Client_Handle ch, Proto_MT_Handler h
   c->session_lost_handler = h;
 }
 
+
 extern int
 proto_client_set_event_handler(Proto_Client_Handle ch, Proto_Msg_Types mt,
-			       Proto_MT_Handler h)
+             Proto_MT_Handler h)
 {
   int i;
   Proto_Client *c = ch;
 
+  // Here, we can setting the event handler for Proto_Client, which contains a seession lost handler
+  // and an array for handlers for each messaget type that we have, we will need to write a 
+  // handler for each message type
   if (mt>PROTO_MT_EVENT_BASE_RESERVED_FIRST && 
       mt<PROTO_MT_EVENT_BASE_RESERVED_LAST) {
     i=mt - PROTO_MT_EVENT_BASE_RESERVED_FIRST - 1;
-    ADD CODE
+    // ADD CODE
+    c->base_event_handlers[i] = h;
+
     return 1;
-  } else {
+  } 
+
+  else {
     return -1;
   }
 }
@@ -92,7 +100,7 @@ static int
 proto_client_event_null_handler(Proto_Session *s)
 {
   fprintf(stderr, 
-	  "proto_client_event_null_handler: invoked for session:\n");
+    "proto_client_event_null_handler: invoked for session:\n");
   proto_session_dump(s);
 
   return 1;
@@ -109,19 +117,25 @@ proto_client_event_dispatcher(void * arg)
 
   pthread_detach(pthread_self());
 
-  c = ADD CODE
-  s = ADD CODE
+  c = (Proto_Client *) arg;
+  s = c->event_session;
 
   for (;;) {
     if (proto_session_rcv_msg(s)==1) {
       mt = proto_session_hdr_unmarshall_type(s);
       if (mt > PROTO_MT_EVENT_BASE_RESERVED_FIRST && 
-	  mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
-	ADD CODE
-	if (hdlr(s)<0) goto leave;
+    mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
+
+    // We are getting the handler corresponding to our message type from our protocol_client 
+     hdlr = c->base_event_handlers[mt];
+
+         if (hdlr(s)<0) goto leave;
       }
-    } else {
-      ADD CODE
+    } 
+    else {
+      // ADD CODE
+      fprintf(stderr, "failed to receive event message from server\n", );
+
       goto leave;
     }
   }
@@ -141,11 +155,15 @@ proto_client_init(Proto_Client_Handle *ch)
   bzero(c, sizeof(Proto_Client));
 
   proto_client_set_session_lost_handler(c, 
-			      	proto_client_session_lost_default_hdlr);
+              proto_client_session_lost_default_hdlr);
 
+  // Basically goes through event message type, creates a handler and adds it to the
+  // client's array of message handlers
+  // TODO - define a handler for each message type
   for (mt=PROTO_MT_EVENT_BASE_RESERVED_FIRST+1;
-       mt<PROTO_MT_EVENT_BASE_RESERVED_LAST; mt++)
-    ADD CODE
+       mt<PROTO_MT_EVENT_BASE_RESERVED_LAST; mt++) {
+      proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
+  }
 
   *ch = c;
   return 1;
@@ -163,9 +181,9 @@ proto_client_connect(Proto_Client_Handle ch, char *host, PortType port)
     return -2; 
 
   if (pthread_create(&(c->EventHandlerTid), NULL, 
-		     &proto_client_event_dispatcher, c) !=0) {
+         &proto_client_event_dispatcher, c) !=0) {
     fprintf(stderr, 
-	    "proto_client_init: create EventHandler thread failed\n");
+      "proto_client_init: create EventHandler thread failed\n");
     perror("proto_client_init:");
     return -3;
   }
@@ -191,16 +209,17 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
   Proto_Session *s;
   Proto_Client *c = ch;
 
-  s = ADD CODE
-  // marshall
+  s = c->rpc_session;
 
-  marshall_mtonly(s, mt);
-  rc = proto_session_ADD CODE
+  // marshall
+  marshall_mtonly(s, mt);  
+  //???
+  rc = proto_session_rpc(s);
 
   if (rc==1) {
     proto_session_body_unmarshall_int(s, 0, &rc);
   } else {
-    ADD CODE
+    fprintf(stderr, "Rpc execution failed...\n", );
   }
   
   return rc;

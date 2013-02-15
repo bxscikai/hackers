@@ -37,8 +37,8 @@ proto_session_dump(Proto_Session *s)
 {
   fprintf(stderr, "Session s=%p:\n", s);
   fprintf(stderr, " fd=%d, extra=%p slen=%d, rlen=%d\n shdr:\n  ", 
-	  s->fd, s->extra,
-	  s->slen, s->rlen);
+    s->fd, s->extra,
+    s->slen, s->rlen);
   proto_dump_msghdr(&(s->shdr));
   fprintf(stderr, " rhdr:\n  ");
   proto_dump_msghdr(&(s->rhdr));
@@ -239,7 +239,7 @@ proto_session_body_ptr(Proto_Session *s, int offset, char **ptr)
   }
   return -1;
 }
-	    
+      
 extern int
 proto_session_body_marshall_bytes(Proto_Session *s, int len, char *data)
 {
@@ -253,7 +253,7 @@ proto_session_body_marshall_bytes(Proto_Session *s, int len, char *data)
 
 extern int
 proto_session_body_unmarshall_bytes(Proto_Session *s, int offset, int len, 
-				     char *data)
+             char *data)
 {
   if (s && ((s->rlen - (offset + len)) >= 0)) {
     memcpy(data, s->rbuf + offset, len);
@@ -270,7 +270,8 @@ proto_session_send_msg(Proto_Session *s, int reset)
   s->shdr.blen = htonl(s->slen);
 
   // write request
-  ADD CODE
+  // ADD CODE
+  net_writen(s->fd, s->shdr, (int)sizeof(Proto_Msg_Hdr));
   
   if (proto_debug()) {
     fprintf(stderr, "%p: proto_session_send_msg: SENT:\n", pthread_self());
@@ -290,7 +291,23 @@ proto_session_rcv_msg(Proto_Session *s)
   proto_session_reset_receive(s);
 
   // read reply
-  ADD CODE
+  // ADD CODE
+  int bytesRead = net_readn(s->fd, &s->rhdr, sizeof(Proto_Msg_Hdr)); // Read the reply header from received message
+  // Make sure we read the # of bytes we expect
+  if (bytesRead<sizeof(Proto_Msg_Hdr)) {
+          fprintf(stderr, "%s: ERROR failed to read len: %d!=%d"
+        " ... closing connection\n", __func__, bytesRead, (int)sizeof(Proto_Msg_Hdr));
+  }
+  // Get the number of extra bytes in the blen field
+  int numOfBytesToRead = proto_session_hdr_unmarshall_blen(s);
+  // Now read the read into the reply buffer
+  bytesRead = net_readn(s->fd, &s->rbuf, numOfBytesToRead);
+  if ( bytesRead != numOfBytesToRead ) {
+    fprintf(stderr, "%s: ERROR failed to read msg: %d!=%d"
+      " .. closing connection\n" , __func__, bytesRead, numOfBytesToRead);
+    break;
+  }
+
 
   if (proto_debug()) {
     fprintf(stderr, "%p: proto_session_rcv_msg: RCVED:\n", pthread_self());
@@ -302,9 +319,10 @@ proto_session_rcv_msg(Proto_Session *s)
 extern int
 proto_session_rpc(Proto_Session *s)
 {
-  int rc;
-  
-  ADD CODE
+  int rc;  
+  // HACK
+  rc = proto_session_send_msg(s, 0);
+  rc = proto_session_rcv_msg(s);
 
   return rc;
 }
