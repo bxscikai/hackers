@@ -12,7 +12,7 @@ CFLAGS := -g
 
 MODULE := $(shell basename $CURDIR)
 
-DAGAMELIBHDRS := types.h net.h dummy.h
+DAGAMELIBHDRS := types.h net.h
 DAGAMELIBFILE := libdagame.a
 DAGAMELIBARCHIVE := ../lib/$(DAGAMELIBFILE)
 DAGAMELIB := -L../lib -ldagame
