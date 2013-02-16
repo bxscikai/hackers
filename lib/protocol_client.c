@@ -214,7 +214,7 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
 
   // marshall
   marshall_mtonly(s, mt);  
-  //???
+  //??? TO DO, Marshall more fields into this send header?
   rc = proto_session_rpc(s);
 
   if (rc==1) {

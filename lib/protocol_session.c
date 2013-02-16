@@ -306,7 +306,7 @@ proto_session_rcv_msg(Proto_Session *s)
   if ( bytesRead != numOfBytesToRead ) {
     fprintf(stderr, "%s: ERROR failed to read msg: %d!=%d"
       " .. closing connection\n" , __func__, bytesRead, numOfBytesToRead);
-    break;
+    return -1;
   }
   /////////////////////
 

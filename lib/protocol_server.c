@@ -96,15 +96,23 @@ proto_server_record_event_subscriber(int fd, int *num)
   if (Proto_Server.EventLastSubscriber < PROTO_SERVER_MAX_EVENT_SUBSCRIBERS
       && Proto_Server.EventSubscribers[Proto_Server.EventLastSubscriber]
       ==-1) {
-    ADD CODE
+    // ADD CODE
+    Proto_Server.EventSubscribers[Proto_Server.EventLastSubscriber] = fd;
+    Proto_Server.EventNumSubscribers++;
+    *num = Proto_Server.EventLastSubscriber;
+
     rc = 1;
-  } else {
+  } 
+
+  else {
     int i;
     for (i=0; i< PROTO_SERVER_MAX_EVENT_SUBSCRIBERS; i++) {
       if (Proto_Server.EventSubscribers[i]==-1) {
-  ADD CODE
-  *num=i;
-  rc=1;
+        // ADD CODE
+        Proto_Server.EventSubscribers[i] = fd;
+        Proto_Server.EventNumSubscribers++;
+        *num=i;
+        rc=1;
       }
     }
   }
@@ -141,8 +149,12 @@ proto_server_event_listen(void *arg)
       } else {
 
           // ADD CODE
-          Proto_Server.EventSubscribers[Proto_Server.EventNumSubscribers] = connfd;
-          Proto_Server.EventNumSubscribers++;
+          int LastSubscriber;
+          proto_server_record_event_subscriber(connfd, &LastSubscriber);          
+          Proto_Server.EventLastSubscriber = LastSubscriber;
+
+          // Proto_Server.EventSubscribers[Proto_Server.EventNumSubscribers] = connfd;
+          // Proto_Server.EventNumSubscribers++;
 
           fprintf(stderr, "subscriber num %d\n", i);
       }
@@ -164,13 +176,17 @@ proto_server_post_event(void)
     Proto_Server.EventSession.fd = Proto_Server.EventSubscribers[i];
     if (Proto_Server.EventSession.fd != -1) {
       num--;
-      if (ADD CODE)<0) {
-  // must have lost an event connection
-  close(Proto_Server.EventSession.fd);
-  Proto_Server.EventSubscribers[i]=-1;
-  Proto_Server.EventNumSubscribers--;
-  Proto_Server.ADD CODE
+
+      // HACK
+      if (proto_session_send_msg(Proto_Server.EventSession, 0)<0) {
+          // must have lost an event connection
+          close(Proto_Server.EventSession.fd);
+          Proto_Server.EventSubscribers[i]=-1;
+          Proto_Server.EventNumSubscribers--;
+          Proto_Server.EventLastSubscriber
       } 
+
+      Proto_Server.base_req_handlers[PROTO_MT_EVENT_BASE_RESERVED_FIRST+1](Proto_Server.EventSession))<0
       // FIXME: add ack message here to ensure that game is updated 
       // correctly everywhere... at the risk of making server dependent
       // on client behaviour  (use time out to limit impact... drop
@@ -203,15 +219,30 @@ proto_server_req_dispatcher(void * arg)
 
   for (;;) {
     if (proto_session_rcv_msg(&s)==1) {
-      ADD CODE
-  if (hdlr(&s)<0) goto leave;
+
+
+      // ADD CODE /////////////
+      mt = proto_session_hdr_unmarshall_type(s);
+      if (mt > PROTO_MT_EVENT_BASE_RESERVED_FIRST && mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
+
+       // We are getting the handler corresponding to our message type from our protocol_client 
+        fprintf(stderr, "Server received rpc request, going inside server handler!\n", );
+       hdlr = Proto_Server->base_req_handlers[mt];
+
+      /////////////////
+        if (hdlr(&s)<0) goto leave;
       }
-    } else {
+    } 
+
+    else {
+
+      fprintf(stderr, "Server: Valid message not received!\n" );
       goto leave;
     }
   }
  leave:
-  Proto_Server.ADD CODE
+  // ADD CODE
+  Proto_Server.RPCListenTid = -1;
   close(s.fd);
   return NULL;
 }
