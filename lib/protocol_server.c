@@ -76,7 +76,9 @@ proto_server_set_req_handler(Proto_Msg_Types mt, Proto_MT_Handler h)
       mt<PROTO_MT_REQ_BASE_RESERVED_LAST) {
     i = mt - PROTO_MT_REQ_BASE_RESERVED_FIRST - 1;
 
-    ADD CODE
+  // Add handler for proto server
+  Proto_Server.base_req_handlers[i] = h;
+
     return 1;
   } else {
     return -1;
@@ -124,18 +126,25 @@ proto_server_event_listen(void *arg)
   }
 
   for (;;) {
-    connfd = ADD CODE
+    // ADD CODE
+    connfd = net_accept(fd);
     if (connfd < 0) {
       fprintf(stderr, "Error: EventListen accept failed (%d)\n", errno);
     } else {
       int i;
       fprintf(stderr, "EventListen: connfd=%d -> ", connfd);
 
-      if (ADD CODE<0) {
-  fprintf(stderr, "oops no space for any more event subscribers\n");
-  close(connfd);
+      // If our subscribe queue has been maxed out, don't accept another subscriber
+      if (PROTO_SERVER_MAX_EVENT_SUBSCRIBERS - Proto_Server.EventNumSubscribers <0) {
+        fprintf(stderr, "oops no space for any more event subscribers\n");
+        close(connfd);
       } else {
-  fprintf(stderr, "subscriber num %d\n", i);
+
+          // ADD CODE
+          Proto_Server.EventSubscribers[Proto_Server.EventNumSubscribers] = connfd;
+          Proto_Server.EventNumSubscribers++;
+
+          fprintf(stderr, "subscriber num %d\n", i);
       }
     } 
   }
@@ -221,7 +230,8 @@ proto_server_rpc_listen(void *arg)
   }
 
   for (;;) {
-    connfd = ADD CODE
+    // ADD CODE
+    connfd = net_accept(fd);
     if (connfd < 0) {
       fprintf(stderr, "Error: proto_server_rpc_listen accept failed (%d)\n", errno);
     } else {
@@ -284,11 +294,14 @@ proto_server_init(void)
 
   proto_session_init(&Proto_Server.EventSession);
 
+  // TO DO, define handler for each message type
+  // Add handler for each server event
   proto_server_set_session_lost_handler(
              proto_session_lost_default_handler);
   for (i=PROTO_MT_REQ_BASE_RESERVED_FIRST+1; 
        i<PROTO_MT_REQ_BASE_RESERVED_LAST; i++) {
-    ADD CODE
+      proto_server_set_req_handler(i, proto_server_mt_null_handler);
+        
   }
 
 
@@ -319,6 +332,7 @@ proto_server_init(void)
     return -2;
   }
 
+  // Create a thread which waits for clients to subscribe to
   if (pthread_create(&(Proto_Server.EventListenTid), NULL, 
          &proto_server_event_listen, NULL) !=0) {
     fprintf(stderr, 

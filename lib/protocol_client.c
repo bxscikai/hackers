@@ -119,7 +119,7 @@ proto_client_event_dispatcher(void * arg)
   pthread_detach(pthread_self());
 
   c = (Proto_Client *) arg;
-  s = c->event_session;
+  s = &c->event_session;
 
   for (;;) {
     if (proto_session_rcv_msg(s)==1) {
