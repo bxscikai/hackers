@@ -16,3 +16,5 @@ lib/libdagame.a
 server/server
 
 5
+
+client/client
