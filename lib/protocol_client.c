@@ -62,6 +62,7 @@ proto_client_set_session_lost_handler(Proto_Client_Handle ch, Proto_MT_Handler h
 {
   Proto_Client *c = ch;
   c->session_lost_handler = h;
+  return 1;
 }
 
 
@@ -131,11 +132,13 @@ proto_client_event_dispatcher(void * arg)
      hdlr = c->base_event_handlers[mt];
 
          if (hdlr(s)<0) goto leave;
+
+
       }
     } 
     else {
       // ADD CODE
-      fprintf(stderr, "failed to receive event message from server\n", );
+      fprintf(stderr, "failed to receive event message from server\n");
 
       goto leave;
     }
@@ -210,17 +213,19 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
   Proto_Session *s;
   Proto_Client *c = ch;
 
-  s = c->rpc_session;
+  s = &c->rpc_session;
 
   // marshall
   marshall_mtonly(s, mt);  
   //??? TO DO, Marshall more fields into this send header?
+  fprintf(stderr, "Before doing rpc\n");
   rc = proto_session_rpc(s);
+  fprintf(stderr, "After doing rpc\n");
 
   if (rc==1) {
     proto_session_body_unmarshall_int(s, 0, &rc);
   } else {
-    fprintf(stderr, "Rpc execution failed...\n", );
+    fprintf(stderr, "Rpc execution failed...\n");
   }
   
   return rc;

@@ -122,8 +122,8 @@ doRPCCmd(Client *C, char c)
   switch (c) {
   case 'h':  
     {
-      rc = proto_client_hello(C->ph);
       printf("hello: rc=%x\n", rc);
+      rc = proto_client_hello(C->ph);
       if (rc > 0) game_process_reply(C);
     }
     break;
@@ -132,6 +132,7 @@ doRPCCmd(Client *C, char c)
     rc = proto_client_move(C->ph, c);
     break;
   case 'g':
+    printf("goodbye: rc=%x\n", rc);
     rc = proto_client_goodbye(C->ph);
     break;
   default:
@@ -150,7 +151,7 @@ doRPC(Client *C)
   char c;
 
   // Enter command, h=hello, m<c> = move c steps, g = goodbye
-  printf("enter (h|m<c>|g): ");
+  printf("enter (h|m<c>|g): \n");
   scanf("%c", &c);
   rc=doRPCCmd(C,c);
 

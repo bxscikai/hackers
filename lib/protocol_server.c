@@ -65,6 +65,7 @@ extern int
 proto_server_set_session_lost_handler(Proto_MT_Handler h)
 {
   Proto_Server.session_lost_handler = h;
+  return 1;
 }
 
 extern int
@@ -97,6 +98,8 @@ proto_server_record_event_subscriber(int fd, int *num)
       && Proto_Server.EventSubscribers[Proto_Server.EventLastSubscriber]
       ==-1) {
     // ADD CODE
+    // If the last eventSubscriber is empty, place the new fd in its index
+    // it is to save the for loop
     Proto_Server.EventSubscribers[Proto_Server.EventLastSubscriber] = fd;
     Proto_Server.EventNumSubscribers++;
     *num = Proto_Server.EventLastSubscriber;
@@ -178,19 +181,30 @@ proto_server_post_event(void)
       num--;
 
       // HACK
-      if (proto_session_send_msg(Proto_Server.EventSession, 0)<0) {
+      if (net_listen(Proto_Server.EventSession.fd)<0) {
           // must have lost an event connection
           close(Proto_Server.EventSession.fd);
           Proto_Server.EventSubscribers[i]=-1;
           Proto_Server.EventNumSubscribers--;
-          Proto_Server.EventLastSubscriber
+          Proto_Server.EventLastSubscriber = -1;
       } 
 
-      Proto_Server.base_req_handlers[PROTO_MT_EVENT_BASE_RESERVED_FIRST+1](Proto_Server.EventSession))<0
       // FIXME: add ack message here to ensure that game is updated 
       // correctly everywhere... at the risk of making server dependent
       // on client behaviour  (use time out to limit impact... drop
       // clients that misbehave but be carefull of introducing deadlocks
+      // HACK
+        int rc = proto_session_send_msg(&Proto_Server.EventSession, 0);
+        if (rc<0)
+          fprintf(stderr, "Failed to post event\n");
+        else
+          rc = proto_session_rcv_msg(&Proto_Server.EventSession);
+        if (rc<0)
+          fprintf(stderr, "Failed to receive ACK\n" );
+
+        fprintf(stderr, "Reply message from post event: %s\n", Proto_Server.EventSession.rbuf);
+        /////////////////////////////////////////
+
     }
     i++;
   }
@@ -218,16 +232,25 @@ proto_server_req_dispatcher(void * arg)
     pthread_self(), s.fd);
 
   for (;;) {
+
+    fprintf(stderr, "Before server receives message\n");
+
     if (proto_session_rcv_msg(&s)==1) {
 
 
       // ADD CODE /////////////
-      mt = proto_session_hdr_unmarshall_type(s);
-      if (mt > PROTO_MT_EVENT_BASE_RESERVED_FIRST && mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
+      mt = proto_session_hdr_unmarshall_type(&s);
+      
+      printMessageType(mt);
+      
+
+      if (mt > PROTO_MT_REQ_BASE_RESERVED_FIRST && mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
 
        // We are getting the handler corresponding to our message type from our protocol_client 
-        fprintf(stderr, "Server received rpc request, going inside server handler!\n", );
-       hdlr = Proto_Server->base_req_handlers[mt];
+        fprintf(stderr, "Server received rpc request, going inside server handler!\n");
+        printMessageType(mt);
+
+        hdlr = Proto_Server.base_req_handlers[mt];
 
       /////////////////
         if (hdlr(&s)<0) goto leave;
@@ -242,10 +265,67 @@ proto_server_req_dispatcher(void * arg)
   }
  leave:
   // ADD CODE
-  Proto_Server.RPCListenTid = -1;
+  Proto_Server.RPCListenTid = (pthread_t)-1;
   close(s.fd);
   return NULL;
 }
+
+void printMessageType(Proto_Msg_Types type) {
+
+  fprintf(stderr, "Printing message type\n");
+
+  if (type==PROTO_MT_REQ_BASE_RESERVED_FIRST)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_RESERVED_FIRST\n");
+  if (type==PROTO_MT_REQ_BASE_HELLO)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_HELLO\n");
+  if (type==PROTO_MT_REQ_BASE_MOVE)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_MOVE\n");
+  if (type==PROTO_MT_REQ_BASE_GOODBYE)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_GOODBYE\n");
+  if (type==PROTO_MT_REQ_BASE_RESERVED_LAST)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_RESERVED_LAST\n");
+
+
+  if (type==PROTO_MT_REP_BASE_RESERVED_FIRST)
+    fprintf(stderr, "PROTO_MT_REP_BASE_RESERVED_FIRST\n");
+  if (type==PROTO_MT_REP_BASE_HELLO)
+    fprintf(stderr, "PROTO_MT_REP_BASE_HELLO\n");
+  if (type==PROTO_MT_REP_BASE_MOVE)
+    fprintf(stderr, "PROTO_MT_REP_BASE_MOVE\n");
+  if (type==PROTO_MT_REP_BASE_GOODBYE)
+    fprintf(stderr, "PROTO_MT_REP_BASE_GOODBYE\n");
+  if (type==PROTO_MT_REP_BASE_RESERVED_LAST)
+    fprintf(stderr, "PROTO_MT_REP_BASE_RESERVED_LAST\n");
+
+
+  if (type==PROTO_MT_EVENT_BASE_RESERVED_FIRST)
+    fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_FIRST\n");
+  if (type==PROTO_MT_EVENT_BASE_UPDATE)
+    fprintf(stderr, "PROTO_MT_EVENT_BASE_UPDATE\n");
+  if (type==PROTO_MT_EVENT_BASE_RESERVED_LAST)
+    fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_LAST\n");
+
+}
+
+  // PROTO_MT_REQ_BASE_RESERVED_FIRST,
+  // PROTO_MT_REQ_BASE_HELLO,
+  // PROTO_MT_REQ_BASE_MOVE,
+  // PROTO_MT_REQ_BASE_GOODBYE,
+  // // RESERVED LAST REQ MT PUT ALL NEW REQ MTS ABOVE
+  // PROTO_MT_REQ_BASE_RESERVED_LAST,
+  
+  // // Replys
+  // PROTO_MT_REP_BASE_RESERVED_FIRST,
+  // PROTO_MT_REP_BASE_HELLO,
+  // PROTO_MT_REP_BASE_MOVE,
+  // PROTO_MT_REP_BASE_GOODBYE,
+  // // RESERVED LAST REP MT PUT ALL NEW REP MTS ABOVE
+  // PROTO_MT_REP_BASE_RESERVED_LAST,
+
+  // // Events  
+  // PROTO_MT_EVENT_BASE_RESERVED_FIRST,
+  // PROTO_MT_EVENT_BASE_UPDATE,
+  // PROTO_MT_EVENT_BASE_RESERVED_LAST
 
 static
 void *
