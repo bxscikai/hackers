@@ -124,7 +124,16 @@ proto_client_event_dispatcher(void * arg)
 
   for (;;) {
     if (proto_session_rcv_msg(s)==1) {
+
+        fprintf(stderr, "Client: Received event from server :)\n");
+
       mt = proto_session_hdr_unmarshall_type(s);
+      int version = proto_session_hdr_unmarshall_version(s);
+
+    fprintf(stderr, "Receiving event message: %d version: %d\n", mt, version);
+
+      printMessageType(mt);
+
       if (mt > PROTO_MT_EVENT_BASE_RESERVED_FIRST && 
     mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
 
@@ -192,6 +201,11 @@ proto_client_connect(Proto_Client_Handle ch, char *host, PortType port)
     return -3;
   }
 
+  // MY ADD CODE
+  // Subscribe to the server for events
+  marshall_mtonly(&(c->event_session), PROTO_MT_EVENT_BASE_UPDATE);  
+  proto_session_send_msg(&(c->event_session), 0);
+
   return 0;
 }
 
@@ -218,9 +232,8 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
   // marshall
   marshall_mtonly(s, mt);  
   //??? TO DO, Marshall more fields into this send header?
-  fprintf(stderr, "Before doing rpc\n");
   rc = proto_session_rpc(s);
-  fprintf(stderr, "After doing rpc\n");
+
 
   if (rc==1) {
     proto_session_body_unmarshall_int(s, 0, &rc);

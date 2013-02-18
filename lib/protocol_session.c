@@ -118,19 +118,21 @@ proto_session_hdr_unmarshall_blen(Proto_Session *s)
 static void
 proto_session_hdr_marshall_type(Proto_Session *s, Proto_Msg_Types t)
 {
-  s->shdr.type = htonl(s);
+  s->shdr.type = htonl(t);
 }
 
-static int
+extern int
 proto_session_hdr_unmarshall_version(Proto_Session *s)
 {
   s->rhdr.sver.raw = ntohll(s->rhdr.sver.raw);
+  return s->rhdr.sver.raw;
 }
 
 extern Proto_Msg_Types
 proto_session_hdr_unmarshall_type(Proto_Session *s)
 {
   s->rhdr.type = ntohll(s->rhdr.type);
+  return s->rhdr.type;
 }
 
 extern void
@@ -298,11 +300,12 @@ proto_session_rcv_msg(Proto_Session *s)
 
   // read reply
   ////////// ADD CODE //////////
-  fprintf(stderr, "Before net_readn\n");
+  fprintf(stderr, "Waiting for message...\n");
   int bytesRead = net_readn(s->fd, &s->rhdr, sizeof(Proto_Msg_Hdr)); // Read the reply header from received message
-  fprintf(stderr, "After net_readn\n");
 
   // Make sure we read the # of bytes we expect
+
+  fprintf(stderr, "Number of bytes read: %d header:%d\n", bytesRead, sizeof(Proto_Msg_Hdr));
   if (bytesRead<sizeof(Proto_Msg_Hdr)) {
           fprintf(stderr, "%s: ERROR failed to read len: %d!=%d"
         " ... closing connection\n", __func__, bytesRead, (int)sizeof(Proto_Msg_Hdr));
@@ -310,8 +313,7 @@ proto_session_rcv_msg(Proto_Session *s)
   // Get the number of extra bytes in the blen field
   proto_session_hdr_unmarshall_blen(s);
 
-  fprintf(stderr, "Number of bytes trying to read: %d\n", s->rlen);
-  fprintf(stderr, "Number of bytes read: %d\n", bytesRead);
+  fprintf(stderr, "Number of bytes read: %d extraBytes=%d\n", bytesRead, s->rlen);
 
   // Now read the read into the reply buffer
   bytesRead = net_readn(s->fd, &s->rbuf, s->rlen);
@@ -336,11 +338,8 @@ proto_session_rpc(Proto_Session *s)
 {
   int rc;  
   // HACK
-  fprintf(stderr, "Before sending\n" );  
   rc = proto_session_send_msg(s, 0);
-  fprintf(stderr, "Before receiving\n" );
   rc = proto_session_rcv_msg(s);
-  fprintf(stderr, "After receiving\n" );
 
   return rc;
 }

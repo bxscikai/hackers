@@ -33,4 +33,39 @@ static inline void proto_debug_on(void) { PROTO_DEBUG = 1; }
 static inline void proto_debug_off(void) { PROTO_DEBUG = 0; }
 static inline int  proto_debug(void) {return PROTO_DEBUG; }
 
+static inline void printMessageType(Proto_Msg_Types type) {
+
+  if (type==PROTO_MT_REQ_BASE_RESERVED_FIRST)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_RESERVED_FIRST\n");
+  if (type==PROTO_MT_REQ_BASE_HELLO)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_HELLO\n");
+  if (type==PROTO_MT_REQ_BASE_MOVE)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_MOVE\n");
+  if (type==PROTO_MT_REQ_BASE_GOODBYE)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_GOODBYE\n");
+  if (type==PROTO_MT_REQ_BASE_RESERVED_LAST)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_RESERVED_LAST\n");
+
+
+  if (type==PROTO_MT_REP_BASE_RESERVED_FIRST)
+    fprintf(stderr, "PROTO_MT_REP_BASE_RESERVED_FIRST\n");
+  if (type==PROTO_MT_REP_BASE_HELLO)
+    fprintf(stderr, "PROTO_MT_REP_BASE_HELLO\n");
+  if (type==PROTO_MT_REP_BASE_MOVE)
+    fprintf(stderr, "PROTO_MT_REP_BASE_MOVE\n");
+  if (type==PROTO_MT_REP_BASE_GOODBYE)
+    fprintf(stderr, "PROTO_MT_REP_BASE_GOODBYE\n");
+  if (type==PROTO_MT_REP_BASE_RESERVED_LAST)
+    fprintf(stderr, "PROTO_MT_REP_BASE_RESERVED_LAST\n");
+
+
+  if (type==PROTO_MT_EVENT_BASE_RESERVED_FIRST)
+    fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_FIRST\n");
+  if (type==PROTO_MT_EVENT_BASE_UPDATE)
+    fprintf(stderr, "PROTO_MT_EVENT_BASE_UPDATE\n");
+  if (type==PROTO_MT_EVENT_BASE_RESERVED_LAST)
+    fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_LAST\n");
+
+}
+
 #endif

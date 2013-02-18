@@ -45,4 +45,7 @@ extern int proto_client_set_event_handler(Proto_Client_Handle ch,
 extern int proto_client_hello(Proto_Client_Handle ch);
 extern int proto_client_move(Proto_Client_Handle ch, char d);
 extern int proto_client_goodbye(Proto_Client_Handle ch);
+
+// Marshalling
+static void marshall_mtonly(Proto_Session *s, Proto_Msg_Types mt);
 #endif

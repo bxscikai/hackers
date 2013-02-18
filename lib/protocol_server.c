@@ -138,7 +138,11 @@ proto_server_event_listen(void *arg)
 
   for (;;) {
     // ADD CODE
+
+    fprintf(stderr, "Listening for subscribers...\n");
     connfd = net_accept(fd);
+    fprintf(stderr, "Subscriber trying to subscribe...\n");
+
     if (connfd < 0) {
       fprintf(stderr, "Error: EventListen accept failed (%d)\n", errno);
     } else {
@@ -159,7 +163,7 @@ proto_server_event_listen(void *arg)
           // Proto_Server.EventSubscribers[Proto_Server.EventNumSubscribers] = connfd;
           // Proto_Server.EventNumSubscribers++;
 
-          fprintf(stderr, "subscriber num %d\n", i);
+          fprintf(stderr, "New subscriber with subscriber num %d connfd=%d\n", Proto_Server.EventNumSubscribers, connfd);
       }
     } 
   }
@@ -176,12 +180,15 @@ proto_server_post_event(void)
   i = 0;
   num = Proto_Server.EventNumSubscribers;
   while (num) {
+
+    fprintf(stderr, "Looping postEvent\n");
+
     Proto_Server.EventSession.fd = Proto_Server.EventSubscribers[i];
     if (Proto_Server.EventSession.fd != -1) {
       num--;
 
       // HACK
-      if (net_listen(Proto_Server.EventSession.fd)<0) {
+      if (Proto_Server.EventListenFD<0) {
           // must have lost an event connection
           close(Proto_Server.EventSession.fd);
           Proto_Server.EventSubscribers[i]=-1;
@@ -194,7 +201,10 @@ proto_server_post_event(void)
       // on client behaviour  (use time out to limit impact... drop
       // clients that misbehave but be carefull of introducing deadlocks
       // HACK
+        setPostMessage(&Proto_Server.EventSession);
+        fprintf(stderr, "Server Trying to send event update to %d\n", Proto_Server.EventSession.fd);
         int rc = proto_session_send_msg(&Proto_Server.EventSession, 0);
+
         if (rc<0)
           fprintf(stderr, "Failed to post event\n");
         else
@@ -270,42 +280,6 @@ proto_server_req_dispatcher(void * arg)
   return NULL;
 }
 
-void printMessageType(Proto_Msg_Types type) {
-
-  fprintf(stderr, "Printing message type\n");
-
-  if (type==PROTO_MT_REQ_BASE_RESERVED_FIRST)
-    fprintf(stderr, "PROTO_MT_REQ_BASE_RESERVED_FIRST\n");
-  if (type==PROTO_MT_REQ_BASE_HELLO)
-    fprintf(stderr, "PROTO_MT_REQ_BASE_HELLO\n");
-  if (type==PROTO_MT_REQ_BASE_MOVE)
-    fprintf(stderr, "PROTO_MT_REQ_BASE_MOVE\n");
-  if (type==PROTO_MT_REQ_BASE_GOODBYE)
-    fprintf(stderr, "PROTO_MT_REQ_BASE_GOODBYE\n");
-  if (type==PROTO_MT_REQ_BASE_RESERVED_LAST)
-    fprintf(stderr, "PROTO_MT_REQ_BASE_RESERVED_LAST\n");
-
-
-  if (type==PROTO_MT_REP_BASE_RESERVED_FIRST)
-    fprintf(stderr, "PROTO_MT_REP_BASE_RESERVED_FIRST\n");
-  if (type==PROTO_MT_REP_BASE_HELLO)
-    fprintf(stderr, "PROTO_MT_REP_BASE_HELLO\n");
-  if (type==PROTO_MT_REP_BASE_MOVE)
-    fprintf(stderr, "PROTO_MT_REP_BASE_MOVE\n");
-  if (type==PROTO_MT_REP_BASE_GOODBYE)
-    fprintf(stderr, "PROTO_MT_REP_BASE_GOODBYE\n");
-  if (type==PROTO_MT_REP_BASE_RESERVED_LAST)
-    fprintf(stderr, "PROTO_MT_REP_BASE_RESERVED_LAST\n");
-
-
-  if (type==PROTO_MT_EVENT_BASE_RESERVED_FIRST)
-    fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_FIRST\n");
-  if (type==PROTO_MT_EVENT_BASE_UPDATE)
-    fprintf(stderr, "PROTO_MT_EVENT_BASE_UPDATE\n");
-  if (type==PROTO_MT_EVENT_BASE_RESERVED_LAST)
-    fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_LAST\n");
-
-}
 
   // PROTO_MT_REQ_BASE_RESERVED_FIRST,
   // PROTO_MT_REQ_BASE_HELLO,
@@ -454,3 +428,15 @@ proto_server_init(void)
 
   return 0;
 }
+
+//////// Event Posting /////////
+extern void setPostMessage(Proto_Session *event) {
+
+  Proto_Msg_Hdr h;  
+  bzero(&h, sizeof(h));
+  h.type = PROTO_MT_EVENT_BASE_UPDATE;
+  h.version = 15;
+  fprintf(stderr, "Sending event message: %d\n", h.type);
+  proto_session_hdr_marshall(event, &h);
+}
+

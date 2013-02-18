@@ -41,6 +41,13 @@ doUpdateClients(void)
   return 1;
 }
 
+int 
+broadCastMessage(void)
+{
+  proto_server_post_event();    
+  return 1;
+}
+
 char MenuString[] =
   "d/D-debug on/off u-update clients q-quit";
 
@@ -59,6 +66,9 @@ docmd(char cmd)
   case 'u':
     rc = doUpdateClients();
     break;
+  case 'b':
+    rc = broadCastMessage();
+    break;    
   case 'q':
     rc=-1;
     break;
