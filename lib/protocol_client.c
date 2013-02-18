@@ -209,14 +209,36 @@ proto_client_connect(Proto_Client_Handle ch, char *host, PortType port)
   return 0;
 }
 
+void print_mem(void const *vp, size_t n)
+{
+    unsigned char const *p = vp;
+    for (size_t i=0; i<n; i++)
+        printf("%02x", p[i]);
+    printf("\n");
+};
+
 static void
 marshall_mtonly(Proto_Session *s, Proto_Msg_Types mt) {
   Proto_Msg_Hdr h;
   
   bzero(&h, sizeof(h));
   h.type = mt;
+
+  ////
+  fprintf(stderr, "Client sending these bytes:\n");
+  h.version = 20;  
+  h.gstate.v0.raw = 9;
+  print_mem(&h, sizeof(Proto_Msg_Hdr));
+
+  ////
+
   proto_session_hdr_marshall(s, &h);
+  fprintf(stderr, "Client sending these converted:\n");
+  print_mem(&s->shdr, sizeof(Proto_Msg_Hdr));
+
 };
+
+
 
 // all rpc's are assume to only reply only with a return code in the body
 // eg.  like the null_mes
@@ -232,6 +254,8 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
   // marshall
   marshall_mtonly(s, mt);  
   //??? TO DO, Marshall more fields into this send header?
+
+
   rc = proto_session_rpc(s);
 
 

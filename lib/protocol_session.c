@@ -73,7 +73,7 @@ proto_session_hdr_marshall_sver(Proto_Session *s, Proto_StateVersion v)
 static void
 proto_session_hdr_unmarshall_sver(Proto_Session *s, Proto_StateVersion *v)
 {
-  v->raw = ntohll(s->rhdr.sver.raw);
+  s->rhdr.sver.raw = ntohll(s->rhdr.sver.raw);
 }
 
 static void
@@ -88,9 +88,9 @@ proto_session_hdr_marshall_pstate(Proto_Session *s, Proto_Player_State *ps)
 static void
 proto_session_hdr_unmarshall_pstate(Proto_Session *s, Proto_Player_State *ps)
 {
-  ps->v0.raw = ntohll(s->rhdr.pstate.v0.raw);
-  ps->v1.raw = ntohll(s->rhdr.pstate.v1.raw);
-  ps->v2.raw = ntohll(s->rhdr.pstate.v2.raw);
+  s->rhdr.pstate.v0.raw = ntohl(s->rhdr.pstate.v0.raw);
+  s->rhdr.pstate.v1.raw = ntohl(s->rhdr.pstate.v1.raw);
+  s->rhdr.pstate.v2.raw = ntohl(s->rhdr.pstate.v2.raw);
 }
 
 static void
@@ -104,15 +104,15 @@ proto_session_hdr_marshall_gstate(Proto_Session *s, Proto_Game_State *gs)
 static void
 proto_session_hdr_unmarshall_gstate(Proto_Session *s, Proto_Game_State *gs)
 {
-  gs->v0.raw = ntohll(s->rhdr.gstate.v0.raw);
-  gs->v1.raw = ntohll(s->rhdr.gstate.v1.raw);
-  gs->v2.raw = ntohll(s->rhdr.gstate.v2.raw);
+  s->rhdr.gstate.v0.raw = ntohl(s->rhdr.gstate.v0.raw);
+  s->rhdr.gstate.v1.raw = ntohl(s->rhdr.gstate.v1.raw);
+  s->rhdr.gstate.v2.raw = ntohl(s->rhdr.gstate.v2.raw);
 }
 
 static int
 proto_session_hdr_unmarshall_blen(Proto_Session *s)
 {
-  s->rlen = ntohll(s->rlen);
+  s->rhdr.blen = ntohl(s->rhdr.blen);
 }
 
 static void
@@ -121,17 +121,18 @@ proto_session_hdr_marshall_type(Proto_Session *s, Proto_Msg_Types t)
   s->shdr.type = htonl(t);
 }
 
+
 extern int
 proto_session_hdr_unmarshall_version(Proto_Session *s)
 {
-  s->rhdr.sver.raw = ntohll(s->rhdr.sver.raw);
-  return s->rhdr.sver.raw;
+  s->rhdr.version = htonl(s->rhdr.version);
+  return s->rhdr.version;
 }
 
 extern Proto_Msg_Types
 proto_session_hdr_unmarshall_type(Proto_Session *s)
 {
-  s->rhdr.type = ntohll(s->rhdr.type);
+  s->rhdr.type = ntohl(s->rhdr.type);
   return s->rhdr.type;
 }
 
@@ -139,19 +140,23 @@ extern void
 proto_session_hdr_unmarshall(Proto_Session *s, Proto_Msg_Hdr *h)
 {
   
-  h->version = proto_session_hdr_unmarshall_version(s);
-  h->type = proto_session_hdr_unmarshall_type(s);
+  proto_session_hdr_unmarshall_version(s);
+  proto_session_hdr_unmarshall_type(s);
   proto_session_hdr_unmarshall_sver(s, &h->sver);
   proto_session_hdr_unmarshall_pstate(s, &h->pstate);
   proto_session_hdr_unmarshall_gstate(s, &h->gstate);
-  h->blen = proto_session_hdr_unmarshall_blen(s);
+  proto_session_hdr_unmarshall_blen(s);
 }
    
 extern void
 proto_session_hdr_marshall(Proto_Session *s, Proto_Msg_Hdr *h)
 {
   // ignore the version number and hard code to the version we support
-  s->shdr.version = PROTOCOL_BASE_VERSION;
+
+  if (h->version>0)
+    s->shdr.version = htonl(h->version);
+  else  
+    s->shdr.version = htonl(PROTOCOL_BASE_VERSION);
   proto_session_hdr_marshall_type(s, h->type);
   proto_session_hdr_marshall_sver(s, h->sver);
   proto_session_hdr_marshall_pstate(s, &h->pstate);

@@ -222,6 +222,13 @@ proto_server_post_event(void)
   pthread_mutex_unlock(&Proto_Server.EventSubscribersLock);
 }
 
+void print_mem(void const *vp, size_t n)
+{
+    unsigned char const *p = vp;
+    for (size_t i=0; i<n; i++)
+        printf("%02x", p[i]);
+    printf("\n");
+};
 
 static void *
 proto_server_req_dispatcher(void * arg)
@@ -249,16 +256,22 @@ proto_server_req_dispatcher(void * arg)
 
 
       // ADD CODE /////////////
-      mt = proto_session_hdr_unmarshall_type(&s);
-      
-      printMessageType(mt);
+      // mt = proto_session_hdr_unmarshall_type(&s);
+      fprintf(stderr,"Receiving before unmarshall bytes.\n");
+      print_mem(&s.rhdr, sizeof(Proto_Msg_Hdr));
+
+      proto_session_hdr_unmarshall(&s, &s.rhdr);
+
+      mt = s.rhdr.type;
+      fprintf(stderr,"Receiving after unmarshall bytes.\n");
+      print_mem(&s.rhdr, sizeof(Proto_Msg_Hdr));
+      printHeader(&s.rhdr);
       
 
       if (mt > PROTO_MT_REQ_BASE_RESERVED_FIRST && mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
 
        // We are getting the handler corresponding to our message type from our protocol_client 
         fprintf(stderr, "Server received rpc request, going inside server handler!\n");
-        printMessageType(mt);
 
         hdlr = Proto_Server.base_req_handlers[mt];
 

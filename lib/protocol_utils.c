@@ -110,12 +110,20 @@ proto_dump_gstate(Proto_Game_State *gs)
 extern void
 proto_dump_msghdr(Proto_Msg_Hdr *hdr)
 {
-  fprintf(stderr, "ver=%d type=", ntohl(hdr->version));
-  proto_dump_mt(ntohl(hdr->type));
-  fprintf(stderr, " sver=%llx", ntohll(hdr->sver.raw));
+  // fprintf(stderr, "ver=%d type=", ntohl(hdr->version));
+  // proto_dump_mt(ntohl(hdr->type));
+  // fprintf(stderr, " sver=%llx", ntohll(hdr->sver.raw));
+  // fprintf(stderr, " pstate:");
+  // proto_dump_pstate(&(hdr->pstate));
+  // fprintf(stderr, " gstate:"); 
+  // proto_dump_gstate(&(hdr->gstate));
+  // fprintf(stderr, " blen=%d\n", ntohl(hdr->blen));
+    fprintf(stderr, "ver=%d type=", hdr->version);
+  proto_dump_mt(hdr->type);
+  fprintf(stderr, " sver=%llx", hdr->sver.raw);
   fprintf(stderr, " pstate:");
   proto_dump_pstate(&(hdr->pstate));
   fprintf(stderr, " gstate:"); 
   proto_dump_gstate(&(hdr->gstate));
-  fprintf(stderr, " blen=%d\n", ntohl(hdr->blen));
+  fprintf(stderr, " blen=%d\n", hdr->blen);
 }

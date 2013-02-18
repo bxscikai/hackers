@@ -37,35 +37,45 @@ static inline void printMessageType(Proto_Msg_Types type) {
 
   if (type==PROTO_MT_REQ_BASE_RESERVED_FIRST)
     fprintf(stderr, "PROTO_MT_REQ_BASE_RESERVED_FIRST\n");
-  if (type==PROTO_MT_REQ_BASE_HELLO)
+  else if (type==PROTO_MT_REQ_BASE_HELLO)
     fprintf(stderr, "PROTO_MT_REQ_BASE_HELLO\n");
-  if (type==PROTO_MT_REQ_BASE_MOVE)
+  else if (type==PROTO_MT_REQ_BASE_MOVE)
     fprintf(stderr, "PROTO_MT_REQ_BASE_MOVE\n");
-  if (type==PROTO_MT_REQ_BASE_GOODBYE)
+  else if (type==PROTO_MT_REQ_BASE_GOODBYE)
     fprintf(stderr, "PROTO_MT_REQ_BASE_GOODBYE\n");
-  if (type==PROTO_MT_REQ_BASE_RESERVED_LAST)
+  else if (type==PROTO_MT_REQ_BASE_RESERVED_LAST)
     fprintf(stderr, "PROTO_MT_REQ_BASE_RESERVED_LAST\n");
 
 
-  if (type==PROTO_MT_REP_BASE_RESERVED_FIRST)
+  else if (type==PROTO_MT_REP_BASE_RESERVED_FIRST)
     fprintf(stderr, "PROTO_MT_REP_BASE_RESERVED_FIRST\n");
-  if (type==PROTO_MT_REP_BASE_HELLO)
+  else if (type==PROTO_MT_REP_BASE_HELLO)
     fprintf(stderr, "PROTO_MT_REP_BASE_HELLO\n");
-  if (type==PROTO_MT_REP_BASE_MOVE)
+  else if (type==PROTO_MT_REP_BASE_MOVE)
     fprintf(stderr, "PROTO_MT_REP_BASE_MOVE\n");
-  if (type==PROTO_MT_REP_BASE_GOODBYE)
+  else if (type==PROTO_MT_REP_BASE_GOODBYE)
     fprintf(stderr, "PROTO_MT_REP_BASE_GOODBYE\n");
-  if (type==PROTO_MT_REP_BASE_RESERVED_LAST)
+  else if (type==PROTO_MT_REP_BASE_RESERVED_LAST)
     fprintf(stderr, "PROTO_MT_REP_BASE_RESERVED_LAST\n");
 
 
-  if (type==PROTO_MT_EVENT_BASE_RESERVED_FIRST)
+  else if (type==PROTO_MT_EVENT_BASE_RESERVED_FIRST)
     fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_FIRST\n");
-  if (type==PROTO_MT_EVENT_BASE_UPDATE)
+  else if (type==PROTO_MT_EVENT_BASE_UPDATE)
     fprintf(stderr, "PROTO_MT_EVENT_BASE_UPDATE\n");
-  if (type==PROTO_MT_EVENT_BASE_RESERVED_LAST)
+  else if (type==PROTO_MT_EVENT_BASE_RESERVED_LAST)
     fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_LAST\n");
+  else 
+  	fprintf(stderr, "No matching type, raw int: %d\n", type );
+  
 
+}
+
+static inline void printHeader(Proto_Msg_Hdr *header) {
+	fprintf(stderr, "---HEADER----\n");
+	printMessageType(header->type);
+	fprintf(stderr, "VERSION: %d  blen: %d \n", header->version, header->blen);
+	fprintf(stderr, "---END OF HEADER----\n");
 }
 
 #endif
