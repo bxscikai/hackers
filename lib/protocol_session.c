@@ -96,17 +96,30 @@ proto_session_hdr_unmarshall_pstate(Proto_Session *s, Proto_Player_State *ps)
 static void
 proto_session_hdr_marshall_gstate(Proto_Session *s, Proto_Game_State *gs)
 {
-  s->shdr.gstate.v0.raw = htonl(gs->v0.raw);
-  s->shdr.gstate.v1.raw = htonl(gs->v1.raw);
-  s->shdr.gstate.v2.raw = htonl(gs->v2.raw);
+  s->shdr.gstate.pos1.raw = htonl(gs->pos1.raw);
+  s->shdr.gstate.pos2.raw = htonl(gs->pos2.raw);
+  s->shdr.gstate.pos3.raw = htonl(gs->pos3.raw);
+  s->shdr.gstate.pos4.raw = htonl(gs->pos4.raw);
+  s->shdr.gstate.pos5.raw = htonl(gs->pos5.raw);
+  s->shdr.gstate.pos6.raw = htonl(gs->pos6.raw);
+  s->shdr.gstate.pos7.raw = htonl(gs->pos7.raw);
+  s->shdr.gstate.pos8.raw = htonl(gs->pos8.raw);
+  s->shdr.gstate.pos9.raw = htonl(gs->pos9.raw);
+
 }
 
 static void
 proto_session_hdr_unmarshall_gstate(Proto_Session *s, Proto_Game_State *gs)
 {
-  s->rhdr.gstate.v0.raw = ntohl(s->rhdr.gstate.v0.raw);
-  s->rhdr.gstate.v1.raw = ntohl(s->rhdr.gstate.v1.raw);
-  s->rhdr.gstate.v2.raw = ntohl(s->rhdr.gstate.v2.raw);
+  s->rhdr.gstate.pos1.raw = ntohl(s->rhdr.gstate.pos1.raw);
+  s->rhdr.gstate.pos2.raw = ntohl(s->rhdr.gstate.pos2.raw);
+  s->rhdr.gstate.pos3.raw = ntohl(s->rhdr.gstate.pos3.raw);
+  s->rhdr.gstate.pos4.raw = ntohl(s->rhdr.gstate.pos4.raw);
+  s->rhdr.gstate.pos5.raw = ntohl(s->rhdr.gstate.pos5.raw);
+  s->rhdr.gstate.pos6.raw = ntohl(s->rhdr.gstate.pos6.raw);
+  s->rhdr.gstate.pos7.raw = ntohl(s->rhdr.gstate.pos7.raw);
+  s->rhdr.gstate.pos8.raw = ntohl(s->rhdr.gstate.pos8.raw);
+  s->rhdr.gstate.pos9.raw = ntohl(s->rhdr.gstate.pos9.raw);
 }
 
 static int
@@ -309,11 +322,11 @@ proto_session_rcv_msg(Proto_Session *s)
   int bytesRead = net_readn(s->fd, &s->rhdr, sizeof(Proto_Msg_Hdr)); // Read the reply header from received message
 
   // Make sure we read the # of bytes we expect
-
-  fprintf(stderr, "Number of bytes read: %d header:%d\n", bytesRead, sizeof(Proto_Msg_Hdr));
-  if (bytesRead<sizeof(Proto_Msg_Hdr)) {
+  if (bytesRead<(int)sizeof(Proto_Msg_Hdr)) {
           fprintf(stderr, "%s: ERROR failed to read len: %d!=%d"
         " ... closing connection\n", __func__, bytesRead, (int)sizeof(Proto_Msg_Hdr));
+          close(s->fd);
+          return -1;
   }
   // Get the number of extra bytes in the blen field
   proto_session_hdr_unmarshall_blen(s);
@@ -325,6 +338,7 @@ proto_session_rcv_msg(Proto_Session *s)
   if ( bytesRead != s->rlen ) {
     fprintf(stderr, "%s: ERROR failed to read msg: %d!=%d"
       " .. closing connection\n" , __func__, bytesRead, s->rlen);
+    close(s->fd);
     return -1;
   }
   /////////////////////

@@ -85,12 +85,15 @@ docmd(char cmd)
 int
 prompt(int menu) 
 {
+  // fprintf(stderr, "Menu:%d\n", menu);
   int ret;
   int c=0;
 
-  if (menu) printf("%s:", MenuString);
+  if (menu) 
+    printf("%s:", MenuString);
+
   fflush(stdout);
-  c=getchar();;
+  c=getchar();
   return c;
 }
 
@@ -102,6 +105,7 @@ shell(void *arg)
   int menu=1;
 
   while (1) {
+    
     if ((c=prompt(menu))!=0) rc=docmd(c);
     if (rc<0) break;
     if (rc==1) menu=1; else menu=0;

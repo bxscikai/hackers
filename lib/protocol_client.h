@@ -48,4 +48,8 @@ extern int proto_client_goodbye(Proto_Client_Handle ch);
 
 // Marshalling
 static void marshall_mtonly(Proto_Session *s, Proto_Msg_Types mt);
+
+// Helper methods
+extern void killConnection(Proto_Client_Handle *c);
+
 #endif

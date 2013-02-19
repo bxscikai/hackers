@@ -85,9 +85,16 @@ typedef union {
 } Proto_GV2;
 
 typedef struct {
-  Proto_GV0       v0;
-  Proto_GV1       v1;
-  Proto_GV2       v2;
+  Proto_GV0       pos1;
+  Proto_GV0       pos2;
+  Proto_GV0       pos3;
+  Proto_GV0       pos4;
+  Proto_GV0       pos5;
+  Proto_GV0       pos6;
+  Proto_GV0       pos7;
+  Proto_GV0       pos8;
+  Proto_GV0       pos9;
+
 } __attribute__((__packed__)) Proto_Game_State;
 
 typedef struct {

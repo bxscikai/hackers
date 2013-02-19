@@ -41,6 +41,9 @@ typedef struct {
   Proto_MT_Handler base_event_handlers[PROTO_MT_EVENT_BASE_RESERVED_LAST 
                - PROTO_MT_EVENT_BASE_RESERVED_FIRST
                - 1];
+
+  Proto_Game_State gameState;
+
 } Proto_Client;
 
 extern Proto_Session *
@@ -78,7 +81,7 @@ proto_client_set_event_handler(Proto_Client_Handle ch, Proto_Msg_Types mt,
   // handler for each message type
   if (mt>PROTO_MT_EVENT_BASE_RESERVED_FIRST && 
       mt<PROTO_MT_EVENT_BASE_RESERVED_LAST) {
-    i=mt - PROTO_MT_EVENT_BASE_RESERVED_FIRST - 1;
+    i= mt;
     // ADD CODE
     c->base_event_handlers[i] = h;
 
@@ -140,7 +143,12 @@ proto_client_event_dispatcher(void * arg)
     // We are getting the handler corresponding to our message type from our protocol_client 
      hdlr = c->base_event_handlers[mt];
 
-         if (hdlr(s)<0) goto leave;
+
+          fprintf(stderr, "About to execute handler: %p\n", hdlr);
+         if (hdlr(s)<0) {
+          fprintf(stderr, "Handler executed\n");
+          goto leave;
+         }
 
 
       }
@@ -156,6 +164,7 @@ proto_client_event_dispatcher(void * arg)
   close(s->fd);
   return NULL;
 }
+
 
 extern int
 proto_client_init(Proto_Client_Handle *ch)
@@ -177,6 +186,7 @@ proto_client_init(Proto_Client_Handle *ch)
        mt<PROTO_MT_EVENT_BASE_RESERVED_LAST; mt++) {
       proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
   }
+
 
   *ch = c;
   return 1;
@@ -209,13 +219,6 @@ proto_client_connect(Proto_Client_Handle ch, char *host, PortType port)
   return 0;
 }
 
-void print_mem(void const *vp, size_t n)
-{
-    unsigned char const *p = vp;
-    for (size_t i=0; i<n; i++)
-        printf("%02x", p[i]);
-    printf("\n");
-};
 
 static void
 marshall_mtonly(Proto_Session *s, Proto_Msg_Types mt) {
@@ -224,17 +227,17 @@ marshall_mtonly(Proto_Session *s, Proto_Msg_Types mt) {
   bzero(&h, sizeof(h));
   h.type = mt;
 
-  ////
-  fprintf(stderr, "Client sending these bytes:\n");
-  h.version = 20;  
-  h.gstate.v0.raw = 9;
-  print_mem(&h, sizeof(Proto_Msg_Hdr));
+  // ////
+  // fprintf(stderr, "Client sending these bytes:\n");
+  // h.version = 20;  
+  // h.gstate.v0.raw = 9;
+  // print_mem(&h, sizeof(Proto_Msg_Hdr));
 
-  ////
+  // ////
 
   proto_session_hdr_marshall(s, &h);
-  fprintf(stderr, "Client sending these converted:\n");
-  print_mem(&s->shdr, sizeof(Proto_Msg_Hdr));
+  // fprintf(stderr, "Client sending these converted:\n");
+  // print_mem(&s->shdr, sizeof(Proto_Msg_Hdr));
 
 };
 
@@ -287,3 +290,14 @@ proto_client_goodbye(Proto_Client_Handle ch)
 }
 
 
+// Connection terminated, actually close connection
+extern void killConnection(Proto_Client_Handle *c) {
+
+  Proto_Client *client = c;
+  // Cancel server thread
+  pthread_cancel(client->EventHandlerTid);
+  // Close rpc and event session
+  close(client->rpc_session.fd);
+  close(client->event_session.fd);
+  fprintf(stderr, "Connection terminated\n");
+}

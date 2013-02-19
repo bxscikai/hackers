@@ -51,6 +51,13 @@ struct {
   Proto_MT_Handler   session_lost_handler;
   Proto_MT_Handler   base_req_handlers[PROTO_MT_REQ_BASE_RESERVED_LAST - 
                PROTO_MT_REQ_BASE_RESERVED_FIRST-1];
+
+  // Game logic
+  Proto_Game_State   gameState;
+  FDType             player_O;
+  FDType             player_X;
+
+
 } Proto_Server;
 
 extern PortType proto_server_rpcport(void) { return Proto_Server.RPCPort; }
@@ -139,7 +146,6 @@ proto_server_event_listen(void *arg)
   for (;;) {
     // ADD CODE
 
-    fprintf(stderr, "Listening for subscribers...\n");
     connfd = net_accept(fd);
     fprintf(stderr, "Subscriber trying to subscribe...\n");
 
@@ -222,14 +228,6 @@ proto_server_post_event(void)
   pthread_mutex_unlock(&Proto_Server.EventSubscribersLock);
 }
 
-void print_mem(void const *vp, size_t n)
-{
-    unsigned char const *p = vp;
-    for (size_t i=0; i<n; i++)
-        printf("%02x", p[i]);
-    printf("\n");
-};
-
 static void *
 proto_server_req_dispatcher(void * arg)
 {
@@ -282,7 +280,7 @@ proto_server_req_dispatcher(void * arg)
 
     else {
 
-      fprintf(stderr, "Server: Valid message not received!\n" );
+      fprintf(stderr, "Server: Valid message not received! Killing client thread...\n" );
       goto leave;
     }
   }
@@ -290,6 +288,7 @@ proto_server_req_dispatcher(void * arg)
   // ADD CODE
   Proto_Server.RPCListenTid = (pthread_t)-1;
   close(s.fd);
+
   return NULL;
 }
 
@@ -438,6 +437,22 @@ proto_server_init(void)
     perror("pthread_createt:");
     return -3;
   }
+
+  // Initialize game board
+  Proto_Server.gameState.pos1.raw = -1;
+  Proto_Server.gameState.pos2.raw = -1;
+  Proto_Server.gameState.pos3.raw = -1;
+  Proto_Server.gameState.pos4.raw = -1;
+  Proto_Server.gameState.pos5.raw = -1;
+  Proto_Server.gameState.pos6.raw = -1;
+  Proto_Server.gameState.pos7.raw = -1;
+  Proto_Server.gameState.pos8.raw = -1;
+  Proto_Server.gameState.pos9.raw = -1;
+
+  // Initialize players
+  Proto_Sever.player_O = -1;
+  Proto_Sever.player_X = -1;
+
 
   return 0;
 }

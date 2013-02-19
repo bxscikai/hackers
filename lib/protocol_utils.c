@@ -97,14 +97,20 @@ proto_dump_pstate(Proto_Player_State *ps)
 extern void
 proto_dump_gstate(Proto_Game_State *gs)
 {
-  int v0, v1, v2;
+  int pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9;
 
-  v0 = ntohl(gs->v0.raw);
-  v1 = ntohl(gs->v1.raw);
-  v2 = ntohl(gs->v2.raw);
+  pos1 = ntohl(gs->pos1.raw);
+  pos2 = ntohl(gs->pos2.raw);
+  pos3 = ntohl(gs->pos3.raw);
+  pos4 = ntohl(gs->pos4.raw);
+  pos5 = ntohl(gs->pos5.raw);
+  pos6 = ntohl(gs->pos6.raw);
+  pos7 = ntohl(gs->pos7.raw);
+  pos8 = ntohl(gs->pos8.raw);
+  pos9 = ntohl(gs->pos9.raw);
 
-  fprintf(stderr, "v0=0x%x v1=0x%x v2=0x%x\n",
-	  v0, v1, v2);
+  fprintf(stderr, "pos1=0x%x pos2=0x%x pos3=0x%x pos4=0x%x pos5=0x%x pos6=0x%x pos7=0x%x pos8=0x%x pos9=0x%x\n",
+	  pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9);
 }
 
 extern void
@@ -127,3 +133,4 @@ proto_dump_msghdr(Proto_Msg_Hdr *hdr)
   proto_dump_gstate(&(hdr->gstate));
   fprintf(stderr, " blen=%d\n", hdr->blen);
 }
+

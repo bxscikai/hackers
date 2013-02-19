@@ -198,7 +198,10 @@ shell(void *arg)
 
   while (1) {
     if ((c=prompt(menu))!=0) rc=docmd(C, c);
-    if (rc<0) break;
+    if (rc<0) {
+      killConnection(C->ph);
+      break;
+    }
     if (rc==1) menu=1; else menu=0;
   }
 
@@ -206,6 +209,7 @@ shell(void *arg)
   fflush(stdout);
   return NULL;
 }
+
 
 void 
 usage(char *pgm)
