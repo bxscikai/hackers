@@ -78,6 +78,7 @@ static inline void printHeader(Proto_Msg_Hdr *header) {
 	fprintf(stderr, "---END OF HEADER----\n");
 }
 
+/*
 static inline void print_mem(void const *vp, size_t n)
 {
     unsigned char const *p = vp;
@@ -85,5 +86,5 @@ static inline void print_mem(void const *vp, size_t n)
         printf("%02x", p[i]);
     printf("\n");
 };
-
+*/
 #endif

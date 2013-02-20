@@ -166,7 +166,12 @@ proto_server_event_listen(void *arg)
           proto_server_record_event_subscriber(connfd, &LastSubscriber);          
           Proto_Server.EventLastSubscriber = LastSubscriber;
 
-          // Proto_Server.EventSubscribers[Proto_Server.EventNumSubscribers] = connfd;
+          if (LastSubscriber == 1) {//Set Proto_Server.PlayerX to the FD
+		}
+	  else {//Set PlayerO}}
+		}
+	  
+	  // Proto_Server.EventSubscribers[Proto_Server.EventNumSubscribers] = connfd;
           // Proto_Server.EventNumSubscribers++;
 
           fprintf(stderr, "New subscriber with subscriber num %d connfd=%d\n", Proto_Server.EventNumSubscribers, connfd);
@@ -256,13 +261,13 @@ proto_server_req_dispatcher(void * arg)
       // ADD CODE /////////////
       // mt = proto_session_hdr_unmarshall_type(&s);
       fprintf(stderr,"Receiving before unmarshall bytes.\n");
-      print_mem(&s.rhdr, sizeof(Proto_Msg_Hdr));
+      //print_mem(&s.rhdr, sizeof(Proto_Msg_Hdr));
 
       proto_session_hdr_unmarshall(&s, &s.rhdr);
 
       mt = s.rhdr.type;
       fprintf(stderr,"Receiving after unmarshall bytes.\n");
-      print_mem(&s.rhdr, sizeof(Proto_Msg_Hdr));
+      //print_mem(&s.rhdr, sizeof(Proto_Msg_Hdr));
       printHeader(&s.rhdr);
       
 
@@ -450,8 +455,8 @@ proto_server_init(void)
   Proto_Server.gameState.pos9.raw = -1;
 
   // Initialize players
-  Proto_Sever.player_O = -1;
-  Proto_Sever.player_X = -1;
+  Proto_Server.player_O = -1;
+  Proto_Server.player_X = -1;
 
 
   return 0;

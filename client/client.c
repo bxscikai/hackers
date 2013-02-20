@@ -38,6 +38,7 @@ struct Globals {
 typedef struct ClientState  {
   int data;
   Proto_Client_Handle ph;
+  int isX;
 } Client;
 
 static int
@@ -86,9 +87,12 @@ startConnection(Client *C, char *host, PortType port, Proto_MT_Handler h)
 
 
 int
-prompt(int menu) 
+prompt(int menu, int isX) 
 {
-  static char MenuString[] = "\nclient> ";
+  char *MenuString = "";
+  if (isX == 1){MenuString = "\nX> ";}
+  else {MenuString = "\nO> ";}
+  
   int ret;
   int c=0;
 
@@ -195,21 +199,34 @@ shell(void *arg)
   char c;
   int rc;
   int menu=1;
-
+  //the following is done in order to change the prompt for the user to X or O
+  int promptType = C->isX;
+  
   while (1) {
-    if ((c=prompt(menu))!=0) rc=docmd(C, c);
+    if ((c=prompt(menu, promptType))!=0) rc=docmd(C, c);
     if (rc<0) {
       killConnection(C->ph);
       break;
     }
-    if (rc==1) menu=1; else menu=0;
+    if (rc==1) 
+    {
+       menu=1;
+       
+       Proto_Game_State *gs = proto_client_game_state(C->ph);
+       printBoard(gs);
+       //This is where the screen gets replaced
+       //printf("\n1|2|3\n- - -\n4|5|6\n- - -\n7|8|9\n");
+    
+
+    
+    } 
+    else menu=0;
   }
 
   fprintf(stderr, "terminating\n");
   fflush(stdout);
   return NULL;
 }
-
 
 void 
 usage(char *pgm)
@@ -265,9 +282,47 @@ main(int argc, char **argv)
     fprintf(stderr, "ERROR: startConnection failed\n");
     return -1;
   }
-
+  
+  printf("\n1|2|3\n- - -\n4|5|6\n- - -\n7|8|9\n");
+  
   shell(&c);
 
   return 0;
 }
 
+void
+printBoard(Proto_Game_State *myGS)
+{
+  int pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9;
+  char cpos1, cpos2, cpos3, cpos4, cpos5, cpos6, cpos7, cpos8, cpos9;
+
+  pos1 = ntohl(myGS->pos1.raw);
+  pos2 = ntohl(myGS->pos2.raw);
+  pos3 = ntohl(myGS->pos3.raw);
+  pos4 = ntohl(myGS->pos4.raw);
+  pos5 = ntohl(myGS->pos5.raw);
+  pos6 = ntohl(myGS->pos6.raw);
+  pos7 = ntohl(myGS->pos7.raw);
+  pos8 = ntohl(myGS->pos8.raw);
+  pos9 = ntohl(myGS->pos9.raw);
+  
+  if (pos1 == 0){cpos1 = '1';}
+  else if (pos1 == 1){cpos1 = 'X';} else {cpos1 = 'O';}
+  if (pos2 == 0){cpos2 = '2';}
+  else if (pos2 == 1){cpos2 = 'X';} else {cpos2 = 'O';}
+  if (pos3 == 0){cpos3 = '3';}
+  else if (pos3 == 1){cpos3 = 'X';} else {cpos3 = 'O';}
+  if (pos4 == 0){cpos4 = '4';}
+  else if (pos4 == 1){cpos4 = 'X';} else {cpos4 = 'O';}
+  if (pos5 == 0){cpos5 = '5';}
+  else if (pos5 == 1){cpos5 = 'X';} else {cpos5 = 'O';}
+  if (pos6 == 0){cpos6 = '6';}
+  else if (pos6 == 1){cpos6 = 'X';} else {cpos6 = 'O';}
+  if (pos7 == 0){cpos7 = '7';}
+  else if (pos7 == 1){cpos7 = 'X';} else {cpos7 = 'O';}
+  if (pos8 == 0){cpos8 = '8';}
+  else if (pos8 == 1){cpos8 = 'X';} else {cpos8 = 'O';}
+  if (pos9 == 0){cpos9 = '9';}
+  else if (pos9 == 1){cpos9 = 'X';} else {cpos9 = 'O';}
+  printf("\n%c|%c|%c\n- - -\n%c|%c|%c\n- - -\n%c|%c|%c\n", cpos1, cpos2, cpos3, cpos4, cpos5, cpos6, cpos7, cpos8, cpos9);
+}

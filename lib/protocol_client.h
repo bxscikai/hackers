@@ -31,6 +31,9 @@ typedef void * Proto_Client_Handle;
 extern Proto_Session *proto_client_rpc_session(Proto_Client_Handle ch);
 extern Proto_Session *proto_client_event_session(Proto_Client_Handle ch);
 
+//Created to get gamestate to for client drawing
+extern Proto_Game_State *proto_client_game_state(Proto_Client_Handle ch);
+
 extern int proto_client_init(Proto_Client_Handle *ch);
 extern int proto_client_connect(Proto_Client_Handle ch, char *host, PortType p);
 

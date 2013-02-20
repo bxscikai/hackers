@@ -60,6 +60,13 @@ proto_client_event_session(Proto_Client_Handle ch)
   return &(c->event_session);
 }
 
+extern Proto_Game_State *
+proto_client_game_state(Proto_Client_Handle ch)
+{
+  Proto_Client *c = ch;
+  return &(c->gameState);
+}
+
 extern int
 proto_client_set_session_lost_handler(Proto_Client_Handle ch, Proto_MT_Handler h)
 {
