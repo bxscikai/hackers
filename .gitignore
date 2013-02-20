@@ -18,3 +18,7 @@ server/server
 5
 
 client/client
+
+lib/protocol_server.c.orig
+
+lib/protocol_utils.h.orig
