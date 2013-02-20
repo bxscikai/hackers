@@ -25,10 +25,12 @@
 #include <sys/types.h>
 #include <strings.h>
 #include <errno.h>
+#include <pthread.h>
 
+#include "net.h"
 #include "protocol.h"
 #include "protocol_utils.h"
-
+#include "protocol_session.h"
 
 int PROTO_DEBUG=0;
 
@@ -85,8 +87,8 @@ proto_dump_pstate(Proto_Player_State *ps)
 {
   int v0, v1, v2, v3;
   
-  v0 = ntohl(ps->v0.raw);
-  v1 = ntohl(ps->v1.raw);
+  v0 = ntohl(ps->playerIdentity.raw);
+  v1 = ntohl(ps->playerTurn.raw);
   v2 = ntohl(ps->v2.raw);
   v3 = ntohl(ps->v3.raw);
 
@@ -124,13 +126,32 @@ proto_dump_msghdr(Proto_Msg_Hdr *hdr)
   // fprintf(stderr, " gstate:"); 
   // proto_dump_gstate(&(hdr->gstate));
   // fprintf(stderr, " blen=%d\n", ntohl(hdr->blen));
+
+  if (PROTO_PRINT_DUMPS==1) {
+
     fprintf(stderr, "ver=%d type=", hdr->version);
-  proto_dump_mt(hdr->type);
-  fprintf(stderr, " sver=%llx", hdr->sver.raw);
-  fprintf(stderr, " pstate:");
-  proto_dump_pstate(&(hdr->pstate));
-  fprintf(stderr, " gstate:"); 
-  proto_dump_gstate(&(hdr->gstate));
-  fprintf(stderr, " blen=%d\n", hdr->blen);
+    proto_dump_mt(hdr->type);
+    fprintf(stderr, " sver=%llx", hdr->sver.raw);
+    fprintf(stderr, " pstate:");
+    proto_dump_pstate(&(hdr->pstate));
+    fprintf(stderr, " gstate:"); 
+    proto_dump_gstate(&(hdr->gstate));
+    fprintf(stderr, " blen=%d\n", hdr->blen);
+
+  }
 }
+
+extern void
+marshall_mtonly(void *session, Proto_Msg_Types mt) {
+  
+  Proto_Session *s = (Proto_Session*)session;
+  Proto_Msg_Hdr h; 
+
+  
+
+  bzero(&h, sizeof(h));
+  h.type = mt;
+  proto_session_hdr_marshall(s, &h);
+
+};
 

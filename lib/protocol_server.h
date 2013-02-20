@@ -41,4 +41,7 @@ extern void proto_server_post_event(void);
 // Game logic
 extern void setPostMessage(Proto_Session *event);
 
+// Handlers
+static int proto_server_mt_rpc_goodbye_handler(Proto_Session *s);
+static int proto_server_mt_rpc_hello_handler(Proto_Session *s);
 #endif

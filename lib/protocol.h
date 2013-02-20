@@ -66,8 +66,8 @@ typedef union {
 } Proto_PV3;
 
 typedef struct {
-  Proto_PV0    v0;
-  Proto_PV1    v1;
+  Proto_PV0    playerIdentity;
+  Proto_PV1    playerTurn;
   Proto_PV2    v2;
   Proto_PV3    v3;
 } __attribute__((__packed__)) Proto_Player_State;
@@ -94,6 +94,7 @@ typedef struct {
   Proto_GV0       pos7;
   Proto_GV0       pos8;
   Proto_GV0       pos9;
+  Proto_GV0       gameResult;
 
 } __attribute__((__packed__)) Proto_Game_State;
 

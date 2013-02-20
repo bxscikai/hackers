@@ -23,6 +23,7 @@
 *****************************************************************************/
 
 extern int PROTO_DEBUG;
+#define PROTO_PRINT_DUMPS 0
 
 extern void proto_dump_mt(Proto_Msg_Types type);
 extern void proto_dump_pstate(Proto_Player_State *ps);
@@ -75,10 +76,31 @@ static inline void printHeader(Proto_Msg_Hdr *header) {
 	fprintf(stderr, "---HEADER----\n");
 	printMessageType(header->type);
 	fprintf(stderr, "VERSION: %d  blen: %d \n", header->version, header->blen);
+  fprintf(stderr, "Game State: %d %d %d %d %d %d %d %d %d\n", header->gstate.pos1.raw, header->gstate.pos2.raw, header->gstate.pos3.raw, header->gstate.pos4.raw, header->gstate.pos5.raw, header->gstate.pos6.raw, header->gstate.pos7.raw ,header->gstate.pos8.raw ,header->gstate.pos9.raw);
 	fprintf(stderr, "---END OF HEADER----\n");
 }
 
-/*
+static inline char printGamePiece(int piece, int position) {
+  if (piece==-1)
+    return ('0' + position);
+  else if (piece==1)
+    return 'X';
+  else if (piece==2)
+    return 'O';
+}
+
+static inline void printGameBoard(Proto_Msg_Hdr *header) {
+
+  fprintf(stderr, "\n");
+  fprintf(stderr, "%c|%c|%c\n", printGamePiece(header->gstate.pos1.raw, 1), printGamePiece(header->gstate.pos2.raw, 2), printGamePiece(header->gstate.pos3.raw, 3));
+  fprintf(stderr, "-----\n");
+  fprintf(stderr, "%c|%c|%c\n", printGamePiece(header->gstate.pos4.raw, 4), printGamePiece(header->gstate.pos5.raw, 5), printGamePiece(header->gstate.pos6.raw, 6));
+  fprintf(stderr, "-----\n");
+  fprintf(stderr, "%c|%c|%c\n", printGamePiece(header->gstate.pos7.raw, 7), printGamePiece(header->gstate.pos8.raw, 8), printGamePiece(header->gstate.pos9.raw, 9));
+  fprintf(stderr, "\n");
+
+}
+
 static inline void print_mem(void const *vp, size_t n)
 {
     unsigned char const *p = vp;
@@ -86,5 +108,8 @@ static inline void print_mem(void const *vp, size_t n)
         printf("%02x", p[i]);
     printf("\n");
 };
-*/
+
+extern void
+marshall_mtonly(void *session, Proto_Msg_Types mt);
+
 #endif

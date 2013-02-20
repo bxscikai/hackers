@@ -50,9 +50,16 @@ extern int proto_client_move(Proto_Client_Handle ch, char d);
 extern int proto_client_goodbye(Proto_Client_Handle ch);
 
 // Marshalling
-static void marshall_mtonly(Proto_Session *s, Proto_Msg_Types mt);
+// static void marshall_mtonly(Proto_Session *s, Proto_Msg_Types mt);
 
 // Helper methods
 extern void killConnection(Proto_Client_Handle *c);
+
+// Reply handlers
+static int proto_server_mt_rpc_rep_goodbye_handler(Proto_Session *s);
+static int proto_server_mt_rpc_rep_hello_handler(Proto_Session *s);
+static int proto_server_mt_event_update_handler(Proto_Session *s);
+
+
 
 #endif

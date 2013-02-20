@@ -35,13 +35,18 @@
 extern void
 proto_session_dump(Proto_Session *s)
 {
-  fprintf(stderr, "Session s=%p:\n", s);
-  fprintf(stderr, " fd=%d, extra=%p slen=%d, rlen=%d\n shdr:\n  ", 
-    s->fd, s->extra,
-    s->slen, s->rlen);
-  proto_dump_msghdr(&(s->shdr));
-  fprintf(stderr, " rhdr:\n  ");
-  proto_dump_msghdr(&(s->rhdr));
+
+  if (PROTO_PRINT_DUMPS==1) {
+
+    fprintf(stderr, "Session s=%p:\n", s);
+    fprintf(stderr, " fd=%d, extra=%p slen=%d, rlen=%d\n shdr:\n  ", 
+      s->fd, s->extra,
+      s->slen, s->rlen);
+    proto_dump_msghdr(&(s->shdr));
+    fprintf(stderr, " rhdr:\n  ");
+    proto_dump_msghdr(&(s->rhdr));
+
+  } 
 }
 
 extern void
@@ -79,8 +84,8 @@ proto_session_hdr_unmarshall_sver(Proto_Session *s, Proto_StateVersion *v)
 static void
 proto_session_hdr_marshall_pstate(Proto_Session *s, Proto_Player_State *ps)
 {
-    s->shdr.pstate.v0.raw  = htonl(ps->v0.raw);
-    s->shdr.pstate.v1.raw  = htonl(ps->v1.raw);
+    s->shdr.pstate.playerIdentity.raw  = htonl(ps->playerIdentity.raw);
+    s->shdr.pstate.playerTurn.raw  = htonl(ps->playerTurn.raw);
     s->shdr.pstate.v2.raw  = htonl(ps->v2.raw);
     s->shdr.pstate.v3.raw  = htonl(ps->v3.raw);
 }
@@ -88,9 +93,11 @@ proto_session_hdr_marshall_pstate(Proto_Session *s, Proto_Player_State *ps)
 static void
 proto_session_hdr_unmarshall_pstate(Proto_Session *s, Proto_Player_State *ps)
 {
-  s->rhdr.pstate.v0.raw = ntohl(s->rhdr.pstate.v0.raw);
-  s->rhdr.pstate.v1.raw = ntohl(s->rhdr.pstate.v1.raw);
+  s->rhdr.pstate.playerIdentity.raw = ntohl(s->rhdr.pstate.playerIdentity.raw);
+  s->rhdr.pstate.playerTurn.raw = ntohl(s->rhdr.pstate.playerTurn.raw);
   s->rhdr.pstate.v2.raw = ntohl(s->rhdr.pstate.v2.raw);
+  s->rhdr.pstate.v3.raw = ntohl(s->rhdr.pstate.v3.raw);
+
 }
 
 static void
@@ -105,6 +112,7 @@ proto_session_hdr_marshall_gstate(Proto_Session *s, Proto_Game_State *gs)
   s->shdr.gstate.pos7.raw = htonl(gs->pos7.raw);
   s->shdr.gstate.pos8.raw = htonl(gs->pos8.raw);
   s->shdr.gstate.pos9.raw = htonl(gs->pos9.raw);
+  s->shdr.gstate.gameResult.raw = htonl(gs->gameResult.raw);
 
 }
 
@@ -119,7 +127,8 @@ proto_session_hdr_unmarshall_gstate(Proto_Session *s, Proto_Game_State *gs)
   s->rhdr.gstate.pos6.raw = ntohl(s->rhdr.gstate.pos6.raw);
   s->rhdr.gstate.pos7.raw = ntohl(s->rhdr.gstate.pos7.raw);
   s->rhdr.gstate.pos8.raw = ntohl(s->rhdr.gstate.pos8.raw);
-  s->rhdr.gstate.pos9.raw = ntohl(s->rhdr.gstate.pos9.raw);
+  s->rhdr.gstate.pos9.raw = ntohl(s->rhdr.gstate.pos9.raw);    
+  s->rhdr.gstate.gameResult.raw = ntohl(s->rhdr.gstate.gameResult.raw);     
 }
 
 static int
@@ -298,11 +307,16 @@ proto_session_send_msg(Proto_Session *s, int reset)
   // write request
   // ADD CODE
   net_writen(s->fd, &s->shdr, (int)sizeof(Proto_Msg_Hdr));
+
+  if (s->slen>0) 
+    net_writen(s->fd, &s->sbuf, (int)s->slen);
   
   if (proto_debug()) {
     fprintf(stderr, "%p: proto_session_send_msg: SENT:\n", pthread_self());
     proto_session_dump(s);
   }
+
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Sending message...\n");
 
   // communication was successfull 
   if (reset) proto_session_reset_send(s);
@@ -318,7 +332,6 @@ proto_session_rcv_msg(Proto_Session *s)
 
   // read reply
   ////////// ADD CODE //////////
-  fprintf(stderr, "Waiting for message...\n");
   int bytesRead = net_readn(s->fd, &s->rhdr, sizeof(Proto_Msg_Hdr)); // Read the reply header from received message
 
   // Make sure we read the # of bytes we expect
@@ -331,16 +344,17 @@ proto_session_rcv_msg(Proto_Session *s)
   // Get the number of extra bytes in the blen field
   proto_session_hdr_unmarshall_blen(s);
 
-  fprintf(stderr, "Number of bytes read: %d extraBytes=%d\n", bytesRead, s->rlen);
+  fprintf(stderr, "Number of bytes read: %d extraBytes=%d\n", bytesRead, s-> rhdr.blen);
 
   // Now read the read into the reply buffer
-  bytesRead = net_readn(s->fd, &s->rbuf, s->rlen);
-  if ( bytesRead != s->rlen ) {
+  bytesRead = net_readn(s->fd, &s->rbuf, s->rhdr.blen);
+  if ( bytesRead != s->rhdr.blen)  {
     fprintf(stderr, "%s: ERROR failed to read msg: %d!=%d"
-      " .. closing connection\n" , __func__, bytesRead, s->rlen);
+      " .. closing connection\n" , __func__, bytesRead, s->rhdr.blen);
     close(s->fd);
     return -1;
   }
+
   /////////////////////
 
   if (proto_debug()) {
@@ -348,7 +362,7 @@ proto_session_rcv_msg(Proto_Session *s)
     proto_session_dump(s);
   }
 
-  fprintf(stderr, "Successfully received message\n" );
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Successfully received message\n" );
   return 1;
 }
 
@@ -357,8 +371,14 @@ proto_session_rpc(Proto_Session *s)
 {
   int rc;  
   // HACK
+  // fprintf(stderr, "Sent bytes:\n", );
+  // print_mem(&s->shdr, sizeof(Proto_Msg_Hdr));
+
   rc = proto_session_send_msg(s, 0);
   rc = proto_session_rcv_msg(s);
+
+
+  // fprintf(stderr, "Rcv msg returns : %d\n", rc);
 
   return rc;
 }

@@ -43,6 +43,7 @@ typedef struct {
                - 1];
 
   Proto_Game_State gameState;
+  Proto_Player_State playerState;
 
 } Proto_Client;
 
@@ -86,9 +87,10 @@ proto_client_set_event_handler(Proto_Client_Handle ch, Proto_Msg_Types mt,
   // Here, we can setting the event handler for Proto_Client, which contains a seession lost handler
   // and an array for handlers for each messaget type that we have, we will need to write a 
   // handler for each message type
-  if (mt>PROTO_MT_EVENT_BASE_RESERVED_FIRST && 
+  if (mt>PROTO_MT_REQ_BASE_RESERVED_FIRST && 
       mt<PROTO_MT_EVENT_BASE_RESERVED_LAST) {
-    i= mt;
+    i= mt - PROTO_MT_REQ_BASE_RESERVED_FIRST -1;
+
     // ADD CODE
     c->base_event_handlers[i] = h;
 
@@ -135,12 +137,8 @@ proto_client_event_dispatcher(void * arg)
   for (;;) {
     if (proto_session_rcv_msg(s)==1) {
 
-        fprintf(stderr, "Client: Received event from server :)\n");
-
       mt = proto_session_hdr_unmarshall_type(s);
       int version = proto_session_hdr_unmarshall_version(s);
-
-    fprintf(stderr, "Receiving event message: %d version: %d\n", mt, version);
 
       printMessageType(mt);
 
@@ -148,15 +146,17 @@ proto_client_event_dispatcher(void * arg)
     mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
 
     // We are getting the handler corresponding to our message type from our protocol_client 
-     hdlr = c->base_event_handlers[mt];
+      mt = mt - PROTO_MT_REQ_BASE_RESERVED_FIRST - 1;
+      hdlr = c->base_event_handlers[mt];
+
+        if (hdlr(s)<0) goto leave;
+         
+        // Sync server game state with local game state        
+        c->gameState = s->rhdr.gstate;
+        c->playerState.playerTurn.raw = s->rhdr.pstate.playerTurn.raw;
 
 
-          fprintf(stderr, "About to execute handler: %p\n", hdlr);
-         if (hdlr(s)<0) {
-          fprintf(stderr, "Handler executed\n");
-          goto leave;
-         }
-
+        fprintf(stderr, "My identity: %d  currentTurn: %d\n", c->playerState.playerIdentity.raw, c->playerState.playerTurn.raw);
 
       }
     } 
@@ -189,13 +189,28 @@ proto_client_init(Proto_Client_Handle *ch)
   // Basically goes through event message type, creates a handler and adds it to the
   // client's array of message handlers
   // TODO - define a handler for each message type
-  for (mt=PROTO_MT_EVENT_BASE_RESERVED_FIRST+1;
+  for (mt=PROTO_MT_REQ_BASE_RESERVED_FIRST+1;
        mt<PROTO_MT_EVENT_BASE_RESERVED_LAST; mt++) {
-      proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
+      if (mt==PROTO_MT_REP_BASE_GOODBYE)
+        proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_goodbye_handler);
+      else if (mt==PROTO_MT_REP_BASE_HELLO)
+        proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_hello_handler);
+      else if (mt==PROTO_MT_EVENT_BASE_UPDATE)
+        proto_client_set_event_handler(c, mt, proto_server_mt_event_update_handler);
+      else
+        proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
   }
 
+    // // Print out handlers
+    // for (mt=PROTO_MT_REQ_BASE_RESERVED_FIRST+1;
+    //    mt<PROTO_MT_EVENT_BASE_RESERVED_LAST; mt++) {
+    //   Proto_MT_Handler handler =  c->base_event_handlers[mt];
+    // fprintf(stderr, "Handler at index: %d  is: %p\n", mt, handler);
+    // }
 
   *ch = c;
+
+
   return 1;
 }
 
@@ -226,54 +241,67 @@ proto_client_connect(Proto_Client_Handle ch, char *host, PortType port)
   return 0;
 }
 
-
-static void
-marshall_mtonly(Proto_Session *s, Proto_Msg_Types mt) {
-  Proto_Msg_Hdr h;
-  
-  bzero(&h, sizeof(h));
-  h.type = mt;
-
-  // ////
-  // fprintf(stderr, "Client sending these bytes:\n");
-  // h.version = 20;  
-  // h.gstate.v0.raw = 9;
-  // print_mem(&h, sizeof(Proto_Msg_Hdr));
-
-  // ////
-
-  proto_session_hdr_marshall(s, &h);
-  // fprintf(stderr, "Client sending these converted:\n");
-  // print_mem(&s->shdr, sizeof(Proto_Msg_Hdr));
-
-};
-
-
-
 // all rpc's are assume to only reply only with a return code in the body
 // eg.  like the null_mes
 static int 
 do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
 {
+
+
   int rc;
   Proto_Session *s;
   Proto_Client *c = ch;
+  Proto_Msg_Hdr h;
+  Proto_Msg_Types reply_mt;
+  Proto_MT_Handler hdlr;
 
   s = &c->rpc_session;
 
-  // marshall
+  // marshall message type and send
   marshall_mtonly(s, mt);  
-  //??? TO DO, Marshall more fields into this send header?
 
-
+  // execute rpc
   rc = proto_session_rpc(s);
+  proto_session_hdr_unmarshall(s, &h);
+
+
+  printHeader(&s->rhdr);
+
+  // Execute handler associated with the rpc reply
+  reply_mt = s->rhdr.type;
+
+  if (reply_mt > PROTO_MT_REQ_BASE_RESERVED_FIRST && reply_mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
+
+    // We are getting the handler corresponding to our message type from our protocol_client 
+    reply_mt = reply_mt - PROTO_MT_REQ_BASE_RESERVED_FIRST - 1;
+    hdlr = c->base_event_handlers[reply_mt];
+
+    rc = hdlr(s);
+
+    // Set player identity
+    if (s->rhdr.type==PROTO_MT_REP_BASE_HELLO) {
+      fprintf(stderr, "Setting player identity: %d\n", s->rhdr.pstate.playerIdentity.raw);
+      c->playerState.playerIdentity.raw = s->rhdr.pstate.playerIdentity.raw;
+    }
+  }
+
 
 
   if (rc==1) {
+
+    // print_mem(&s->rhdr, sizeof(Proto_Msg_Hdr)+4);
     proto_session_body_unmarshall_int(s, 0, &rc);
+    // print_mem(&s->rhdr, sizeof(Proto_Msg_Hdr)+4);
+
+
+    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Return code: %x\n", rc);
   } else {
     fprintf(stderr, "Rpc execution failed...\n");
+    c->session_lost_handler(s);
+    close(s->fd);    
   }
+
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Ending RPC with rc = %d\n", rc);
   
   return rc;
 }
@@ -308,3 +336,40 @@ extern void killConnection(Proto_Client_Handle *c) {
   close(client->event_session.fd);
   fprintf(stderr, "Connection terminated\n");
 }
+
+/////////// Custom Event Handlers ///////////////
+static int 
+proto_server_mt_rpc_rep_goodbye_handler(Proto_Session *s)
+{
+  fprintf(stderr, "RPC REPLY GOODBYE: disconnecting from server okay\n");
+  return -1;
+}
+
+static int 
+proto_server_mt_rpc_rep_hello_handler(Proto_Session *s)
+{
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(Proto_Msg_Hdr));
+
+  if (s->rhdr.pstate.playerIdentity.raw==1) 
+    fprintf(stderr, "You are X’s\n");
+  else if (s->rhdr.pstate.playerIdentity.raw==2) 
+    fprintf(stderr, "You are O’s\n");
+  else
+    fprintf(stderr, "Game full, joined as spectator\n");
+
+  return 1;
+}
+
+static int 
+proto_server_mt_event_update_handler(Proto_Session *s)
+{
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(Proto_Msg_Hdr));
+
+  proto_session_hdr_unmarshall(s, &h);
+  printGameBoard(&s->rhdr);
+
+  return 1;
+}
+/////////// End of Custom Event Handlers ///////////////

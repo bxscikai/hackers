@@ -22,3 +22,8 @@ are working. Went to office hours for further questions regarding the assignment
 ---- HW 2 -----
 
 2/17 - Met up for 4 hours to finish the server side code and complete marshalling/unmarshalling code. Got code to compile with no errors. By end of session was also able to have multiple clients successfullly connect to the server. Unable to send or receive messages yet.
+Memeber: Tiffany, Chenkai, Eric
+
+2/18 - Met for 5.5 hours, worked on passing rpc and event messages between client and server. Spent a long time trying to figure out why the data passed between client and server isn't correct. We realized we are using 'ntohl' and 'ntoholl' interchangably. Also was able to get event subscription and broadcast working between client and server, though right now, it can only perform 1 action at a time. Also, quit and 'rpc_goodbye' command causes the server to go crazy (infinite loop).
+Members: Tiffany, Chenkai, Eric
+

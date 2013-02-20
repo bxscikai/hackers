@@ -54,8 +54,10 @@ struct {
 
   // Game logic
   Proto_Game_State   gameState;
-  FDType             player_O;
   FDType             player_X;
+  FDType             player_O;
+  FDType             currentTurn;
+  int                gameStarted;
 
 
 } Proto_Server;
@@ -166,12 +168,7 @@ proto_server_event_listen(void *arg)
           proto_server_record_event_subscriber(connfd, &LastSubscriber);          
           Proto_Server.EventLastSubscriber = LastSubscriber;
 
-          if (LastSubscriber == 1) {//Set Proto_Server.PlayerX to the FD
-		}
-	  else {//Set PlayerO}}
-		}
-	  
-	  // Proto_Server.EventSubscribers[Proto_Server.EventNumSubscribers] = connfd;
+          // Proto_Server.EventSubscribers[Proto_Server.EventNumSubscribers] = connfd;
           // Proto_Server.EventNumSubscribers++;
 
           fprintf(stderr, "New subscriber with subscriber num %d connfd=%d\n", Proto_Server.EventNumSubscribers, connfd);
@@ -192,8 +189,6 @@ proto_server_post_event(void)
   num = Proto_Server.EventNumSubscribers;
   while (num) {
 
-    fprintf(stderr, "Looping postEvent\n");
-
     Proto_Server.EventSession.fd = Proto_Server.EventSubscribers[i];
     if (Proto_Server.EventSession.fd != -1) {
       num--;
@@ -204,7 +199,7 @@ proto_server_post_event(void)
           close(Proto_Server.EventSession.fd);
           Proto_Server.EventSubscribers[i]=-1;
           Proto_Server.EventNumSubscribers--;
-          Proto_Server.EventLastSubscriber = -1;
+          Proto_Server.session_lost_handler(&Proto_Server.EventSession);
       } 
 
       // FIXME: add ack message here to ensure that game is updated 
@@ -253,21 +248,16 @@ proto_server_req_dispatcher(void * arg)
 
   for (;;) {
 
-    fprintf(stderr, "Before server receives message\n");
+    fprintf(stderr, "Server waiting for rpc from fd=%d\n", s.fd);
 
     if (proto_session_rcv_msg(&s)==1) {
 
 
       // ADD CODE /////////////
-      // mt = proto_session_hdr_unmarshall_type(&s);
-      fprintf(stderr,"Receiving before unmarshall bytes.\n");
-      //print_mem(&s.rhdr, sizeof(Proto_Msg_Hdr));
 
       proto_session_hdr_unmarshall(&s, &s.rhdr);
-
       mt = s.rhdr.type;
-      fprintf(stderr,"Receiving after unmarshall bytes.\n");
-      //print_mem(&s.rhdr, sizeof(Proto_Msg_Hdr));
+
       printHeader(&s.rhdr);
       
 
@@ -275,7 +265,7 @@ proto_server_req_dispatcher(void * arg)
 
        // We are getting the handler corresponding to our message type from our protocol_client 
         fprintf(stderr, "Server received rpc request, going inside server handler!\n");
-
+        mt = mt - PROTO_MT_REQ_BASE_RESERVED_FIRST - 1;
         hdlr = Proto_Server.base_req_handlers[mt];
 
       /////////////////
@@ -291,32 +281,15 @@ proto_server_req_dispatcher(void * arg)
   }
  leave:
   // ADD CODE
-  Proto_Server.RPCListenTid = (pthread_t)-1;
+  Proto_Server.session_lost_handler(&s);
   close(s.fd);
+  fprintf(stderr, "Thread finished\n");
 
   return NULL;
 }
 
 
-  // PROTO_MT_REQ_BASE_RESERVED_FIRST,
-  // PROTO_MT_REQ_BASE_HELLO,
-  // PROTO_MT_REQ_BASE_MOVE,
-  // PROTO_MT_REQ_BASE_GOODBYE,
-  // // RESERVED LAST REQ MT PUT ALL NEW REQ MTS ABOVE
-  // PROTO_MT_REQ_BASE_RESERVED_LAST,
-  
-  // // Replys
-  // PROTO_MT_REP_BASE_RESERVED_FIRST,
-  // PROTO_MT_REP_BASE_HELLO,
-  // PROTO_MT_REP_BASE_MOVE,
-  // PROTO_MT_REP_BASE_GOODBYE,
-  // // RESERVED LAST REP MT PUT ALL NEW REP MTS ABOVE
-  // PROTO_MT_REP_BASE_RESERVED_LAST,
 
-  // // Events  
-  // PROTO_MT_EVENT_BASE_RESERVED_FIRST,
-  // PROTO_MT_EVENT_BASE_UPDATE,
-  // PROTO_MT_EVENT_BASE_RESERVED_LAST
 
 static
 void *
@@ -375,15 +348,20 @@ proto_server_mt_null_handler(Proto_Session *s)
 
   // setup dummy reply header : set correct reply message type and 
   // everything else empty
-  bzero(&h, sizeof(s));
+  bzero(&h, sizeof(h));
   h.type = proto_session_hdr_unmarshall_type(s);
   h.type += PROTO_MT_REP_BASE_RESERVED_FIRST;
+  h.version = 15;
   proto_session_hdr_marshall(s, &h);
 
   // setup a dummy body that just has a return code 
   proto_session_body_marshall_int(s, 0xdeadbeef);
 
+    fprintf(stderr, "Server sent bytes:\n" );
+  print_mem(&s->shdr, sizeof(Proto_Msg_Hdr)+4);
+
   rc=proto_session_send_msg(s,1);
+
 
   return rc;
 }
@@ -402,6 +380,11 @@ proto_server_init(void)
              proto_session_lost_default_handler);
   for (i=PROTO_MT_REQ_BASE_RESERVED_FIRST+1; 
        i<PROTO_MT_REQ_BASE_RESERVED_LAST; i++) {
+    if (i==PROTO_MT_REQ_BASE_GOODBYE)
+      proto_server_set_req_handler(i, proto_server_mt_rpc_goodbye_handler);
+    else if (i==PROTO_MT_REQ_BASE_HELLO)
+      proto_server_set_req_handler(i, proto_server_mt_rpc_hello_handler);
+    else
       proto_server_set_req_handler(i, proto_server_mt_null_handler);
         
   }
@@ -468,8 +451,93 @@ extern void setPostMessage(Proto_Session *event) {
   Proto_Msg_Hdr h;  
   bzero(&h, sizeof(h));
   h.type = PROTO_MT_EVENT_BASE_UPDATE;
-  h.version = 15;
-  fprintf(stderr, "Sending event message: %d\n", h.type);
+
+  // Set game state to the server's game state
+  h.gstate = Proto_Server.gameState;
+
+  // Set the current turn to the server's current turn
+  if (Proto_Server.currentTurn==Proto_Server.player_X)
+    h.pstate.playerTurn.raw = 1;
+  else if (Proto_Server.currentTurn==Proto_Server.player_O)
+    h.pstate.playerTurn.raw = 2;
+  else
+    h.pstate.playerTurn.raw = -1;
+
   proto_session_hdr_marshall(event, &h);
 }
 
+
+/////////// Custom Event Handlers ///////////////
+
+// Disconnects from the calling client and sends ack to confirm disconnection
+static int 
+proto_server_mt_rpc_goodbye_handler(Proto_Session *s)
+{
+  int rc=-1;
+
+  // Close connection with client
+  for (int i=0; i<PROTO_SERVER_MAX_EVENT_SUBSCRIBERS; i++) {
+    if (Proto_Server.EventSubscribers[i]==s->fd) {
+      Proto_Server.EventSubscribers[i] = -1;
+      fprintf(stderr, "Removing subscriber\n");
+    }
+  }
+  Proto_Server.EventNumSubscribers--;
+
+    // Sending a goodbye reply
+    marshall_mtonly(s, PROTO_MT_REP_BASE_GOODBYE);
+    proto_session_send_msg(s, 1);
+
+    fprintf(stderr, "Client disconnecting....\n");
+
+
+  return rc;
+}
+
+// Assigns client with either X or O depending on the game state
+static int 
+proto_server_mt_rpc_hello_handler(Proto_Session *s)
+{
+
+  // Send a reply with the identity of the user
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(h));
+  h.type = PROTO_MT_REP_BASE_HELLO;  
+
+  if (Proto_Server.player_X==-1 && Proto_Server.player_O==-1) {
+    Proto_Server.player_X = s->fd;
+    h.pstate.playerIdentity.raw=1;
+  }
+  else if (Proto_Server.player_X!=-1 && Proto_Server.player_O==-1) {
+    Proto_Server.player_O = s->fd;
+    h.pstate.playerIdentity.raw=2;
+  }
+  else {
+    h.pstate.playerIdentity.raw=3;
+  }
+
+
+  // fprintf(stderr, "Telling client identity as %d\n", h.pstate.playerIdentity.raw);
+
+  // fprintf(stderr, "Hello sending bytes before marshall:\n");
+  // print_mem(&s->shdr, sizeof(Proto_Msg_Hdr));
+
+  proto_session_hdr_marshall(s, &h);
+  proto_session_send_msg(s, 1);
+
+    // Start game if we have 2 players
+  if (Proto_Server.player_X!=-1 && Proto_Server.player_O!=-1 && Proto_Server.gameStarted!=1) {
+
+    // Start game
+    Proto_Server.gameStarted = 1;
+
+    // Assign X as first turn
+    Proto_Server.currentTurn = Proto_Server.player_X;
+
+    // Broadcast game state
+    proto_server_post_event();
+  }
+
+  return 1;
+}
+/////////// End of Custom Event Handlers ///////////////

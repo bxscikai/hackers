@@ -143,7 +143,7 @@ doRPCCmd(Client *C, char c)
     printf("%s: unknown command %c\n", __func__, c);
   }
   // NULL MT OVERRIDE ;-)
-  printf("%s: rc=0x%x\n", __func__, rc);
+  if (PROTO_PRINT_DUMPS==1) printf("%s: rc=0x%x\n", __func__, rc);
   if (rc == 0xdeadbeef) rc=1;
   return rc;
 }
@@ -159,7 +159,7 @@ doRPC(Client *C)
   scanf("%c", &c);
   rc=doRPCCmd(C,c);
 
-  printf("doRPC: rc=0x%x\n", rc);
+  if (PROTO_PRINT_DUMPS==1) printf("doRPC: rc=0x%x\n", rc);
 
   return rc;
 }
