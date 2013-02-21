@@ -86,13 +86,17 @@ startConnection(Client *C, char *host, PortType port, Proto_MT_Handler h)
 
 
 int
-prompt(int menu, int isX) 
+prompt(int menu) 
 {
+<<<<<<< HEAD
+  static char MenuString[] = "\?> ";
+=======
   char *MenuString = "";
   if (isX == 1){MenuString = "\nX> ";}
   else if (isX == 2){MenuString = "\nO> ";}
   else {MenuString = "\n?> ";}
   
+>>>>>>> f3df284c924000d77b83830a97211e3f7d87b79f
   int ret;
   int c=0;
 
@@ -200,29 +204,23 @@ shell(void *arg)
   char c;
   int rc;
   int menu=1;
+<<<<<<< HEAD
+
+  while (1) {
+    if ((c=prompt(menu))!=0) rc=docmd(C, c);
+=======
   //the following is done in order to change the prompt for the user to X or O
   int promptType;
   
   while (1) {
     promptType = proto_client_isX(C->ph);
     if ((c=prompt(menu, promptType))!=0) rc=docmd(C, c);
+>>>>>>> f3df284c924000d77b83830a97211e3f7d87b79f
     if (rc<0) {
       killConnection(C->ph);
       break;
     }
-    if (rc==1) 
-    {
-       menu=1;
-       
-       Proto_Game_State *gs = proto_client_game_state(C->ph);
-       printBoard(gs);
-       //This is where the screen gets replaced
-       //printf("\n1|2|3\n- - -\n4|5|6\n- - -\n7|8|9\n");
-    
-
-    
-    } 
-    else menu=0;
+    if (rc==1) menu=1; else menu=0;
   }
 
   fprintf(stderr, "terminating\n");
