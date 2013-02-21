@@ -358,7 +358,7 @@ proto_session_rcv_msg(Proto_Session *s)
   /////////////////////
 
   if (proto_debug()) {
-    fprintf(stderr, "%p: proto_session_rcv_msg: RCVED:\n", pthread_self());
+    if(PROTO_PRINT_DUMPS==1) fprintf(stderr, "%p: proto_session_rcv_msg: RCVED:\n", pthread_self());
     proto_session_dump(s);
   }
 

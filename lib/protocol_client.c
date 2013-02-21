@@ -112,7 +112,7 @@ proto_client_set_event_handler(Proto_Client_Handle ch, Proto_Msg_Types mt,
 static int 
 proto_client_session_lost_default_hdlr(Proto_Session *s)
 {
-  fprintf(stderr, "Session lost...:\n");
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Session lost...:\n");
   proto_session_dump(s);
   return -1;
 }
@@ -169,6 +169,9 @@ proto_client_event_dispatcher(void * arg)
             fprintf(stderr, "Game Over: You win!\n");
           else if (s->rhdr.gstate.gameResult.raw==TIE)
             fprintf(stderr, "Game Over: Draw\n");
+          else if (s->rhdr.gstate.gameResult.raw==RESIGNED) {
+            fprintf(stderr, "Game Over: Other Side Quit\n");
+          }
           else
             fprintf(stderr, "Game Over: You lose\n");
           goto leave;
@@ -337,7 +340,7 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
 
   } 
   else {
-    fprintf(stderr, "Rpc execution failed...\n");
+    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Rpc execution failed...\n");
     c->session_lost_handler(s);
     close(s->fd);    
   }
@@ -398,7 +401,7 @@ extern void killConnection(Proto_Client_Handle *c) {
   // Close rpc and event session
   close(client->rpc_session.fd);
   close(client->event_session.fd);
-  fprintf(stderr, "Connection terminated\n");
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Connection terminated\n");
 }
 
 /////////// Custom Event Handlers ///////////////

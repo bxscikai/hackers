@@ -46,10 +46,10 @@ typedef enum  {
 
 typedef enum  {
 
-  PLAYER_S,
+  PLAYER_EMPTY,
   PLAYER_X,
   PLAYER_O,
-  PLAYER_EMPTY
+  PLAYER_S
 
 } Player_Types;
 
@@ -67,7 +67,8 @@ typedef enum {
   WIN_X,
   TIE,
   PLAYING,
-  NOT_STARTED
+  NOT_STARTED,
+  RESIGNED
 
 } Game_Outcome;
 
