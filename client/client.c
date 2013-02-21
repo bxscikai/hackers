@@ -27,7 +27,8 @@
 #include "../lib/protocol_client.h"
 #include "../lib/protocol_utils.h"
 
-#define STRLEN 81
+#define STRLEN    81
+#define INPUTSIZE 20
 
 struct Globals {
   char host[STRLEN];
@@ -85,8 +86,27 @@ startConnection(Client *C, char *host, PortType port, Proto_MT_Handler h)
 }
 
 
-int
-prompt(int menu, int isX) 
+// const char* getstring()
+// {
+//     char *buffer;
+//     int i = 255;
+
+//     buffer = (char *)malloc(i*sizeof(char));
+//     const char* _temp = buffer;    
+
+//     *buffer = getchar();
+//     while ( *buffer != '\n' )
+//     {
+//         buffer++;
+//         *buffer = getchar();
+//     }
+//     *buffer = '\0';
+
+//     return _temp;
+// }
+
+void
+prompt(int menu, int isX, char *result) 
 {
   char *MenuString = "";
   if (isX == 1){MenuString = "\nX> ";}
@@ -97,9 +117,13 @@ prompt(int menu, int isX)
   int c=0;
 
   if (menu) printf("%s", MenuString);
-  fflush(stdout);
-  c = getchar();
-  return c;
+
+  // OLD PROMPT
+  // fflush(stdout);
+  // c = getchar();
+
+  // NEW PROMPT
+  fgets(result, INPUTSIZE, stdin);  // Get string from user
 }
 
 
@@ -165,31 +189,57 @@ doRPC(Client *C)
   return rc;
 }
 
+void where() {
+  if (globals.port<=0)
+    fprintf(stderr, "Not Connected\n");
+  else
+    fprintf(stderr, "Connection: %s:%d\n", globals.host, globals.port);
+}
 
 int 
-docmd(Client *C, char cmd)
+docmd(Client *C, char *cmd)
 {
   int rc = 1;
 
-  switch (cmd) {
-  case 'd':
-    proto_debug_on();
-    break;
-  case 'D':
-    proto_debug_off();
-    break;
-  case 'r':
-    rc = doRPC(C);
-    break;
-  case 'q':
+  if (strcmp(cmd, "disconnect\n")==0) {
+    doRPCCmd(C, 'g');
     rc=-1;
-    break;
-  case '\n':
-    rc=1;
-    break;
-  default:
-    printf("Unkown Command\n");
   }
+  else if (strcmp(cmd, "where\n")==0) 
+    where();
+  else if (strcmp(cmd, "1\n")==0) 
+    rc = proto_client_move(C->ph, '1');
+  else if (strcmp(cmd, "2\n")==0) 
+    rc = proto_client_move(C->ph, '2');  
+  else if (strcmp(cmd, "3\n")==0) 
+    rc = proto_client_move(C->ph, '3');
+  else if (strcmp(cmd, "4\n")==0) 
+    rc = proto_client_move(C->ph, '4');  
+  else if (strcmp(cmd, "5\n")==0) 
+    rc = proto_client_move(C->ph, '5');  
+  else if (strcmp(cmd, "6\n")==0) 
+    rc = proto_client_move(C->ph, '6');  
+  else if (strcmp(cmd, "7\n")==0) 
+    rc = proto_client_move(C->ph, '7');  
+  else if (strcmp(cmd, "8\n")==0) 
+    rc = proto_client_move(C->ph, '8');  
+  else if (strcmp(cmd, "9\n")==0) 
+    rc = proto_client_move(C->ph, '9');                 
+  else if (strcmp(cmd, "d\n")==0) 
+    proto_debug_on();  
+  else if (strcmp(cmd, "D\n")==0) 
+    proto_debug_off();
+  else if (strcmp(cmd, "rh\n")==0) 
+    rc = proto_client_hello(C->ph);
+  else if (strcmp(cmd, "q\n")==0) {
+    doRPCCmd(C, 'g');
+    rc=-1;
+  }  
+  else if (strcmp(cmd, "\n")==0) 
+    rc=1;
+  else
+    fprintf(stderr, "Unknown command\n");
+
   return rc;
 }
 
@@ -197,30 +247,28 @@ void *
 shell(void *arg)
 {
   Client *C = arg;
-  char c;
+  char input[INPUTSIZE];
   int rc;
   int menu=1;
   //the following is done in order to change the prompt for the user to X or O
   int promptType;
+
   
   while (1) {
     promptType = proto_client_isX(C->ph);
-    if ((c=prompt(menu, promptType))!=0) rc=docmd(C, c);
+    prompt(menu, promptType, input);
+
+    if (strlen(input)>0) {
+      rc=docmd(C, input);
+    }
     if (rc<0) {
       killConnection(C->ph);
       break;
     }
     if (rc==1) 
     {
-       menu=1;
-       
+       menu=1;       
        Proto_Game_State *gs = proto_client_game_state(C->ph);
-       // printBoard(gs);
-       //This is where the screen gets replaced
-       //printf("\n1|2|3\n- - -\n4|5|6\n- - -\n7|8|9\n");
-    
-
-    
     } 
     else menu=0;
   }
