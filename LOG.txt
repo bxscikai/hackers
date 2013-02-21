@@ -21,9 +21,21 @@ are working. Went to office hours for further questions regarding the assignment
 
 ---- HW 2 -----
 
+2/15 - Started filling in blank for any "ADD CODE"s and figured out structure of the program. Mainly on the client side.
+Member: Chenkai, Eric, Tiffany
+ 
+2/16 - Finished filling out the client side, completed filling out "ADD CODE" blank on the server side, sucessfully compiled the code.
+Member: Chenkai, Eric, Tiffany
+
 2/17 - Met up for 4 hours to finish the server side code and complete marshalling/unmarshalling code. Got code to compile with no errors. By end of session was also able to have multiple clients successfullly connect to the server. Unable to send or receive messages yet.
-Memeber: Tiffany, Chenkai, Eric
+Member: Tiffany, Chenkai, Eric
 
 2/18 - Met for 5.5 hours, worked on passing rpc and event messages between client and server. Spent a long time trying to figure out why the data passed between client and server isn't correct. We realized we are using 'ntohl' and 'ntoholl' interchangably. Also was able to get event subscription and broadcast working between client and server, though right now, it can only perform 1 action at a time. Also, quit and 'rpc_goodbye' command causes the server to go crazy (infinite loop).
+Members: Tiffany, Chenkai, Eric
+
+2/20 - Met up for 3 hours, started game logic, the RPC and Event channel work regularly, (no crazy loops). Basic stuctures for game logic starting to be implemented - assignment of X/Os, basic structural coding for the move command.
+Members: Tiffany, Chenkai, Eric
+
+2/21 - Met up for 6 hours, got game to FUNCTION, resolved all handlers and game behavior. Cleaned up code and put in correct prompt strings for desired behavior of program. DONE. Also completed documentation and architecture docs.
 Members: Tiffany, Chenkai, Eric
 
