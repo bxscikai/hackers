@@ -91,8 +91,8 @@ prompt(int menu, int isX, char *result)
 {
 
   char *MenuString = "";
-  if (isX == 1){MenuString = "\nX> ";}
-  else if (isX == 2){MenuString = "\nO> ";}
+  if (isX == PLAYER_X){MenuString = "\nX> ";}
+  else if (isX == PLAYER_O){MenuString = "\nO> ";}
   else {MenuString = "\n?> ";}
   
   int ret;
@@ -257,9 +257,15 @@ docmd(Client *C, char *cmd)
   else if (strcmp(cmd, "rh\n")==0) 
     rc = proto_client_hello(C->ph);
   else if (strcmp(cmd, "q\n")==0) {
+    fprintf(stderr, "Game Over: You Quit\n");    
     doRPCCmd(C, 'g');
     rc=-1;
   }  
+  else if (strcmp(cmd, "quit\n")==0) {
+    doRPCCmd(C, 'g');
+    fprintf(stderr, "Game Over: You Quit\n");
+    rc=-1;
+  }    
   else if (strcmp(cmd, "\n")==0) {
     rc = proto_client_update(C->ph);
     rc=1;
@@ -305,7 +311,7 @@ shell(void *arg)
     else menu=1;
   }
 
-  fprintf(stderr, "terminating\n");
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "terminating\n");
   fflush(stdout);
   return NULL;
 }

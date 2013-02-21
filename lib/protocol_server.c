@@ -548,6 +548,24 @@ extern void setPostMessage(Proto_Session *event) {
 
 /////////// Custom Event Handlers ///////////////
 
+// Reinit game state
+static void reinitialize_State() {
+  bzero(&Proto_Server.gameState, sizeof(Proto_Game_State));
+  Proto_Server.player_O = -1;
+  Proto_Server.player_X = -1;
+  Proto_Server.currentTurn = -1;
+  Proto_Server.gameStarted = 0;
+  Proto_Server.gameState.pos1.raw = -1;
+  Proto_Server.gameState.pos2.raw = -1;
+  Proto_Server.gameState.pos3.raw = -1;
+  Proto_Server.gameState.pos4.raw = -1;
+  Proto_Server.gameState.pos5.raw = -1;
+  Proto_Server.gameState.pos6.raw = -1;
+  Proto_Server.gameState.pos7.raw = -1;
+  Proto_Server.gameState.pos8.raw = -1;
+  Proto_Server.gameState.pos9.raw = -1;
+}
+
 // Disconnects from the calling client and sends ack to confirm disconnection
 static int 
 proto_server_mt_rpc_goodbye_handler(Proto_Session *s)
@@ -567,6 +585,13 @@ proto_server_mt_rpc_goodbye_handler(Proto_Session *s)
     // Sending a goodbye reply
     marshall_mtonly(s, PROTO_MT_REP_BASE_GOODBYE);
     proto_session_send_msg(s, 1);
+
+    // Telling other client the player quit
+    Proto_Server.gameState.gameResult.raw=RESIGNED;
+    proto_server_post_event();
+
+    // Reinitialize server state
+    reinitialize_State();
 
     fprintf(stderr, "Client disconnecting....\n");
 

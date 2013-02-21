@@ -43,6 +43,7 @@ extern void setPostMessage(Proto_Session *event);
 static Player_Types currentPlayer();
 static Game_Outcome checkOutcome();
 extern void printGameState();
+static void reinitialize_State();
 // Handlers
 static int proto_server_mt_rpc_goodbye_handler(Proto_Session *s);
 static int proto_server_mt_rpc_hello_handler(Proto_Session *s);
