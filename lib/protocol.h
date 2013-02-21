@@ -43,6 +43,23 @@ typedef enum  {
 
 } Proto_Msg_Types;
 
+typedef enum  {
+
+  PLAYER_S,
+  PLAYER_X,
+  PLAYER_O,
+  PLAYER_EMPTY
+
+} Player_Types;
+
+typedef enum  {
+
+  INVALID_MOVE,
+  NOT_YOUR_TURN,
+  SUCCESS
+
+} Move_Return_Types;
+
 typedef enum { PROTO_STATE_INVALID_VERSION=0, PROTO_STATE_INITIAL_VERSION=1} Proto_SVERS;
 
 typedef union {
@@ -54,7 +71,7 @@ typedef union {
 } Proto_PV0;
 
 typedef union {
-  int raw;
+  Player_Types raw;
 } Proto_PV1;
 
 typedef union {
@@ -66,9 +83,9 @@ typedef union {
 } Proto_PV3;
 
 typedef struct {
-  Proto_PV0    playerIdentity;
+  Proto_PV1    playerIdentity;
   Proto_PV1    playerTurn;
-  Proto_PV2    v2;
+  Proto_PV2    playerMove;
   Proto_PV3    v3;
 } __attribute__((__packed__)) Proto_Player_State;
 

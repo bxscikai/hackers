@@ -89,7 +89,7 @@ proto_dump_pstate(Proto_Player_State *ps)
   
   v0 = ntohl(ps->playerIdentity.raw);
   v1 = ntohl(ps->playerTurn.raw);
-  v2 = ntohl(ps->v2.raw);
+  v2 = ntohl(ps->playerMove.raw);
   v3 = ntohl(ps->v3.raw);
 
   fprintf(stderr, "v0=x0%x v1=0x%x v2=0x%x v3=0x%x\n",

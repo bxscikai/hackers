@@ -59,7 +59,7 @@ extern void killConnection(Proto_Client_Handle *c);
 static int proto_server_mt_rpc_rep_goodbye_handler(Proto_Session *s);
 static int proto_server_mt_rpc_rep_hello_handler(Proto_Session *s);
 static int proto_server_mt_event_update_handler(Proto_Session *s);
-
+static int proto_server_mt_rpc_rep_move_handler(Proto_Session *s);
 
 
 #endif

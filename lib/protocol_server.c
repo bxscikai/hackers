@@ -125,10 +125,12 @@ proto_server_record_event_subscriber(int fd, int *num)
         Proto_Server.EventNumSubscribers++;
         *num=i;
         rc=1;
+        goto leave;
       }
     }
   }
 
+leave:
   pthread_mutex_unlock(&Proto_Server.EventSubscribersLock);
 
   return rc;
@@ -183,10 +185,13 @@ proto_server_post_event(void)
   int i;
   int num;
 
+  fprintf(stderr, "BEFORE BROADCASTING EVENT TO %d SUBSCRIBERS\n", Proto_Server.EventNumSubscribers);
+
   pthread_mutex_lock(&Proto_Server.EventSubscribersLock);
 
   i = 0;
   num = Proto_Server.EventNumSubscribers;
+  fprintf(stderr, "BROADCASTING EVENT TO %d SUBSCRIBERS\n", Proto_Server.EventNumSubscribers);
   while (num) {
 
     Proto_Server.EventSession.fd = Proto_Server.EventSubscribers[i];
@@ -265,6 +270,8 @@ proto_server_req_dispatcher(void * arg)
 
        // We are getting the handler corresponding to our message type from our protocol_client 
         fprintf(stderr, "Server received rpc request, going inside server handler!\n");
+        printHeader(&s.rhdr);
+
         mt = mt - PROTO_MT_REQ_BASE_RESERVED_FIRST - 1;
         hdlr = Proto_Server.base_req_handlers[mt];
 
@@ -384,6 +391,8 @@ proto_server_init(void)
       proto_server_set_req_handler(i, proto_server_mt_rpc_goodbye_handler);
     else if (i==PROTO_MT_REQ_BASE_HELLO)
       proto_server_set_req_handler(i, proto_server_mt_rpc_hello_handler);
+    else if (i==PROTO_MT_REQ_BASE_MOVE)
+      proto_server_set_req_handler(i, proto_server_mt_rpc_move_handler);
     else
       proto_server_set_req_handler(i, proto_server_mt_null_handler);
         
@@ -506,14 +515,14 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
 
   if (Proto_Server.player_X==-1 && Proto_Server.player_O==-1) {
     Proto_Server.player_X = s->fd;
-    h.pstate.playerIdentity.raw=1;
+    h.pstate.playerIdentity.raw=PLAYER_X;
   }
   else if (Proto_Server.player_X!=-1 && Proto_Server.player_O==-1) {
     Proto_Server.player_O = s->fd;
-    h.pstate.playerIdentity.raw=2;
+    h.pstate.playerIdentity.raw=  PLAYER_O;
   }
   else {
-    h.pstate.playerIdentity.raw=3;
+    h.pstate.playerIdentity.raw=  PLAYER_S;
   }
 
 
@@ -526,7 +535,11 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
   proto_session_send_msg(s, 1);
 
     // Start game if we have 2 players
+  fprintf(stderr, "playerX : %d  playerO : %d  gameStarted: %d\n", Proto_Server.player_X, Proto_Server.player_O, Proto_Server.gameStarted);
+
   if (Proto_Server.player_X!=-1 && Proto_Server.player_O!=-1 && Proto_Server.gameStarted!=1) {
+
+    fprintf(stderr, "Trying to post event!\n" );
 
     // Start game
     Proto_Server.gameStarted = 1;
@@ -540,4 +553,119 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
 
   return 1;
 }
+
+static int 
+proto_server_mt_rpc_move_handler(Proto_Session *s) {
+
+    // Send a reply with the identity of the user
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(h));
+  h.type = PROTO_MT_REP_BASE_MOVE;
+
+  // fprintf(stderr, "Server moving at position: %d \n", h.pstate.playerMove.raw);
+
+  // Its not the player's turn yet
+  if (s->fd!=Proto_Server.currentTurn) {
+    // -1 indicate its not the player's turn yet
+    h.pstate.playerMove.raw = NOT_YOUR_TURN;
+    goto send_msg;
+  }
+
+//////////////// MOVE LOGIC ////////////////
+
+  if (s->rhdr.pstate.playerMove.raw==1) {
+    if (Proto_Server.gameState.pos1.raw==-1)  {
+      Proto_Server.gameState.pos1.raw = currentPlayer();
+      h.pstate.playerMove.raw = SUCCESS;
+    }
+    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
+  }
+  else if (s->rhdr.pstate.playerMove.raw==2) {
+    if (Proto_Server.gameState.pos2.raw==-1)  {
+      Proto_Server.gameState.pos2.raw = currentPlayer();
+      h.pstate.playerMove.raw = SUCCESS;
+    }
+    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
+  }
+  else if (s->rhdr.pstate.playerMove.raw==3) {
+    if (Proto_Server.gameState.pos3.raw==-1)  {
+      Proto_Server.gameState.pos3.raw = currentPlayer();
+      h.pstate.playerMove.raw = SUCCESS;
+    }
+    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
+  }
+  else if (s->rhdr.pstate.playerMove.raw==4) {
+    if (Proto_Server.gameState.pos4.raw==-1)  {
+      Proto_Server.gameState.pos4.raw = currentPlayer();
+      h.pstate.playerMove.raw = SUCCESS;
+    }
+    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
+  }
+  else if (s->rhdr.pstate.playerMove.raw==5) {
+    if (Proto_Server.gameState.pos5.raw==-1)  {
+      Proto_Server.gameState.pos5.raw = currentPlayer();
+      h.pstate.playerMove.raw = SUCCESS;
+    }
+    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
+  }        
+  else if (s->rhdr.pstate.playerMove.raw==6) {
+    if (Proto_Server.gameState.pos6.raw==-1)  {
+      Proto_Server.gameState.pos6.raw = currentPlayer();
+      h.pstate.playerMove.raw = SUCCESS;
+    }
+    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
+  }
+  else if (s->rhdr.pstate.playerMove.raw==7) {
+    if (Proto_Server.gameState.pos7.raw==-1)  {
+      Proto_Server.gameState.pos7.raw = currentPlayer();
+      h.pstate.playerMove.raw = SUCCESS;
+    }
+    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
+  }
+  else if (s->rhdr.pstate.playerMove.raw==8) {
+    if (Proto_Server.gameState.pos8.raw==-1)  {
+      Proto_Server.gameState.pos8.raw = currentPlayer();
+      h.pstate.playerMove.raw = SUCCESS;
+    }
+    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
+  }
+  else if (s->rhdr.pstate.playerMove.raw==9) {
+    if (Proto_Server.gameState.pos9.raw==-1)  {
+      Proto_Server.gameState.pos9.raw = currentPlayer();
+      h.pstate.playerMove.raw = SUCCESS;
+    }
+    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
+  }      
+//////////////// END OF MOVE LOGIC ////////////////
+
+
+
+  // fprintf(stderr, "Telling client identity as %d\n", h.pstate.playerIdentity.raw);
+
+  // fprintf(stderr, "Hello sending bytes before marshall:\n");
+  // print_mem(&s->shdr, sizeof(Proto_Msg_Hdr));
+
+send_msg:
+  proto_session_hdr_marshall(s, &h);
+  proto_session_send_msg(s, 1);
+
+    // Broadcast game state
+    if (h.pstate.playerMove.raw==SUCCESS)
+      proto_server_post_event();
+  
+
+  return 1;
+
+}
+
+static Player_Types currentPlayer() {
+  if (Proto_Server.currentTurn==Proto_Server.player_X)
+    return PLAYER_X;
+  else if (Proto_Server.currentTurn==Proto_Server.player_O)
+    return PLAYER_O;
+  else
+    return PLAYER_EMPTY;
+}
+
+
 /////////// End of Custom Event Handlers ///////////////

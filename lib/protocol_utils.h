@@ -23,7 +23,7 @@
 *****************************************************************************/
 
 extern int PROTO_DEBUG;
-#define PROTO_PRINT_DUMPS 0
+#define PROTO_PRINT_DUMPS 1
 
 extern void proto_dump_mt(Proto_Msg_Types type);
 extern void proto_dump_pstate(Proto_Player_State *ps);
@@ -77,7 +77,8 @@ static inline void printHeader(Proto_Msg_Hdr *header) {
 	printMessageType(header->type);
 	fprintf(stderr, "VERSION: %d  blen: %d \n", header->version, header->blen);
   fprintf(stderr, "Game State: %d %d %d %d %d %d %d %d %d\n", header->gstate.pos1.raw, header->gstate.pos2.raw, header->gstate.pos3.raw, header->gstate.pos4.raw, header->gstate.pos5.raw, header->gstate.pos6.raw, header->gstate.pos7.raw ,header->gstate.pos8.raw ,header->gstate.pos9.raw);
-	fprintf(stderr, "---END OF HEADER----\n");
+	fprintf(stderr, "Player State: %d %d %d\n", header->pstate.playerIdentity.raw, header->pstate.playerTurn.raw, header->pstate.playerMove.raw);
+  fprintf(stderr, "---END OF HEADER----\n");
 }
 
 static inline char printGamePiece(int piece, int position) {
@@ -87,6 +88,8 @@ static inline char printGamePiece(int piece, int position) {
     return 'X';
   else if (piece==2)
     return 'O';
+
+  return ' ';
 }
 
 static inline void printGameBoard(Proto_Msg_Hdr *header) {

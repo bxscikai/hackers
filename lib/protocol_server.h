@@ -40,8 +40,11 @@ extern void proto_server_post_event(void);
 
 // Game logic
 extern void setPostMessage(Proto_Session *event);
+static Player_Types currentPlayer();
 
 // Handlers
 static int proto_server_mt_rpc_goodbye_handler(Proto_Session *s);
 static int proto_server_mt_rpc_hello_handler(Proto_Session *s);
+static int proto_server_mt_rpc_move_handler(Proto_Session *s);
+
 #endif

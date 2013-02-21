@@ -39,7 +39,7 @@ typedef struct {
   pthread_t EventHandlerTid;
   Proto_MT_Handler session_lost_handler;
   Proto_MT_Handler base_event_handlers[PROTO_MT_EVENT_BASE_RESERVED_LAST 
-               - PROTO_MT_EVENT_BASE_RESERVED_FIRST
+               - PROTO_MT_REQ_BASE_RESERVED_FIRST
                - 1];
 
   Proto_Game_State gameState;
@@ -155,8 +155,13 @@ proto_client_event_dispatcher(void * arg)
         c->gameState = s->rhdr.gstate;
         c->playerState.playerTurn.raw = s->rhdr.pstate.playerTurn.raw;
 
-
-        fprintf(stderr, "My identity: %d  currentTurn: %d\n", c->playerState.playerIdentity.raw, c->playerState.playerTurn.raw);
+        // Prompt for player to enter
+        if (c->playerState.playerIdentity.raw==1)
+          fprintf(stderr, "X>");
+        else if (c->playerState.playerIdentity.raw==2)
+          fprintf(stderr, "O>");
+        else
+          fprintf(stderr, "Waiting for action>\n");
 
       }
     } 
@@ -197,11 +202,13 @@ proto_client_init(Proto_Client_Handle *ch)
         proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_hello_handler);
       else if (mt==PROTO_MT_EVENT_BASE_UPDATE)
         proto_client_set_event_handler(c, mt, proto_server_mt_event_update_handler);
+      else if (mt==PROTO_MT_REP_BASE_MOVE)
+        proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_move_handler);
       else
         proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
   }
 
-    // // Print out handlers
+    // Print out handlers
     // for (mt=PROTO_MT_REQ_BASE_RESERVED_FIRST+1;
     //    mt<PROTO_MT_EVENT_BASE_RESERVED_LAST; mt++) {
     //   Proto_MT_Handler handler =  c->base_event_handlers[mt];
@@ -247,18 +254,21 @@ static int
 do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
 {
 
-
   int rc;
   Proto_Session *s;
   Proto_Client *c = ch;
+
   Proto_Msg_Hdr h;
   Proto_Msg_Types reply_mt;
   Proto_MT_Handler hdlr;
 
   s = &c->rpc_session;
+  c->rpc_session.shdr.type = mt;
 
   // marshall message type and send
-  marshall_mtonly(s, mt);  
+  printHeader(&c->rpc_session.shdr);
+
+  proto_session_hdr_marshall(s, &s->shdr);
 
   // execute rpc
   rc = proto_session_rpc(s);
@@ -276,13 +286,14 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
     reply_mt = reply_mt - PROTO_MT_REQ_BASE_RESERVED_FIRST - 1;
     hdlr = c->base_event_handlers[reply_mt];
 
+    fprintf(stderr, "About to execute handler: %p\n", hdlr);
+
     rc = hdlr(s);
 
     // Set player identity
-    if (s->rhdr.type==PROTO_MT_REP_BASE_HELLO) {
-      fprintf(stderr, "Setting player identity: %d\n", s->rhdr.pstate.playerIdentity.raw);
+    if (s->rhdr.type==PROTO_MT_REP_BASE_HELLO) 
       c->playerState.playerIdentity.raw = s->rhdr.pstate.playerIdentity.raw;
-    }
+    
   }
 
 
@@ -295,7 +306,9 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
 
 
     if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Return code: %x\n", rc);
-  } else {
+
+  } 
+  else {
     fprintf(stderr, "Rpc execution failed...\n");
     c->session_lost_handler(s);
     close(s->fd);    
@@ -315,6 +328,9 @@ proto_client_hello(Proto_Client_Handle ch)
 extern int 
 proto_client_move(Proto_Client_Handle ch, char data)
 {
+  Proto_Client *client = ch;
+  client->rpc_session.shdr.pstate.playerMove.raw = (int) (data - '0');
+
   return do_generic_dummy_rpc(ch,PROTO_MT_REQ_BASE_MOVE);  
 }
 
@@ -351,9 +367,9 @@ proto_server_mt_rpc_rep_hello_handler(Proto_Session *s)
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(Proto_Msg_Hdr));
 
-  if (s->rhdr.pstate.playerIdentity.raw==1) 
+  if (s->rhdr.pstate.playerIdentity.raw==PLAYER_X) 
     fprintf(stderr, "You are X’s\n");
-  else if (s->rhdr.pstate.playerIdentity.raw==2) 
+  else if (s->rhdr.pstate.playerIdentity.raw==PLAYER_O) 
     fprintf(stderr, "You are O’s\n");
   else
     fprintf(stderr, "Game full, joined as spectator\n");
@@ -369,6 +385,25 @@ proto_server_mt_event_update_handler(Proto_Session *s)
 
   proto_session_hdr_unmarshall(s, &h);
   printGameBoard(&s->rhdr);
+
+  return 1;
+}
+
+static int 
+proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
+{
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(Proto_Msg_Hdr));
+  proto_session_hdr_unmarshall(s, &h);
+
+  fprintf(stderr, "RPC REPLY MOVE: Received move result \n");
+
+  if (s->rhdr.pstate.playerMove.raw==NOT_YOUR_TURN)
+    fprintf(stderr, "Not your turn!\n");
+  else if (s->rhdr.pstate.playerMove.raw==INVALID_MOVE)
+    fprintf(stderr, "Invalid move!\n");
+  else if (s->rhdr.pstate.playerMove.raw==SUCCESS)
+    fprintf(stderr, "Move successfully!\n"); 
 
   return 1;
 }

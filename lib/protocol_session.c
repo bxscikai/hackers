@@ -86,7 +86,7 @@ proto_session_hdr_marshall_pstate(Proto_Session *s, Proto_Player_State *ps)
 {
     s->shdr.pstate.playerIdentity.raw  = htonl(ps->playerIdentity.raw);
     s->shdr.pstate.playerTurn.raw  = htonl(ps->playerTurn.raw);
-    s->shdr.pstate.v2.raw  = htonl(ps->v2.raw);
+    s->shdr.pstate.playerMove.raw  = htonl(ps->playerMove.raw);
     s->shdr.pstate.v3.raw  = htonl(ps->v3.raw);
 }
 
@@ -95,7 +95,7 @@ proto_session_hdr_unmarshall_pstate(Proto_Session *s, Proto_Player_State *ps)
 {
   s->rhdr.pstate.playerIdentity.raw = ntohl(s->rhdr.pstate.playerIdentity.raw);
   s->rhdr.pstate.playerTurn.raw = ntohl(s->rhdr.pstate.playerTurn.raw);
-  s->rhdr.pstate.v2.raw = ntohl(s->rhdr.pstate.v2.raw);
+  s->rhdr.pstate.playerMove.raw = ntohl(s->rhdr.pstate.playerMove.raw);
   s->rhdr.pstate.v3.raw = ntohl(s->rhdr.pstate.v3.raw);
 
 }
