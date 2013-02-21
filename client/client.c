@@ -28,7 +28,7 @@
 #include "../lib/protocol_utils.h"
 
 #define STRLEN    81
-#define INPUTSIZE 20
+#define INPUTSIZE 50 
 
 struct Globals {
   char host[STRLEN];
@@ -85,25 +85,6 @@ startConnection(Client *C, char *host, PortType port, Proto_MT_Handler h)
   return 0;
 }
 
-
-// const char* getstring()
-// {
-//     char *buffer;
-//     int i = 255;
-
-//     buffer = (char *)malloc(i*sizeof(char));
-//     const char* _temp = buffer;    
-
-//     *buffer = getchar();
-//     while ( *buffer != '\n' )
-//     {
-//         buffer++;
-//         *buffer = getchar();
-//     }
-//     *buffer = '\0';
-
-//     return _temp;
-// }
 
 void
 prompt(int menu, int isX, char *result) 
@@ -197,61 +178,53 @@ void where() {
     fprintf(stderr, "Connection: %s:%d\n", globals.host, globals.port);
 }
 
+// See if we have a connect code
 int
 check_if_connect(char *mystring){
+
   char *first_part;
   char *sec_part;
   char *third_part;
+  char * pch;
 
-  first_part = strtok(mystring, " ");
-
-  fprintf(stderr, "our first string:%s\n", first_part);
-
-  if (strcmp(first_part, "connect") == 0){
-    sec_part = strtok(NULL, ":");
-    int size_sec = strlen(sec_part);
-
-    fprintf(stderr, "our sec string:%s\n", sec_part);
-
-    if (sec_part == NULL){
-      goto leave;
-    }
-
-    third_part = strtok(NULL, "\n");
-    fprintf(stderr, "our third string:%s\n", third_part);
-
-    if (third_part == NULL){
-      //user only input one arg
-
-      //user only put in the host/ip...
-      if (size_sec > 10){
-        goto leave;
-      }
-
-      strncpy(globals.host, "localhost", STRLEN);
-      globals.port = atoi(sec_part);
-      fprintf(stderr, "connect via localhost\n");
-      return 0;
-
-    }else{
-      strncpy(globals.host, sec_part, STRLEN);
-      globals.port = atoi(third_part);
-      fprintf(stderr, "connect via ip:%s\n", third_part);
-      return 0;
-    }
-
-  }else{
-    //no connect
-    leave:
-    fprintf(stderr, "usage: connect <ip:port>\n");
-    return 1;
+  // printf ("Splitting string \"%s\" into tokens:\n", mystring);
+  pch = strtok (mystring," :");
+  int i =0;
+  while (pch != NULL)
+  {
+    if (i==0 && (strcmp(pch, "connect") != 0)) 
+        return -1;
+    else if (i==1) 
+      strncpy(globals.host, pch, strlen(pch));    
+    else if (i==2) 
+      globals.port = atoi(pch);        
+    i++;
+    pch = strtok (NULL, " :");
   }
+
+  // first_part = strtok(mystring, " ");
+  return 1;
 }
 
 int 
 docmd(Client *C, char *cmd)
 {
   int rc = 1;
+
+  // If this is a connect attempt
+  int connectAttempt = check_if_connect(cmd);
+  if (connectAttempt==1) {
+  // Ok startup our connection to the server
+      if (startConnection(C, globals.host, globals.port, update_event_handler)<0) {
+        fprintf(stderr, "ERROR: startConnection failed\n");
+        return -1;
+      }
+      else  {
+        fprintf(stderr, "Successfully connected to <%s:%d>\n", globals.host, globals.port);      
+        return proto_client_hello(C->ph);
+      }
+      return 1;
+  }
 
   if (strcmp(cmd, "disconnect\n")==0) {
     doRPCCmd(C, 'g');
@@ -379,27 +352,14 @@ int
 main(int argc, char **argv)
 {
   Client c;  
-  //initGlobals(argc, argv);
 
-  char connection_input[30];
-  int not_connected = 1;
-  //set up the connection
-  while(not_connected == 1){
-    fprintf(stderr, "Enter connect <ip:port> : ");
-    fgets(connection_input, INPUTSIZE, stdin);
-    not_connected = check_if_connect(connection_input);
-  }
+  fprintf(stderr, "Type 'connect <host:port>' to connect to a game.\n");
 
   if (clientInit(&c) < 0) {
     fprintf(stderr, "ERROR: clientInit failed\n");
     return -1;
   }    
 
-  // ok startup our connection to the server
-  if (startConnection(&c, globals.host, globals.port, update_event_handler)<0) {
-    fprintf(stderr, "ERROR: startConnection failed\n");
-    return -1;
-  }
 
   shell(&c);
 
