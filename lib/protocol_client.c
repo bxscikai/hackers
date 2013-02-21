@@ -44,7 +44,7 @@ typedef struct {
 
   Proto_Game_State gameState;
   Proto_Player_State playerState;
-
+  int isX;
 } Proto_Client;
 
 extern Proto_Session *
@@ -66,6 +66,13 @@ proto_client_game_state(Proto_Client_Handle ch)
 {
   Proto_Client *c = ch;
   return &(c->gameState);
+}
+
+extern int
+proto_client_isX(Proto_Client_Handle ch)
+{
+  Proto_Client *c = ch;
+  return c->isX;
 }
 
 extern int
@@ -280,6 +287,20 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
 
     // Set player identity
     if (s->rhdr.type==PROTO_MT_REP_BASE_HELLO) {
+
+      if (rc > 0){
+        if (rc == 1) {
+          c->isX = 1;
+        }else if (rc == 2) {
+          c->isX = 2;
+        }else {
+          c->isX = 0;
+        }
+
+        rc = 1; //hack-y way to get everything back to normal
+      }else{
+        rc = 0; //something failed in the handler
+      }
       fprintf(stderr, "Setting player identity: %d\n", s->rhdr.pstate.playerIdentity.raw);
       c->playerState.playerIdentity.raw = s->rhdr.pstate.playerIdentity.raw;
     }
@@ -351,14 +372,17 @@ proto_server_mt_rpc_rep_hello_handler(Proto_Session *s)
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(Proto_Msg_Hdr));
 
-  if (s->rhdr.pstate.playerIdentity.raw==1) 
+  if (s->rhdr.pstate.playerIdentity.raw==1){ 
     fprintf(stderr, "You are X’s\n");
-  else if (s->rhdr.pstate.playerIdentity.raw==2) 
+    return 1;
+  }else if (s->rhdr.pstate.playerIdentity.raw==2){ 
     fprintf(stderr, "You are O’s\n");
-  else
+    return 2;
+  }else{
     fprintf(stderr, "Game full, joined as spectator\n");
+  }
 
-  return 1;
+  return 3; // rc just needs to be >1
 }
 
 static int 

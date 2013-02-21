@@ -104,7 +104,8 @@ static inline void printGameBoard(Proto_Msg_Hdr *header) {
 static inline void print_mem(void const *vp, size_t n)
 {
     unsigned char const *p = vp;
-    for (size_t i=0; i<n; i++)
+    size_t i;
+    for (i=0; i<n; i++)
         printf("%02x", p[i]);
     printf("\n");
 };

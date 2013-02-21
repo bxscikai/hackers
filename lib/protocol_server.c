@@ -474,9 +474,10 @@ static int
 proto_server_mt_rpc_goodbye_handler(Proto_Session *s)
 {
   int rc=-1;
+  int i;
 
   // Close connection with client
-  for (int i=0; i<PROTO_SERVER_MAX_EVENT_SUBSCRIBERS; i++) {
+  for (i=0; i<PROTO_SERVER_MAX_EVENT_SUBSCRIBERS; i++) {
     if (Proto_Server.EventSubscribers[i]==s->fd) {
       Proto_Server.EventSubscribers[i] = -1;
       fprintf(stderr, "Removing subscriber\n");

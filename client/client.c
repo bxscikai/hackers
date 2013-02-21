@@ -38,7 +38,6 @@ struct Globals {
 typedef struct ClientState  {
   int data;
   Proto_Client_Handle ph;
-  int isX;
 } Client;
 
 static int
@@ -91,7 +90,8 @@ prompt(int menu, int isX)
 {
   char *MenuString = "";
   if (isX == 1){MenuString = "\nX> ";}
-  else {MenuString = "\nO> ";}
+  else if (isX == 2){MenuString = "\nO> ";}
+  else {MenuString = "\n?> ";}
   
   int ret;
   int c=0;
@@ -200,9 +200,10 @@ shell(void *arg)
   int rc;
   int menu=1;
   //the following is done in order to change the prompt for the user to X or O
-  int promptType = C->isX;
+  int promptType;
   
   while (1) {
+    promptType = proto_client_isX(C->ph);
     if ((c=prompt(menu, promptType))!=0) rc=docmd(C, c);
     if (rc<0) {
       killConnection(C->ph);
