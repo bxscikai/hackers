@@ -108,6 +108,7 @@ startConnection(Client *C, char *host, PortType port, Proto_MT_Handler h)
 void
 prompt(int menu, int isX, char *result) 
 {
+
   char *MenuString = "";
   if (isX == 1){MenuString = "\nX> ";}
   else if (isX == 2){MenuString = "\nO> ";}
@@ -235,8 +236,10 @@ docmd(Client *C, char *cmd)
     doRPCCmd(C, 'g');
     rc=-1;
   }  
-  else if (strcmp(cmd, "\n")==0) 
+  else if (strcmp(cmd, "\n")==0) {
+    rc = proto_client_update(C->ph);
     rc=1;
+  }
   else
     fprintf(stderr, "Unknown command\n");
 
@@ -255,11 +258,16 @@ shell(void *arg)
 
   
   while (1) {
+
+    // Clear input each time
+    bzero(&input, INPUTSIZE);
+
     promptType = proto_client_isX(C->ph);
     prompt(menu, promptType, input);
 
     if (strlen(input)>0) {
       rc=docmd(C, input);
+      menu = 1;
     }
     if (rc<0) {
       killConnection(C->ph);
@@ -270,7 +278,7 @@ shell(void *arg)
        menu=1;       
        Proto_Game_State *gs = proto_client_game_state(C->ph);
     } 
-    else menu=0;
+    else menu=1;
   }
 
   fprintf(stderr, "terminating\n");

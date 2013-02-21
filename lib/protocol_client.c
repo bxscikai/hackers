@@ -233,6 +233,7 @@ proto_client_init(Proto_Client_Handle *ch)
     //   Proto_MT_Handler handler =  c->base_event_handlers[mt];
     // fprintf(stderr, "Handler at index: %d  is: %p\n", mt, handler);
     // }
+  c->gameState.gameResult.raw = NOT_STARTED;
 
   *ch = c;
 
@@ -353,13 +354,28 @@ proto_client_hello(Proto_Client_Handle ch)
 }
 
 extern int 
+proto_client_update(Proto_Client_Handle ch)
+{
+  // If the game hasn't started, don't bother
+  Proto_Client *client = ch;
+  if (client->gameState.gameResult.raw!=PLAYING)
+    return 1;
+
+  return do_generic_dummy_rpc(ch,PROTO_MT_EVENT_REQ_UPDATE);  
+}
+
+extern int 
 proto_client_move(Proto_Client_Handle ch, char data)
 {
   Proto_Client *client = ch;
   client->rpc_session.shdr.pstate.playerMove.raw = (int) (data - '0');
 
   if (client->gameState.gameResult.raw!=PLAYING) {
-    fprintf(stderr, "Game already over!\n");
+
+    if (client->gameState.gameResult.raw==NOT_STARTED)
+      fprintf(stderr, "Game hasn't started yet, waiting for another player!\n");
+    else
+      fprintf(stderr, "Game is already over!\n");
     return 1;
   }
 
@@ -419,7 +435,7 @@ proto_server_mt_event_update_handler(Proto_Session *s)
 {
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(Proto_Msg_Hdr));
-  printGameBoard(&s->rhdr);
+  printGameBoard(&s->rhdr.gstate);
 
   marshall_mtonly(s, PROTO_MT_EVENT_BASE_UPDATE);
   proto_session_send_msg(s, 0);

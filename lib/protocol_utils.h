@@ -64,6 +64,8 @@ static inline void printMessageType(Proto_Msg_Types type) {
     fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_FIRST\n");
   else if (type==PROTO_MT_EVENT_BASE_UPDATE)
     fprintf(stderr, "PROTO_MT_EVENT_BASE_UPDATE\n");
+  else if (type==PROTO_MT_EVENT_REQ_UPDATE)
+    fprintf(stderr, "PROTO_MT_EVENT_REQ_UPDATE\n");  
   else if (type==PROTO_MT_EVENT_BASE_RESERVED_LAST)
     fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_LAST\n");
   else 
@@ -92,14 +94,14 @@ static inline char printGamePiece(int piece, int position) {
   return ' ';
 }
 
-static inline void printGameBoard(Proto_Msg_Hdr *header) {
+static inline void printGameBoard(Proto_Game_State *gstate) {
 
   fprintf(stderr, "\n");
-  fprintf(stderr, "%c|%c|%c\n", printGamePiece(header->gstate.pos1.raw, 1), printGamePiece(header->gstate.pos2.raw, 2), printGamePiece(header->gstate.pos3.raw, 3));
+  fprintf(stderr, "%c|%c|%c\n", printGamePiece(gstate->pos1.raw, 1), printGamePiece(gstate->pos2.raw, 2), printGamePiece(gstate->pos3.raw, 3));
   fprintf(stderr, "-----\n");
-  fprintf(stderr, "%c|%c|%c\n", printGamePiece(header->gstate.pos4.raw, 4), printGamePiece(header->gstate.pos5.raw, 5), printGamePiece(header->gstate.pos6.raw, 6));
+  fprintf(stderr, "%c|%c|%c\n", printGamePiece(gstate->pos4.raw, 4), printGamePiece(gstate->pos5.raw, 5), printGamePiece(gstate->pos6.raw, 6));
   fprintf(stderr, "-----\n");
-  fprintf(stderr, "%c|%c|%c\n", printGamePiece(header->gstate.pos7.raw, 7), printGamePiece(header->gstate.pos8.raw, 8), printGamePiece(header->gstate.pos9.raw, 9));
+  fprintf(stderr, "%c|%c|%c\n", printGamePiece(gstate->pos7.raw, 7), printGamePiece(gstate->pos8.raw, 8), printGamePiece(gstate->pos9.raw, 9));
   fprintf(stderr, "\n");
 
 }
