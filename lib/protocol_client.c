@@ -162,6 +162,13 @@ proto_client_event_dispatcher(void * arg)
         c->gameState = s->rhdr.gstate;
         c->playerState.playerTurn.raw = s->rhdr.pstate.playerTurn.raw;
 
+        // Reprint prompt
+        if (c->playerState.playerIdentity.raw==PLAYER_X)
+          fprintf(stderr, "X>");
+        else if (c->playerState.playerIdentity.raw==PLAYER_O)
+          fprintf(stderr, "O>");
+        else
+          fprintf(stderr, "S>");                  
 
       }
     } 
@@ -294,18 +301,18 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
     if (s->rhdr.type==PROTO_MT_REP_BASE_HELLO) {
 
       if (rc > 0){
-        if (rc == 1) {
+        if (rc == 1) 
           c->isX = 1;
-        }else if (rc == 2) {
+        else if (rc == 2) 
           c->isX = 2;
-        }else {
-          c->isX = 0;
-        }
-
+        else 
+          c->isX = 0;        
         rc = 1; //hack-y way to get everything back to normal
-      }else{
-        rc = 0; //something failed in the handler
       }
+    }
+    else {
+        rc = 0; //something failed in the handler
+    }
       fprintf(stderr, "Setting player identity: %d\n", s->rhdr.pstate.playerIdentity.raw);
       c->playerState.playerIdentity.raw = s->rhdr.pstate.playerIdentity.raw;
     
@@ -382,12 +389,15 @@ proto_server_mt_rpc_rep_hello_handler(Proto_Session *s)
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(Proto_Msg_Hdr));
 
-  if (s->rhdr.pstate.playerIdentity.raw==PLAYER_X) 
+  if (s->rhdr.pstate.playerIdentity.raw==PLAYER_X) {
     fprintf(stderr, "You are X’s\n");
-  else if (s->rhdr.pstate.playerIdentity.raw==PLAYER_O) 
+    return 1;
+  }
+  else if (s->rhdr.pstate.playerIdentity.raw==PLAYER_O)  {
     fprintf(stderr, "You are O’s\n");
     return 2;
-  }else{
+  }
+  else{
     fprintf(stderr, "Game full, joined as spectator\n");
   }
 

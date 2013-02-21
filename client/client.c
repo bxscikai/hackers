@@ -215,7 +215,7 @@ shell(void *arg)
        menu=1;
        
        Proto_Game_State *gs = proto_client_game_state(C->ph);
-       printBoard(gs);
+       // printBoard(gs);
        //This is where the screen gets replaced
        //printf("\n1|2|3\n- - -\n4|5|6\n- - -\n7|8|9\n");
     
