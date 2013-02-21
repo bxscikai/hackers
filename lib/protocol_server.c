@@ -49,8 +49,8 @@ struct {
   Proto_Session      EventSession; 
   pthread_t          RPCListenTid;
   Proto_MT_Handler   session_lost_handler;
-  Proto_MT_Handler   base_req_handlers[PROTO_MT_REQ_BASE_RESERVED_LAST - 
-               PROTO_MT_REQ_BASE_RESERVED_FIRST-1];
+  Proto_MT_Handler   base_req_handlers[PROTO_MT_EVENT_BASE_RESERVED_LAST - 
+               PROTO_MT_REQ_BASE_RESERVED_FIRST];
 
   // Game logic
   Proto_Game_State   gameState;
@@ -83,7 +83,7 @@ proto_server_set_req_handler(Proto_Msg_Types mt, Proto_MT_Handler h)
   int i;
 
   if (mt>PROTO_MT_REQ_BASE_RESERVED_FIRST &&
-      mt<PROTO_MT_REQ_BASE_RESERVED_LAST) {
+      mt<=PROTO_MT_EVENT_BASE_RESERVED_LAST) {
     i = mt - PROTO_MT_REQ_BASE_RESERVED_FIRST - 1;
 
   // Add handler for proto server
@@ -151,17 +151,17 @@ proto_server_event_listen(void *arg)
     // ADD CODE
 
     connfd = net_accept(fd);
-    fprintf(stderr, "Subscriber trying to subscribe...\n");
+    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Subscriber trying to subscribe...\n");
 
     if (connfd < 0) {
-      fprintf(stderr, "Error: EventListen accept failed (%d)\n", errno);
+      if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Error: EventListen accept failed (%d)\n", errno);
     } else {
       int i;
-      fprintf(stderr, "EventListen: connfd=%d -> ", connfd);
+      if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "EventListen: connfd=%d -> ", connfd);
 
       // If our subscribe queue has been maxed out, don't accept another subscriber
       if (PROTO_SERVER_MAX_EVENT_SUBSCRIBERS - Proto_Server.EventNumSubscribers <0) {
-        fprintf(stderr, "oops no space for any more event subscribers\n");
+        if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "oops no space for any more event subscribers\n");
         close(connfd);
       } else {
 
@@ -173,11 +173,34 @@ proto_server_event_listen(void *arg)
           // Proto_Server.EventSubscribers[Proto_Server.EventNumSubscribers] = connfd;
           // Proto_Server.EventNumSubscribers++;
 
-          fprintf(stderr, "New subscriber with subscriber num %d connfd=%d\n", Proto_Server.EventNumSubscribers, connfd);
+          fprintf(stderr, "New client connected, total subscriber num %d connfd=%d\n", Proto_Server.EventNumSubscribers, connfd);
       }
     } 
   }
 } 
+
+// Post event update to specific client
+static int 
+postEventToFd(FDType fd) {
+  int rc;
+
+  Proto_Server.EventSession.fd = fd;
+  setPostMessage(&Proto_Server.EventSession);
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Server Trying to send event to specific client with fd = %d\n", Proto_Server.EventSession.fd);
+  rc = proto_session_send_msg(&Proto_Server.EventSession, 0);  
+
+  if (rc<0)
+    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Failed to post event\n");
+  else
+    rc = proto_session_rcv_msg(&Proto_Server.EventSession);
+
+  if (rc<0)
+    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Failed to receive ACK\n" );
+
+  proto_session_reset_send(&Proto_Server.EventSession);
+
+    return rc;
+}
 
 void
 proto_server_post_event(void) 
@@ -189,7 +212,13 @@ proto_server_post_event(void)
 
   i = 0;
   num = Proto_Server.EventNumSubscribers;
-  fprintf(stderr, "BROADCASTING EVENT TO %d SUBSCRIBERS\n", Proto_Server.EventNumSubscribers);
+  
+  fprintf(stderr, "Broadcasting update event to %d subscribers\n", Proto_Server.EventNumSubscribers);
+
+
+  printGameState();
+
+
   while (num) {
 
     Proto_Server.EventSession.fd = Proto_Server.EventSubscribers[i];
@@ -211,18 +240,18 @@ proto_server_post_event(void)
       // clients that misbehave but be carefull of introducing deadlocks
       // HACK
         setPostMessage(&Proto_Server.EventSession);
-        fprintf(stderr, "Server Trying to send event update to %d\n", Proto_Server.EventSession.fd);
+        if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Server Trying to send event update to %d\n", Proto_Server.EventSession.fd);
         int rc = proto_session_send_msg(&Proto_Server.EventSession, 0);
 
         if (rc<0)
-          fprintf(stderr, "Failed to post event\n");
+          if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Failed to post event\n");
         else
           rc = proto_session_rcv_msg(&Proto_Server.EventSession);
 
         if (rc<0)
-          fprintf(stderr, "Failed to receive ACK\n" );
+          if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Failed to receive ACK\n" );
 
-        fprintf(stderr, "Received ACK from client\n");
+        if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Received ACK from client\n");
         /////////////////////////////////////////
 
     }
@@ -247,12 +276,13 @@ proto_server_req_dispatcher(void * arg)
 
   s.fd = (FDType) arg_value;
 
-  fprintf(stderr, "proto_rpc_dispatcher: %p: Started: fd=%d\n", 
-    pthread_self(), s.fd);
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "proto_rpc_dispatcher: %p: Started: fd=%d\n", 
+    
+  pthread_self(), s.fd);
 
   for (;;) {
 
-    fprintf(stderr, "Server waiting for rpc from fd=%d\n", s.fd);
+    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Server waiting for rpc from fd=%d\n", s.fd);
 
     if (proto_session_rcv_msg(&s)==1) {
 
@@ -262,14 +292,20 @@ proto_server_req_dispatcher(void * arg)
       proto_session_hdr_unmarshall(&s, &s.rhdr);
       mt = s.rhdr.type;      
 
+      fprintf(stderr, "Client %d sent rpc with event: ", s.fd);
+      printMessageType(s.rhdr.type);
+
+
       if (mt > PROTO_MT_REQ_BASE_RESERVED_FIRST && mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
 
        // We are getting the handler corresponding to our message type from our protocol_client 
-        fprintf(stderr, "Server received rpc request, going inside server handler!\n");
-        printHeader(&s.rhdr);
+       if (PROTO_PRINT_DUMPS==1)  fprintf(stderr, "Server received rpc request, going inside server handler!\n");
+       if (PROTO_PRINT_DUMPS==1) printHeader(&s.rhdr);
 
         mt = mt - PROTO_MT_REQ_BASE_RESERVED_FIRST - 1;
         hdlr = Proto_Server.base_req_handlers[mt];
+
+        if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "The handler: %p\n", hdlr);
 
       /////////////////
         if (hdlr(&s)<0) goto leave;
@@ -278,7 +314,7 @@ proto_server_req_dispatcher(void * arg)
 
     else {
 
-      fprintf(stderr, "Server: Valid message not received! Killing client thread...\n" );
+      if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Server: Valid message not received! Killing client thread...\n" );
       goto leave;
     }
   }
@@ -286,7 +322,7 @@ proto_server_req_dispatcher(void * arg)
   // ADD CODE
   Proto_Server.session_lost_handler(&s);
   close(s.fd);
-  fprintf(stderr, "Thread finished\n");
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Thread finished\n");
 
   return NULL;
 }
@@ -303,7 +339,7 @@ proto_server_rpc_listen(void *arg)
   pthread_t tid;
   
   if (net_listen(fd) < 0) {
-    fprintf(stderr, "Error: proto_server_rpc_listen listen failed (%d)\n", errno);
+    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Error: proto_server_rpc_listen listen failed (%d)\n", errno);
     exit(-1);
   }
 
@@ -311,7 +347,7 @@ proto_server_rpc_listen(void *arg)
     // ADD CODE
     connfd = net_accept(fd);
     if (connfd < 0) {
-      fprintf(stderr, "Error: proto_server_rpc_listen accept failed (%d)\n", errno);
+      if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Error: proto_server_rpc_listen accept failed (%d)\n", errno);
     } else {
       pthread_create(&tid, NULL, &proto_server_req_dispatcher,
          (void *)connfd);
@@ -324,7 +360,7 @@ proto_server_start_rpc_loop(void)
 {
   if (pthread_create(&(Proto_Server.RPCListenTid), NULL, 
          &proto_server_rpc_listen, NULL) !=0) {
-    fprintf(stderr, 
+    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, 
       "proto_server_rpc_listen: pthread_create: create RPCListen thread failed\n");
     perror("pthread_create:");
     return -3;
@@ -335,7 +371,7 @@ proto_server_start_rpc_loop(void)
 static int 
 proto_session_lost_default_handler(Proto_Session *s)
 {
-  fprintf(stderr, "Session lost...:\n");
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Session lost...:\n");
   proto_session_dump(s);
   return -1;
 }
@@ -346,7 +382,7 @@ proto_server_mt_null_handler(Proto_Session *s)
   int rc=1;
   Proto_Msg_Hdr h;
   
-  fprintf(stderr, "proto_server_mt_null_handler: invoked for session:\n");
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "proto_server_mt_null_handler: invoked for session:\n");
   proto_session_dump(s);
 
   // setup dummy reply header : set correct reply message type and 
@@ -378,17 +414,29 @@ proto_server_init(void)
   proto_server_set_session_lost_handler(
              proto_session_lost_default_handler);
   for (i=PROTO_MT_REQ_BASE_RESERVED_FIRST+1; 
-       i<PROTO_MT_REQ_BASE_RESERVED_LAST; i++) {
+       i<PROTO_MT_EVENT_BASE_RESERVED_LAST; i++) {
+
     if (i==PROTO_MT_REQ_BASE_GOODBYE)
       proto_server_set_req_handler(i, proto_server_mt_rpc_goodbye_handler);
     else if (i==PROTO_MT_REQ_BASE_HELLO)
       proto_server_set_req_handler(i, proto_server_mt_rpc_hello_handler);
     else if (i==PROTO_MT_REQ_BASE_MOVE)
       proto_server_set_req_handler(i, proto_server_mt_rpc_move_handler);
-    else
+    else if (i==PROTO_MT_EVENT_REQ_UPDATE) {
+      proto_server_set_req_handler(i, proto_server_mt_rpc_update_handler);
+    }
+    else {
       proto_server_set_req_handler(i, proto_server_mt_null_handler);
+    }
         
   }
+
+    //   // Print out handlers
+    // for (i=PROTO_MT_REQ_BASE_RESERVED_FIRST;
+    //    i<=PROTO_MT_EVENT_BASE_RESERVED_LAST; i++) {
+    //   Proto_MT_Handler handler =  Proto_Server.base_req_handlers[i];
+    // fprintf(stderr, "Handler at index: %d  is: %p\n", i, handler);
+    // }
 
 
   for (i=0; i<PROTO_SERVER_MAX_EVENT_SUBSCRIBERS; i++) {
@@ -437,6 +485,7 @@ proto_server_init(void)
   Proto_Server.gameState.pos7.raw = -1;
   Proto_Server.gameState.pos8.raw = -1;
   Proto_Server.gameState.pos9.raw = -1;
+  Proto_Server.gameState.gameResult.raw = NOT_STARTED;
 
   // Initialize players
   Proto_Server.player_O = -1;
@@ -444,6 +493,35 @@ proto_server_init(void)
 
 
   return 0;
+}
+
+
+extern void printGameState() {
+  fprintf(stderr, "==Current Game State==\n");
+
+  printGameBoard(&Proto_Server.gameState);
+
+  // Print turn
+  if (currentPlayer()==PLAYER_X)
+    fprintf(stderr, "X's Turn\n"); 
+  else if (currentPlayer()==PLAYER_O)
+    fprintf(stderr, "O's Turn\n"); 
+  else if (currentPlayer()==PLAYER_EMPTY)
+    fprintf(stderr, "Game hasn't started\n"); 
+
+  // Game condition
+  if (Proto_Server.gameState.gameResult.raw==WIN_O)
+    fprintf(stderr, "Game State: O Win\n");
+  else if (Proto_Server.gameState.gameResult.raw==WIN_X)
+    fprintf(stderr, "Game State: X Win\n");
+  else if (Proto_Server.gameState.gameResult.raw==TIE)
+    fprintf(stderr, "Game State: Tie\n");
+  else if (Proto_Server.gameState.gameResult.raw==NOT_STARTED)
+    fprintf(stderr, "Game State: Not Started\n");
+  else if (Proto_Server.gameState.gameResult.raw==PLAYING)
+    fprintf(stderr, "Game State: Playing\n");
+
+  fprintf(stderr, "======================\n");
 }
 
 //////// Event Posting /////////
@@ -455,7 +533,6 @@ extern void setPostMessage(Proto_Session *event) {
 
   // Set game state to the server's game state
   h.gstate = Proto_Server.gameState;
-
 
   // Set the current turn to the server's current turn
   if (Proto_Server.currentTurn==Proto_Server.player_X)
@@ -482,7 +559,7 @@ proto_server_mt_rpc_goodbye_handler(Proto_Session *s)
   for (i=0; i<PROTO_SERVER_MAX_EVENT_SUBSCRIBERS; i++) {
     if (Proto_Server.EventSubscribers[i]==s->fd) {
       Proto_Server.EventSubscribers[i] = -1;
-      fprintf(stderr, "Removing subscriber\n");
+      if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Removing subscriber\n");
     }
   }
   Proto_Server.EventNumSubscribers--;
@@ -531,7 +608,7 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
     // Start game if we have 2 players
   if (Proto_Server.player_X!=-1 && Proto_Server.player_O!=-1 && Proto_Server.gameStarted!=1) {
 
-    fprintf(stderr, "Trying to post event!\n" );
+    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Trying to post event!\n" );
 
     // Start game
     Proto_Server.gameStarted = 1;
@@ -555,7 +632,7 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   bzero(&h, sizeof(h));
   h.type = PROTO_MT_REP_BASE_MOVE;
 
-  fprintf(stderr, "Server moving at position: %d \n", s->rhdr.pstate.playerMove.raw);
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Server moving at position: %d \n", s->rhdr.pstate.playerMove.raw);
 
   // Its not the player's turn yet
   if (s->fd!=Proto_Server.currentTurn) {
@@ -643,9 +720,9 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   // print_mem(&s->shdr, sizeof(Proto_Msg_Hdr));
 
   Proto_Server.gameState.gameResult.raw = checkOutcome();
-  fprintf(stderr, "Game outcome: %d\n", Proto_Server.gameState.gameResult.raw);
 
-    fprintf(stderr, "New Game State: %d %d %d %d %d %d %d %d %d\n", Proto_Server.gameState.pos1.raw, Proto_Server.gameState.pos2.raw, Proto_Server.gameState.pos3.raw, Proto_Server.gameState.pos4.raw, Proto_Server.gameState.pos5.raw, Proto_Server.gameState.pos6.raw, Proto_Server.gameState.pos7.raw ,Proto_Server.gameState.pos8.raw ,Proto_Server.gameState.pos9.raw);
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Game outcome: %d\n", Proto_Server.gameState.gameResult.raw);
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "New Game State: %d %d %d %d %d %d %d %d %d\n", Proto_Server.gameState.pos1.raw, Proto_Server.gameState.pos2.raw, Proto_Server.gameState.pos3.raw, Proto_Server.gameState.pos4.raw, Proto_Server.gameState.pos5.raw, Proto_Server.gameState.pos6.raw, Proto_Server.gameState.pos7.raw ,Proto_Server.gameState.pos8.raw ,Proto_Server.gameState.pos9.raw);
 
 send_msg:
   proto_session_hdr_marshall(s, &h);
@@ -704,5 +781,15 @@ static Game_Outcome checkOutcome() {
   return PLAYING;
 }
 
+
+// Client requesting board update
+static int 
+proto_server_mt_rpc_update_handler(Proto_Session *s)
+{
+  int rc=1;
+  postEventToFd(s->fd);
+
+  return rc;
+}
 
 /////////// End of Custom Event Handlers ///////////////

@@ -39,6 +39,7 @@ typedef enum  {
   // Events  
   PROTO_MT_EVENT_BASE_RESERVED_FIRST,
   PROTO_MT_EVENT_BASE_UPDATE,
+  PROTO_MT_EVENT_REQ_UPDATE,
   PROTO_MT_EVENT_BASE_RESERVED_LAST
 
 } Proto_Msg_Types;
@@ -65,7 +66,8 @@ typedef enum {
   WIN_O,
   WIN_X,
   TIE,
-  PLAYING
+  PLAYING,
+  NOT_STARTED
 
 } Game_Outcome;
 
