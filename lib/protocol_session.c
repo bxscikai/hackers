@@ -344,7 +344,7 @@ proto_session_rcv_msg(Proto_Session *s)
   // Get the number of extra bytes in the blen field
   proto_session_hdr_unmarshall_blen(s);
 
-  fprintf(stderr, "Number of bytes read: %d extraBytes=%d\n", bytesRead, s-> rhdr.blen);
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Number of bytes read: %d extraBytes=%d\n", bytesRead, s-> rhdr.blen);
 
   // Now read the read into the reply buffer
   bytesRead = net_readn(s->fd, &s->rbuf, s->rhdr.blen);
@@ -363,6 +363,8 @@ proto_session_rcv_msg(Proto_Session *s)
   }
 
   if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Successfully received message\n" );
+
+  
   return 1;
 }
 

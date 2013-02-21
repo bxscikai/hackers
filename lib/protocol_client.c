@@ -134,6 +134,7 @@ proto_client_event_dispatcher(void * arg)
   Proto_Session *s;
   Proto_Msg_Types mt;
   Proto_MT_Handler hdlr;
+  Proto_Msg_Hdr h;
   int i;
 
   pthread_detach(pthread_self());
@@ -144,10 +145,8 @@ proto_client_event_dispatcher(void * arg)
   for (;;) {
     if (proto_session_rcv_msg(s)==1) {
 
-      mt = proto_session_hdr_unmarshall_type(s);
-      int version = proto_session_hdr_unmarshall_version(s);
-
-      printMessageType(mt);
+      mt = proto_session_hdr_unmarshall_type(s);  
+      proto_session_hdr_unmarshall(s, &h);
 
       if (mt > PROTO_MT_EVENT_BASE_RESERVED_FIRST && 
     mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
@@ -161,6 +160,19 @@ proto_client_event_dispatcher(void * arg)
         // Sync server game state with local game state        
         c->gameState = s->rhdr.gstate;
         c->playerState.playerTurn.raw = s->rhdr.pstate.playerTurn.raw;
+
+        // Check if game is over
+        if (s->rhdr.gstate.gameResult.raw!=PLAYING) {
+
+          if (s->rhdr.gstate.gameResult.raw==WIN_O && c->playerState.playerIdentity.raw==PLAYER_O ||
+            s->rhdr.gstate.gameResult.raw==WIN_X && c->playerState.playerIdentity.raw==PLAYER_X)
+            fprintf(stderr, "Game Over: You win!\n");
+          else if (s->rhdr.gstate.gameResult.raw==TIE)
+            fprintf(stderr, "Game Over: Draw\n");
+          else
+            fprintf(stderr, "Game Over: You lose\n");
+          goto leave;
+        }
 
         // Reprint prompt
         if (c->playerState.playerIdentity.raw==PLAYER_X)
@@ -273,7 +285,7 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
   c->rpc_session.shdr.type = mt;
 
   // marshall message type and send
-  printHeader(&c->rpc_session.shdr);
+  if (PROTO_PRINT_DUMPS==1) printHeader(&c->rpc_session.shdr);
 
   proto_session_hdr_marshall(s, &s->shdr);
 
@@ -281,8 +293,6 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
   rc = proto_session_rpc(s);
   proto_session_hdr_unmarshall(s, &h);
 
-
-  printHeader(&s->rhdr);
 
   // Execute handler associated with the rpc reply
   reply_mt = s->rhdr.type;
@@ -292,29 +302,24 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
     // We are getting the handler corresponding to our message type from our protocol_client 
     reply_mt = reply_mt - PROTO_MT_REQ_BASE_RESERVED_FIRST - 1;
     hdlr = c->base_event_handlers[reply_mt];
-
-    fprintf(stderr, "About to execute handler: %p\n", hdlr);
-
     rc = hdlr(s);
 
     // Set player identity
     if (s->rhdr.type==PROTO_MT_REP_BASE_HELLO) {
 
       if (rc > 0){
-        if (rc == 1) 
+        if (rc == PLAYER_X) 
           c->isX = 1;
-        else if (rc == 2) 
+        else if (rc == PLAYER_O) 
           c->isX = 2;
         else 
           c->isX = 0;        
         rc = 1; //hack-y way to get everything back to normal
       }
-    }
-    else {
-        rc = 0; //something failed in the handler
-    }
-      fprintf(stderr, "Setting player identity: %d\n", s->rhdr.pstate.playerIdentity.raw);
+
       c->playerState.playerIdentity.raw = s->rhdr.pstate.playerIdentity.raw;
+    }
+
     
   }
 
@@ -353,6 +358,11 @@ proto_client_move(Proto_Client_Handle ch, char data)
   Proto_Client *client = ch;
   client->rpc_session.shdr.pstate.playerMove.raw = (int) (data - '0');
 
+  if (client->gameState.gameResult.raw!=PLAYING) {
+    fprintf(stderr, "Game already over!\n");
+    return 1;
+  }
+
   return do_generic_dummy_rpc(ch,PROTO_MT_REQ_BASE_MOVE);  
 }
 
@@ -379,7 +389,7 @@ extern void killConnection(Proto_Client_Handle *c) {
 static int 
 proto_server_mt_rpc_rep_goodbye_handler(Proto_Session *s)
 {
-  fprintf(stderr, "RPC REPLY GOODBYE: disconnecting from server okay\n");
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "RPC REPLY GOODBYE: disconnecting from server okay\n");
   return -1;
 }
 
@@ -409,9 +419,10 @@ proto_server_mt_event_update_handler(Proto_Session *s)
 {
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(Proto_Msg_Hdr));
-
-  proto_session_hdr_unmarshall(s, &h);
   printGameBoard(&s->rhdr);
+
+  marshall_mtonly(s, PROTO_MT_EVENT_BASE_UPDATE);
+  proto_session_send_msg(s, 0);
 
   return 1;
 }
@@ -421,16 +432,17 @@ proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
 {
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(Proto_Msg_Hdr));
-  proto_session_hdr_unmarshall(s, &h);
 
-  fprintf(stderr, "RPC REPLY MOVE: Received move result \n");
+  if (PROTO_PRINT_DUMPS==1) printHeader(&s->rhdr);
+
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "RPC REPLY MOVE: Received move result = %d \n", s->rhdr.pstate.playerMove.raw);
 
   if (s->rhdr.pstate.playerMove.raw==NOT_YOUR_TURN)
     fprintf(stderr, "Not your turn!\n");
   else if (s->rhdr.pstate.playerMove.raw==INVALID_MOVE)
     fprintf(stderr, "Invalid move!\n");
   else if (s->rhdr.pstate.playerMove.raw==SUCCESS)
-    fprintf(stderr, "Move successfully!\n"); 
+    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Move successfully!\n"); 
 
   return 1;
 }

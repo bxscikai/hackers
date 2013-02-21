@@ -60,6 +60,15 @@ typedef enum  {
 
 } Move_Return_Types;
 
+typedef enum {
+
+  WIN_O,
+  WIN_X,
+  TIE,
+  PLAYING
+
+} Game_Outcome;
+
 typedef enum { PROTO_STATE_INVALID_VERSION=0, PROTO_STATE_INITIAL_VERSION=1} Proto_SVERS;
 
 typedef union {
@@ -79,7 +88,7 @@ typedef union {
 } Proto_PV2;
 
 typedef union {
-  int raw;
+  Game_Outcome raw;
 } Proto_PV3;
 
 typedef struct {

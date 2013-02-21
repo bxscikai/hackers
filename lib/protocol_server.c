@@ -185,8 +185,6 @@ proto_server_post_event(void)
   int i;
   int num;
 
-  fprintf(stderr, "BEFORE BROADCASTING EVENT TO %d SUBSCRIBERS\n", Proto_Server.EventNumSubscribers);
-
   pthread_mutex_lock(&Proto_Server.EventSubscribersLock);
 
   i = 0;
@@ -220,10 +218,11 @@ proto_server_post_event(void)
           fprintf(stderr, "Failed to post event\n");
         else
           rc = proto_session_rcv_msg(&Proto_Server.EventSession);
+
         if (rc<0)
           fprintf(stderr, "Failed to receive ACK\n" );
 
-        fprintf(stderr, "Reply message from post event: %s\n", Proto_Server.EventSession.rbuf);
+        fprintf(stderr, "Received ACK from client\n");
         /////////////////////////////////////////
 
     }
@@ -261,10 +260,7 @@ proto_server_req_dispatcher(void * arg)
       // ADD CODE /////////////
 
       proto_session_hdr_unmarshall(&s, &s.rhdr);
-      mt = s.rhdr.type;
-
-      printHeader(&s.rhdr);
-      
+      mt = s.rhdr.type;      
 
       if (mt > PROTO_MT_REQ_BASE_RESERVED_FIRST && mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
 
@@ -363,10 +359,6 @@ proto_server_mt_null_handler(Proto_Session *s)
 
   // setup a dummy body that just has a return code 
   proto_session_body_marshall_int(s, 0xdeadbeef);
-
-    fprintf(stderr, "Server sent bytes:\n" );
-  print_mem(&s->shdr, sizeof(Proto_Msg_Hdr)+4);
-
   rc=proto_session_send_msg(s,1);
 
 
@@ -464,6 +456,7 @@ extern void setPostMessage(Proto_Session *event) {
   // Set game state to the server's game state
   h.gstate = Proto_Server.gameState;
 
+
   // Set the current turn to the server's current turn
   if (Proto_Server.currentTurn==Proto_Server.player_X)
     h.pstate.playerTurn.raw = 1;
@@ -536,14 +529,13 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
   proto_session_send_msg(s, 1);
 
     // Start game if we have 2 players
-  fprintf(stderr, "playerX : %d  playerO : %d  gameStarted: %d\n", Proto_Server.player_X, Proto_Server.player_O, Proto_Server.gameStarted);
-
   if (Proto_Server.player_X!=-1 && Proto_Server.player_O!=-1 && Proto_Server.gameStarted!=1) {
 
     fprintf(stderr, "Trying to post event!\n" );
 
     // Start game
     Proto_Server.gameStarted = 1;
+    Proto_Server.gameState.gameResult.raw = PLAYING;
 
     // Assign X as first turn
     Proto_Server.currentTurn = Proto_Server.player_X;
@@ -563,7 +555,7 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   bzero(&h, sizeof(h));
   h.type = PROTO_MT_REP_BASE_MOVE;
 
-  // fprintf(stderr, "Server moving at position: %d \n", h.pstate.playerMove.raw);
+  fprintf(stderr, "Server moving at position: %d \n", s->rhdr.pstate.playerMove.raw);
 
   // Its not the player's turn yet
   if (s->fd!=Proto_Server.currentTurn) {
@@ -639,12 +631,21 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   }      
 //////////////// END OF MOVE LOGIC ////////////////
 
-
-
-  // fprintf(stderr, "Telling client identity as %d\n", h.pstate.playerIdentity.raw);
+  // Switch player turn
+  if (h.pstate.playerMove.raw==SUCCESS) {
+      if (Proto_Server.player_X==Proto_Server.currentTurn)
+        Proto_Server.currentTurn = Proto_Server.player_O;
+      else if (Proto_Server.player_O==Proto_Server.currentTurn)
+        Proto_Server.currentTurn = Proto_Server.player_X;
+  }
 
   // fprintf(stderr, "Hello sending bytes before marshall:\n");
   // print_mem(&s->shdr, sizeof(Proto_Msg_Hdr));
+
+  Proto_Server.gameState.gameResult.raw = checkOutcome();
+  fprintf(stderr, "Game outcome: %d\n", Proto_Server.gameState.gameResult.raw);
+
+    fprintf(stderr, "New Game State: %d %d %d %d %d %d %d %d %d\n", Proto_Server.gameState.pos1.raw, Proto_Server.gameState.pos2.raw, Proto_Server.gameState.pos3.raw, Proto_Server.gameState.pos4.raw, Proto_Server.gameState.pos5.raw, Proto_Server.gameState.pos6.raw, Proto_Server.gameState.pos7.raw ,Proto_Server.gameState.pos8.raw ,Proto_Server.gameState.pos9.raw);
 
 send_msg:
   proto_session_hdr_marshall(s, &h);
@@ -666,6 +667,41 @@ static Player_Types currentPlayer() {
     return PLAYER_O;
   else
     return PLAYER_EMPTY;
+}
+
+// Check game outcome to see if it has ended or not
+static Game_Outcome checkOutcome() {
+
+  if ((Proto_Server.gameState.pos1.raw==PLAYER_X && Proto_Server.gameState.pos2.raw==PLAYER_X && Proto_Server.gameState.pos3.raw==PLAYER_X)||
+      (Proto_Server.gameState.pos4.raw==PLAYER_X && Proto_Server.gameState.pos5.raw==PLAYER_X && Proto_Server.gameState.pos6.raw==PLAYER_X)||
+      (Proto_Server.gameState.pos7.raw==PLAYER_X && Proto_Server.gameState.pos8.raw==PLAYER_X && Proto_Server.gameState.pos9.raw==PLAYER_X)||
+      (Proto_Server.gameState.pos1.raw==PLAYER_X && Proto_Server.gameState.pos4.raw==PLAYER_X && Proto_Server.gameState.pos7.raw==PLAYER_X)||
+      (Proto_Server.gameState.pos2.raw==PLAYER_X && Proto_Server.gameState.pos5.raw==PLAYER_X && Proto_Server.gameState.pos8.raw==PLAYER_X)||
+      (Proto_Server.gameState.pos3.raw==PLAYER_X && Proto_Server.gameState.pos6.raw==PLAYER_X && Proto_Server.gameState.pos9.raw==PLAYER_X)||
+      (Proto_Server.gameState.pos1.raw==PLAYER_X && Proto_Server.gameState.pos5.raw==PLAYER_X && Proto_Server.gameState.pos9.raw==PLAYER_X)||
+      (Proto_Server.gameState.pos3.raw==PLAYER_X && Proto_Server.gameState.pos5.raw==PLAYER_X && Proto_Server.gameState.pos7.raw==PLAYER_X)
+    ) {
+    return WIN_X;
+  }
+
+  else if ((Proto_Server.gameState.pos1.raw==PLAYER_O && Proto_Server.gameState.pos2.raw==PLAYER_O && Proto_Server.gameState.pos3.raw==PLAYER_O)||
+      (Proto_Server.gameState.pos4.raw==PLAYER_O && Proto_Server.gameState.pos5.raw==PLAYER_O && Proto_Server.gameState.pos6.raw==PLAYER_O)||
+      (Proto_Server.gameState.pos7.raw==PLAYER_O && Proto_Server.gameState.pos8.raw==PLAYER_O && Proto_Server.gameState.pos9.raw==PLAYER_O)||
+      (Proto_Server.gameState.pos1.raw==PLAYER_O && Proto_Server.gameState.pos4.raw==PLAYER_O && Proto_Server.gameState.pos7.raw==PLAYER_O)||
+      (Proto_Server.gameState.pos2.raw==PLAYER_O && Proto_Server.gameState.pos5.raw==PLAYER_O && Proto_Server.gameState.pos8.raw==PLAYER_O)||
+      (Proto_Server.gameState.pos3.raw==PLAYER_O && Proto_Server.gameState.pos6.raw==PLAYER_O && Proto_Server.gameState.pos9.raw==PLAYER_O)||
+      (Proto_Server.gameState.pos1.raw==PLAYER_O && Proto_Server.gameState.pos5.raw==PLAYER_O && Proto_Server.gameState.pos9.raw==PLAYER_O)||
+      (Proto_Server.gameState.pos3.raw==PLAYER_O && Proto_Server.gameState.pos5.raw==PLAYER_O && Proto_Server.gameState.pos7.raw==PLAYER_O)
+    ) {
+    return WIN_O;
+  }
+
+  else if (Proto_Server.gameState.pos1.raw!=-1 && Proto_Server.gameState.pos2.raw!=-1 && Proto_Server.gameState.pos3.raw!=-1 && Proto_Server.gameState.pos4.raw!=-1 && Proto_Server.gameState.pos5.raw!=-1 &&
+           Proto_Server.gameState.pos6.raw!=-1 && Proto_Server.gameState.pos7.raw!=-1 && Proto_Server.gameState.pos8.raw!=-1 && Proto_Server.gameState.pos9.raw!=-1) {
+    return TIE;
+  }
+
+  return PLAYING;
 }
 
 

@@ -23,7 +23,7 @@
 *****************************************************************************/
 
 extern int PROTO_DEBUG;
-#define PROTO_PRINT_DUMPS 1
+#define PROTO_PRINT_DUMPS 0
 
 extern void proto_dump_mt(Proto_Msg_Types type);
 extern void proto_dump_pstate(Proto_Player_State *ps);
