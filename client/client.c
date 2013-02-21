@@ -196,6 +196,57 @@ void where() {
     fprintf(stderr, "Connection: %s:%d\n", globals.host, globals.port);
 }
 
+int
+check_if_connect(char *mystring){
+  char *first_part;
+  char *sec_part;
+  char *third_part;
+
+  first_part = strtok(mystring, " ");
+
+  fprintf(stderr, "our first string:%s\n", first_part);
+
+  if (strcmp(first_part, "connect") == 0){
+    sec_part = strtok(NULL, ":");
+    int size_sec = strlen(sec_part);
+
+    fprintf(stderr, "our sec string:%s\n", sec_part);
+
+    if (sec_part == NULL){
+      goto leave;
+    }
+
+    third_part = strtok(NULL, "\n");
+    fprintf(stderr, "our third string:%s\n", third_part);
+
+    if (third_part == NULL){
+      //user only input one arg
+
+      //user only put in the host/ip...
+      if (size_sec > 10){
+        goto leave;
+      }
+
+      strncpy(globals.host, "localhost", STRLEN);
+      globals.port = atoi(sec_part);
+      fprintf(stderr, "connect via localhost\n");
+      return 0;
+
+    }else{
+      strncpy(globals.host, sec_part, STRLEN);
+      globals.port = atoi(third_part);
+      fprintf(stderr, "connect via ip:%s\n", third_part);
+      return 0;
+    }
+
+  }else{
+    //no connect
+    leave:
+    fprintf(stderr, "usage: connect <ip:port>\n");
+    return 1;
+  }
+}
+
 int 
 docmd(Client *C, char *cmd)
 {
@@ -319,9 +370,17 @@ initGlobals(int argc, char **argv)
 int 
 main(int argc, char **argv)
 {
-  Client c;
+  Client c;  
+  //initGlobals(argc, argv);
 
-  initGlobals(argc, argv);
+  char connection_input[30];
+  int not_connected = 1;
+  //set up the connection
+  while(not_connected == 1){
+    fprintf(stderr, "Enter connect <ip:port> : ");
+    fgets(connection_input, INPUTSIZE, stdin);
+    not_connected = check_if_connect(connection_input);
+  }
 
   if (clientInit(&c) < 0) {
     fprintf(stderr, "ERROR: clientInit failed\n");
