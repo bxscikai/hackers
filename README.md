@@ -28,7 +28,7 @@ Specs:
 Architecture:
 
 ### Client Side
-* when 
+* when we initialize the client, we assign the proper handlers to each type we define in protocol.h
 
 RPC:
 * based on what the user inputs at the prompt, we marshall the type (hello, move, goodbye) and the header to shdr then send the session to the server.
@@ -41,6 +41,7 @@ Event:
 * once it receives a message, it goes the appropriate handler (determined by the MT)
 
 ### Server Side
+* when we initialize the server, we assign the proper handlers to each type we define in protocol.h
 * when start the server, a thread for listening to clients that want to subscribe is opened (adds client to subscribers if message is received) (the event_listen loop)
 
 RPC:
