@@ -1,0 +1,7 @@
+LOG:    15/20
+Builds: 10/10
+test 0: 20/20
+test 1: 30/30
+test 2: 5/10 (failed to echo all 300 files (81,87,84)
+
+        
