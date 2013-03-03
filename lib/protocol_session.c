@@ -81,56 +81,6 @@ proto_session_hdr_unmarshall_sver(Proto_Session *s, Proto_StateVersion *v)
   s->rhdr.sver.raw = ntohll(s->rhdr.sver.raw);
 }
 
-static void
-proto_session_hdr_marshall_pstate(Proto_Session *s, Proto_Player_State *ps)
-{
-    s->shdr.pstate.playerIdentity.raw  = htonl(ps->playerIdentity.raw);
-    s->shdr.pstate.playerTurn.raw  = htonl(ps->playerTurn.raw);
-    s->shdr.pstate.playerMove.raw  = htonl(ps->playerMove.raw);
-    s->shdr.pstate.v3.raw  = htonl(ps->v3.raw);
-}
-
-static void
-proto_session_hdr_unmarshall_pstate(Proto_Session *s, Proto_Player_State *ps)
-{
-  s->rhdr.pstate.playerIdentity.raw = ntohl(s->rhdr.pstate.playerIdentity.raw);
-  s->rhdr.pstate.playerTurn.raw = ntohl(s->rhdr.pstate.playerTurn.raw);
-  s->rhdr.pstate.playerMove.raw = ntohl(s->rhdr.pstate.playerMove.raw);
-  s->rhdr.pstate.v3.raw = ntohl(s->rhdr.pstate.v3.raw);
-
-}
-
-static void
-proto_session_hdr_marshall_gstate(Proto_Session *s, Proto_Game_State *gs)
-{
-  s->shdr.gstate.pos1.raw = htonl(gs->pos1.raw);
-  s->shdr.gstate.pos2.raw = htonl(gs->pos2.raw);
-  s->shdr.gstate.pos3.raw = htonl(gs->pos3.raw);
-  s->shdr.gstate.pos4.raw = htonl(gs->pos4.raw);
-  s->shdr.gstate.pos5.raw = htonl(gs->pos5.raw);
-  s->shdr.gstate.pos6.raw = htonl(gs->pos6.raw);
-  s->shdr.gstate.pos7.raw = htonl(gs->pos7.raw);
-  s->shdr.gstate.pos8.raw = htonl(gs->pos8.raw);
-  s->shdr.gstate.pos9.raw = htonl(gs->pos9.raw);
-  s->shdr.gstate.gameResult.raw = htonl(gs->gameResult.raw);
-
-}
-
-static void
-proto_session_hdr_unmarshall_gstate(Proto_Session *s, Proto_Game_State *gs)
-{
-  s->rhdr.gstate.pos1.raw = ntohl(s->rhdr.gstate.pos1.raw);
-  s->rhdr.gstate.pos2.raw = ntohl(s->rhdr.gstate.pos2.raw);
-  s->rhdr.gstate.pos3.raw = ntohl(s->rhdr.gstate.pos3.raw);
-  s->rhdr.gstate.pos4.raw = ntohl(s->rhdr.gstate.pos4.raw);
-  s->rhdr.gstate.pos5.raw = ntohl(s->rhdr.gstate.pos5.raw);
-  s->rhdr.gstate.pos6.raw = ntohl(s->rhdr.gstate.pos6.raw);
-  s->rhdr.gstate.pos7.raw = ntohl(s->rhdr.gstate.pos7.raw);
-  s->rhdr.gstate.pos8.raw = ntohl(s->rhdr.gstate.pos8.raw);
-  s->rhdr.gstate.pos9.raw = ntohl(s->rhdr.gstate.pos9.raw);    
-  s->rhdr.gstate.gameResult.raw = ntohl(s->rhdr.gstate.gameResult.raw);     
-}
-
 static int
 proto_session_hdr_unmarshall_blen(Proto_Session *s)
 {
@@ -165,8 +115,6 @@ proto_session_hdr_unmarshall(Proto_Session *s, Proto_Msg_Hdr *h)
   proto_session_hdr_unmarshall_version(s);
   proto_session_hdr_unmarshall_type(s);
   proto_session_hdr_unmarshall_sver(s, &h->sver);
-  proto_session_hdr_unmarshall_pstate(s, &h->pstate);
-  proto_session_hdr_unmarshall_gstate(s, &h->gstate);
   proto_session_hdr_unmarshall_blen(s);
 }
    
@@ -181,8 +129,6 @@ proto_session_hdr_marshall(Proto_Session *s, Proto_Msg_Hdr *h)
     s->shdr.version = htonl(PROTOCOL_BASE_VERSION);
   proto_session_hdr_marshall_type(s, h->type);
   proto_session_hdr_marshall_sver(s, h->sver);
-  proto_session_hdr_marshall_pstate(s, &h->pstate);
-  proto_session_hdr_marshall_gstate(s, &h->gstate);
   // we ignore the body length as we will explicity set it
   // on the send path to the amount of body data that was
   // marshalled.

@@ -16,6 +16,7 @@
 //                 V2:  int
 //     BLEN     : int length of body
 #include <assert.h>
+#include "maze.h"
 
 #define PROTOCOL_BASE_VERSION 0
 #define NOT_YET_IMPLEMENTED assert(0); \
@@ -30,6 +31,7 @@ typedef enum  {
   PROTO_MT_REQ_BASE_HELLO,
   PROTO_MT_REQ_BASE_MOVE,
   PROTO_MT_REQ_BASE_GOODBYE,
+  PROTO_MT_REQ_BASE_MAPQUERY,
   // RESERVED LAST REQ MT PUT ALL NEW REQ MTS ABOVE
   PROTO_MT_REQ_BASE_RESERVED_LAST,
   
@@ -38,6 +40,7 @@ typedef enum  {
   PROTO_MT_REP_BASE_HELLO,
   PROTO_MT_REP_BASE_MOVE,
   PROTO_MT_REP_BASE_GOODBYE,
+  PROTO_MT_REP_BASE_MAPQUERY,
   // RESERVED LAST REP MT PUT ALL NEW REP MTS ABOVE
   PROTO_MT_REP_BASE_RESERVED_LAST,
 
@@ -49,14 +52,6 @@ typedef enum  {
 
 } Proto_Msg_Types;
 
-typedef enum  {
-
-  PLAYER_EMPTY,
-  PLAYER_X,
-  PLAYER_O,
-  PLAYER_S
-
-} Player_Types;
 
 typedef enum  {
 
@@ -66,16 +61,6 @@ typedef enum  {
 
 } Move_Return_Types;
 
-typedef enum {
-
-  WIN_O,
-  WIN_X,
-  TIE,
-  PLAYING,
-  NOT_STARTED,
-  RESIGNED
-
-} Game_Outcome;
 
 typedef enum { PROTO_STATE_INVALID_VERSION=0, PROTO_STATE_INITIAL_VERSION=1} Proto_SVERS;
 
@@ -83,63 +68,17 @@ typedef union {
   unsigned long long raw;
 } Proto_StateVersion;
 
-typedef union {
-  int raw;
-} Proto_PV0;
-
-typedef union {
-  Player_Types raw;
-} Proto_PV1;
-
-typedef union {
-  int raw;
-} Proto_PV2;
-
-typedef union {
-  Game_Outcome raw;
-} Proto_PV3;
-
-typedef struct {
-  Proto_PV1    playerIdentity;
-  Proto_PV1    playerTurn;
-  Proto_PV2    playerMove;
-  Proto_PV3    v3;
-} __attribute__((__packed__)) Proto_Player_State;
-
-typedef union {
-  int raw;
-}  Proto_GV0;
-
-typedef union {
-  int raw;
-} Proto_GV1;
-
-typedef union {
-  int raw;
-} Proto_GV2;
-
-typedef struct {
-  Proto_GV0       pos1;
-  Proto_GV0       pos2;
-  Proto_GV0       pos3;
-  Proto_GV0       pos4;
-  Proto_GV0       pos5;
-  Proto_GV0       pos6;
-  Proto_GV0       pos7;
-  Proto_GV0       pos8;
-  Proto_GV0       pos9;
-  Proto_GV0       gameResult;
-
-} __attribute__((__packed__)) Proto_Game_State;
 
 typedef struct {
   int                version;
   Proto_Msg_Types    type;
   Proto_StateVersion sver;
-  Proto_Player_State pstate;
-  Proto_Game_State   gstate;
+  Game               game;
   int                blen;
 } __attribute__((__packed__)) Proto_Msg_Hdr;
+
+
+
 
 // THE FOLLOWING IS TO MAKE SURE THAT YOU GET 
 // 64bit ntohll and htonll defined from your

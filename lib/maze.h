@@ -31,6 +31,17 @@ typedef enum  {
 
 } TeamType;
 
+typedef enum {
+
+	NOT_STARTED,
+	PLAYER1_TURN,
+	PLAYER2_TURN,
+	PLAYER1_WIN,
+	PLAYER2_WIN
+
+} GameStatus;
+
+
 // Data abstraction for position
 typedef struct {
 	int x;
@@ -48,7 +59,6 @@ typedef struct {
 typedef struct {
 
 	Cell **mapBody;
-	// mapBody = new Cell[MAX_MAP_DIMENSIONS][MAX_MAP_DIMENSIONS];
 	Position dimension;
 	int numHome1;
 	int numHome2;
@@ -70,8 +80,9 @@ typedef struct
 
 typedef struct {
 
-	int Team1_Score;
-	int Team2_Score;
+	int 		Team1_Score;
+	int 		Team2_Score;
+	GameStatus 	status;
 
 } GameState;
 

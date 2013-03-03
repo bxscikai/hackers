@@ -41,10 +41,8 @@ typedef struct {
   Proto_MT_Handler base_event_handlers[PROTO_MT_EVENT_BASE_RESERVED_LAST 
                - PROTO_MT_REQ_BASE_RESERVED_FIRST
                - 1];
+  Game game;
 
-  Proto_Game_State gameState;
-  Proto_Player_State playerState;
-  int isX;
 } Proto_Client;
 
 extern Proto_Session *
@@ -61,18 +59,11 @@ proto_client_event_session(Proto_Client_Handle ch)
   return &(c->event_session);
 }
 
-extern Proto_Game_State *
+extern GameState *
 proto_client_game_state(Proto_Client_Handle ch)
 {
   Proto_Client *c = ch;
-  return &(c->gameState);
-}
-
-extern int
-proto_client_isX(Proto_Client_Handle ch)
-{
-  Proto_Client *c = ch;
-  return c->isX;
+  return &(c->game.state);
 }
 
 extern int
@@ -158,32 +149,18 @@ proto_client_event_dispatcher(void * arg)
         if (hdlr(s)<0) goto leave;
          
         // Sync server game state with local game state        
-        c->gameState = s->rhdr.gstate;
-        c->playerState.playerTurn.raw = s->rhdr.pstate.playerTurn.raw;
+        c->game.state = s->rhdr.game.state;
+        // c->playerState.playerTurn.raw = s->rhdr.pstate.playerTurn.raw;
 
-        // Check if game is over
-        if (s->rhdr.gstate.gameResult.raw!=PLAYING) {
-
-          if (s->rhdr.gstate.gameResult.raw==WIN_O && c->playerState.playerIdentity.raw==PLAYER_O ||
-            s->rhdr.gstate.gameResult.raw==WIN_X && c->playerState.playerIdentity.raw==PLAYER_X)
-            fprintf(stderr, "Game Over: You win!\n");
-          else if (s->rhdr.gstate.gameResult.raw==TIE)
-            fprintf(stderr, "Game Over: Draw\n");
-          else if (s->rhdr.gstate.gameResult.raw==RESIGNED) {
-            fprintf(stderr, "Game Over: Other Side Quit\n");
-          }
-          else
-            fprintf(stderr, "Game Over: You lose\n");
-          goto leave;
-        }
+        // CHECK TO SEE IF GAME OVER
 
         // Reprint prompt
-        if (c->playerState.playerIdentity.raw==PLAYER_X)
-          fprintf(stderr, "X>");
-        else if (c->playerState.playerIdentity.raw==PLAYER_O)
-          fprintf(stderr, "O>");
-        else
-          fprintf(stderr, "S>");                  
+        // if (c->playerState.playerIdentity.raw==PLAYER_X)
+        //   fprintf(stderr, "X>");
+        // else if (c->playerState.playerIdentity.raw==PLAYER_O)
+        //   fprintf(stderr, "O>");
+        // else
+        //   fprintf(stderr, "S>");                  
 
       }
     } 
@@ -236,7 +213,7 @@ proto_client_init(Proto_Client_Handle *ch)
     //   Proto_MT_Handler handler =  c->base_event_handlers[mt];
     // fprintf(stderr, "Handler at index: %d  is: %p\n", mt, handler);
     // }
-  c->gameState.gameResult.raw = NOT_STARTED;
+  c->game.state.status = NOT_STARTED;
 
   *ch = c;
 
@@ -308,21 +285,7 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
     hdlr = c->base_event_handlers[reply_mt];
     rc = hdlr(s);
 
-    // Set player identity
-    if (s->rhdr.type==PROTO_MT_REP_BASE_HELLO) {
-
-      if (rc > 0){
-        if (rc == PLAYER_X) 
-          c->isX = 1;
-        else if (rc == PLAYER_O) 
-          c->isX = 2;
-        else 
-          c->isX = 0;        
-        rc = 1; //hack-y way to get everything back to normal
-      }
-
-      c->playerState.playerIdentity.raw = s->rhdr.pstate.playerIdentity.raw;
-    }
+    // SET PLAYER IDENTITY
 
     
   }
@@ -361,7 +324,7 @@ proto_client_update(Proto_Client_Handle ch)
 {
   // If the game hasn't started, don't bother
   Proto_Client *client = ch;
-  if (client->gameState.gameResult.raw!=PLAYING)
+  if (client->game.state.status!=PLAYER1_TURN || client->game.state.status!=PLAYER2_TURN)
     return 1;
 
   return do_generic_dummy_rpc(ch,PROTO_MT_EVENT_REQ_UPDATE);  
@@ -370,17 +333,17 @@ proto_client_update(Proto_Client_Handle ch)
 extern int 
 proto_client_move(Proto_Client_Handle ch, char data)
 {
-  Proto_Client *client = ch;
-  client->rpc_session.shdr.pstate.playerMove.raw = (int) (data - '0');
+  // Proto_Client *client = ch;
+  // client->rpc_session.shdr.pstate.playerMove.raw = (int) (data - '0');
 
-  if (client->gameState.gameResult.raw!=PLAYING) {
+  // if (client->gameState.gameResult.raw!=PLAYING) {
 
-    if (client->gameState.gameResult.raw==NOT_STARTED)
-      fprintf(stderr, "Game hasn't started yet, waiting for another player!\n");
-    else
-      fprintf(stderr, "Game is already over!\n");
-    return 1;
-  }
+  //   if (client->gameState.gameResult.raw==NOT_STARTED)
+  //     fprintf(stderr, "Game hasn't started yet, waiting for another player!\n");
+  //   else
+  //     fprintf(stderr, "Game is already over!\n");
+  //   return 1;
+  // }
 
   return do_generic_dummy_rpc(ch,PROTO_MT_REQ_BASE_MOVE);  
 }
@@ -418,17 +381,17 @@ proto_server_mt_rpc_rep_hello_handler(Proto_Session *s)
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(Proto_Msg_Hdr));
 
-  if (s->rhdr.pstate.playerIdentity.raw==PLAYER_X) {
-    fprintf(stderr, "You are X’s\n");
-    return 1;
-  }
-  else if (s->rhdr.pstate.playerIdentity.raw==PLAYER_O)  {
-    fprintf(stderr, "You are O’s\n");
-    return 2;
-  }
-  else{
-    fprintf(stderr, "Game full, joined as spectator\n");
-  }
+  // if (s->rhdr.pstate.playerIdentity.raw==PLAYER_X) {
+  //   fprintf(stderr, "You are X’s\n");
+  //   return 1;
+  // }
+  // else if (s->rhdr.pstate.playerIdentity.raw==PLAYER_O)  {
+  //   fprintf(stderr, "You are O’s\n");
+  //   return 2;
+  // }
+  // else{
+  //   fprintf(stderr, "Game full, joined as spectator\n");
+  // }
 
   return 3; // rc just needs to be >1
 }
@@ -452,16 +415,14 @@ proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(Proto_Msg_Hdr));
 
-  if (PROTO_PRINT_DUMPS==1) printHeader(&s->rhdr);
-
-  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "RPC REPLY MOVE: Received move result = %d \n", s->rhdr.pstate.playerMove.raw);
-
-  if (s->rhdr.pstate.playerMove.raw==NOT_YOUR_TURN)
-    fprintf(stderr, "Not your turn!\n");
-  else if (s->rhdr.pstate.playerMove.raw==INVALID_MOVE)
-    fprintf(stderr, "Invalid move!\n");
-  else if (s->rhdr.pstate.playerMove.raw==SUCCESS)
-    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Move successfully!\n"); 
+  // RESPOND TO PLAYER MOVE
+  
+  // if (s->rhdr.pstate.playerMove.raw==NOT_YOUR_TURN)
+  //   fprintf(stderr, "Not your turn!\n");
+  // else if (s->rhdr.pstate.playerMove.raw==INVALID_MOVE)
+  //   fprintf(stderr, "Invalid move!\n");
+  // else if (s->rhdr.pstate.playerMove.raw==SUCCESS)
+  //   if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Move successfully!\n"); 
 
   return 1;
 }

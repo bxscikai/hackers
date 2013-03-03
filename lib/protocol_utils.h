@@ -26,8 +26,8 @@ extern int PROTO_DEBUG;
 #define PROTO_PRINT_DUMPS 0
 
 extern void proto_dump_mt(Proto_Msg_Types type);
-extern void proto_dump_pstate(Proto_Player_State *ps);
-extern void proto_dump_gstate(Proto_Game_State *gs);
+extern void proto_dump_pstate(Game *game);
+extern void proto_dump_gstate(GameState *gs);
 extern void proto_dump_msghdr(Proto_Msg_Hdr *hdr);
 
 static inline void proto_debug_on(void) { PROTO_DEBUG = 1; }
@@ -77,8 +77,6 @@ static inline void printHeader(Proto_Msg_Hdr *header) {
 	fprintf(stderr, "---HEADER----\n");
 	printMessageType(header->type);
 	fprintf(stderr, "VERSION: %d  blen: %d \n", header->version, header->blen);
-  fprintf(stderr, "Game State: %d %d %d %d %d %d %d %d %d\n", header->gstate.pos1.raw, header->gstate.pos2.raw, header->gstate.pos3.raw, header->gstate.pos4.raw, header->gstate.pos5.raw, header->gstate.pos6.raw, header->gstate.pos7.raw ,header->gstate.pos8.raw ,header->gstate.pos9.raw);
-	fprintf(stderr, "Player State: %d %d %d\n", header->pstate.playerIdentity.raw, header->pstate.playerTurn.raw, header->pstate.playerMove.raw);
   fprintf(stderr, "---END OF HEADER----\n");
 }
 

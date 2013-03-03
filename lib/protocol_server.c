@@ -31,7 +31,6 @@
 #include "protocol.h"
 #include "protocol_utils.h"
 #include "protocol_server.h"
-#include "maze.h"
 
 #define PROTO_SERVER_MAX_EVENT_SUBSCRIBERS 1024
 
@@ -569,7 +568,7 @@ proto_server_parse_map(char *filename)
   FILE *fr; //file pointer    
   bzero(&Proto_Server.game.map, sizeof(Maze));
 
-    fr = fopen (filename, "r");
+  fr = fopen (filename, "r");
 
    char line[MAX_LINE_LEN];
    size_t len = 0;

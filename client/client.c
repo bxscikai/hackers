@@ -87,13 +87,10 @@ startConnection(Client *C, char *host, PortType port, Proto_MT_Handler h)
 
 
 void
-prompt(int menu, int isX, char *result) 
+prompt(int menu, char *result) 
 {
 
-  char *MenuString = "";
-  if (isX == PLAYER_X){MenuString = "\nX> ";}
-  else if (isX == PLAYER_O){MenuString = "\nO> ";}
-  else {MenuString = "\n?> ";}
+  char *MenuString = "?>";
   
   int ret;
   int c=0;
@@ -284,16 +281,14 @@ shell(void *arg)
   int rc;
   int menu=1;
   //the following is done in order to change the prompt for the user to X or O
-  int promptType;
 
   
   while (1) {
 
     // Clear input each time
     bzero(&input, INPUTSIZE);
-
-    promptType = proto_client_isX(C->ph);
-    prompt(menu, promptType, input);
+    
+    prompt(menu, input);
 
     if (strlen(input)>0) {
       rc=docmd(C, input);
@@ -306,7 +301,7 @@ shell(void *arg)
     if (rc==1) 
     {
        menu=1;       
-       Proto_Game_State *gs = proto_client_game_state(C->ph);
+       // Proto_Game_State *gs = proto_client_game_state(C->ph);
     } 
     else menu=1;
   }
