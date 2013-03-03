@@ -30,6 +30,7 @@
 
 #define STRLEN    81
 #define INPUTSIZE 50 
+#define FASTINPUTMODE 1
 
 struct Globals {
   char host[STRLEN];
@@ -283,7 +284,6 @@ docmd(Client *C, char *cmd)
       }
       return 1;
   }
-  fprintf(stderr, "Command before: %s\n", cmd);
 
   if (strcmp(cmd, "disconnect\n")==0) {
     doRPCCmd(C, 'g');
@@ -441,14 +441,18 @@ main(int argc, char **argv)
 {
   Client c;  
 
-  // initGlobals(argc, argv);
-  fprintf(stderr, "Type 'connect <host:port>' to connect to a game.\n");
+  if (!FASTINPUTMODE)
+      fprintf(stderr, "Type 'connect <host:port>' to connect to a game.\n");
 
   if (clientInit(&c) < 0) {
     fprintf(stderr, "ERROR: clientInit failed\n");
     return -1;
   }    
 
+  if (FASTINPUTMODE) {
+    initGlobals(argc, argv);
+    startConnection(&c, globals.host, globals.port, update_event_handler);
+  }
 
   shell(&c);
 
