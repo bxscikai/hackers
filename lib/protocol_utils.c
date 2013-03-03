@@ -142,15 +142,36 @@ extern void printMap(void *map) {
  
 
 extern void
-proto_dump_pstate(Game *game)
+proto_dump_game_players(Game *g)
 {
-  NOT_YET_IMPLEMENTED
+  int i;
+  int array_len = sizeof(g->Team1_Players) / sizeof(g->Team1_Players[0]);
+  fprintf(stderr, "Team 1 Players:\n");
+  for(i=0; i<array_len; i++){
+    fprintf(stderr, "PLAYER %d position: type=%d occupied= %d\n", i+1, g->Team1_Players[i].cellPosition.type, g->Team1_Players[i].cellPosition.occupied);
+    fprintf(stderr, "team: %d\n", g->Team1_Players[i].team);
+    fprintf(stderr, "holding flag?: %d\n", g->Team1_Players[i].holdingFlag);
+    fprintf(stderr, "can move?: %d\n", g->Team1_Players[i].canMove);
+  }
+
+  fprintf(stderr, "Team 2 Players:\n");
+
+  int j;
+  for(j=0; j<array_len; j++){
+    fprintf(stderr, "PLAYER %d position: type=%d occupied= %d\n", j+1, g->Team2_Players[i].cellPosition.type, g->Team2_Players[i].cellPosition.occupied);
+    fprintf(stderr, "team: %d\n", g->Team2_Players[i].team);
+    fprintf(stderr, "holding flag?: %d\n", g->Team2_Players[i].holdingFlag);
+    fprintf(stderr, "can move?: %d\n", g->Team2_Players[i].canMove);
+  }
 }
 
 extern void
 proto_dump_gstate(GameState *gs)
 {
-  NOT_YET_IMPLEMENTED
+  fprintf(stderr, "Game State:\n");
+  fprintf(stderr, "Team 1 score: %d\n", gs->Team1_Score);
+  fprintf(stderr, "Team 2 score: %d\n", gs->Team2_Score);
+  fprintf(stderr, "Game status: %d\n", gs->status);
 }
 
 extern void
@@ -161,10 +182,10 @@ proto_dump_msghdr(Proto_Msg_Hdr *hdr)
 
     fprintf(stderr, "ver=%d type=", hdr->version);
     proto_dump_mt(hdr->type);
-    fprintf(stderr, " sver=%llx", hdr->sver.raw);
-    fprintf(stderr, " pstate:");
-    proto_dump_pstate(&(hdr->game));
-    fprintf(stderr, " gstate:"); 
+    fprintf(stderr, " sver=%llx \n", hdr->sver.raw);
+    fprintf(stderr, " game: \n");
+    proto_dump_game_players(&(hdr->game));
+    fprintf(stderr, " gstate: \n"); 
     proto_dump_gstate(&(hdr->game.state));
     fprintf(stderr, " blen=%d\n", hdr->blen);
 
