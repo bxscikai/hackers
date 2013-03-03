@@ -189,6 +189,8 @@ proto_client_init(Proto_Client_Handle *ch)
         proto_client_set_event_handler(c, mt, proto_server_mt_event_update_handler);
       else if (mt==PROTO_MT_REP_BASE_MOVE)
         proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_move_handler);
+      else if (mt==PROTO_MT_REP_BASE_MAPQUERY)
+        proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_querymap_handler);
       else
         proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
   }
@@ -346,7 +348,7 @@ proto_client_querymap(Proto_Client_Handle ch)
   Proto_Client *client = ch;
 
   // If we already cached the map, do not query the server again
-  if (client->game.map.dimension.x>=0 && client->game.map.dimension.y>=0)
+  if (client->game.map.dimension.x>0 && client->game.map.dimension.y>0)
     return 1;
 
   return do_generic_dummy_rpc(ch,PROTO_MT_REQ_BASE_MAPQUERY);  
@@ -378,19 +380,7 @@ proto_server_mt_rpc_rep_hello_handler(Proto_Session *s)
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(Proto_Msg_Hdr));
 
-  // if (s->rhdr.pstate.playerIdentity.raw==PLAYER_X) {
-  //   fprintf(stderr, "You are X’s\n");
-  //   return 1;
-  // }
-  // else if (s->rhdr.pstate.playerIdentity.raw==PLAYER_O)  {
-  //   fprintf(stderr, "You are O’s\n");
-  //   return 2;
-  // }
-  // else{
-  //   fprintf(stderr, "Game full, joined as spectator\n");
-  // }
-
-  return 3; // rc just needs to be >1
+  return 2; // rc just needs to be >1
 }
 
 static int 
@@ -423,4 +413,15 @@ proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
 
   return 1;
 }
+
+static int 
+proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s)
+{
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(Proto_Msg_Hdr));
+
+  fprintf(stderr, "Got reply from map query handler%s\n");
+  return 1; // rc just needs to be >1
+}
+
 /////////// End of Custom Event Handlers ///////////////

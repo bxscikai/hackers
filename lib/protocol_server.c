@@ -537,14 +537,14 @@ proto_server_mt_rpc_goodbye_handler(Proto_Session *s)
 static int 
 proto_server_mt_rpc_hello_handler(Proto_Session *s)
 {
-  NOT_YET_IMPLEMENTED
-  return 1;
-}
+  // Send a reply with the identity of the user
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(h));
+  h.type = PROTO_MT_REP_BASE_HELLO;  
 
-static int 
-proto_server_mt_rpc_querymap_handler(Proto_Session *s)
-{
-  
+  proto_session_hdr_marshall(s, &h);
+  proto_session_send_msg(s, 1);
+
   return 1;
 }
 
@@ -567,6 +567,20 @@ proto_server_mt_rpc_update_handler(Proto_Session *s)
   return rc;
 }
 
+static int 
+proto_server_mt_rpc_querymap_handler(Proto_Session *s)
+{
+  fprintf(stderr, "query map handler!\n"); 
+    // Send a reply with the identity of the user
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(h));
+  h.type = PROTO_MT_REP_BASE_MAPQUERY;  
+
+  proto_session_hdr_marshall(s, &h);
+  proto_session_send_msg(s, 1);
+  
+  return 1;
+}
 /////////// End of Custom Event Handlers ///////////////
 
 

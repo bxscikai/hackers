@@ -62,7 +62,7 @@ extern int proto_client_hello(Proto_Client_Handle ch);
 extern int proto_client_move(Proto_Client_Handle ch, char d);
 extern int proto_client_goodbye(Proto_Client_Handle ch);
 extern int proto_client_update(Proto_Client_Handle ch);
-
+extern int proto_client_querymap(Proto_Client_Handle ch);
 // Marshalling
 // static void marshall_mtonly(Proto_Session *s, Proto_Msg_Types mt);
 
@@ -74,6 +74,8 @@ static int proto_server_mt_rpc_rep_goodbye_handler(Proto_Session *s);
 static int proto_server_mt_rpc_rep_hello_handler(Proto_Session *s);
 static int proto_server_mt_event_update_handler(Proto_Session *s);
 static int proto_server_mt_rpc_rep_move_handler(Proto_Session *s);
+static int proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s);
+
 
 
 #endif
