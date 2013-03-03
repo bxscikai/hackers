@@ -46,6 +46,8 @@ static inline void printMessageType(Proto_Msg_Types type) {
     fprintf(stderr, "PROTO_MT_REQ_BASE_GOODBYE\n");
   else if (type==PROTO_MT_REQ_BASE_RESERVED_LAST)
     fprintf(stderr, "PROTO_MT_REQ_BASE_RESERVED_LAST\n");
+  else if (type==PROTO_MT_REQ_BASE_MAPQUERY)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_MAPQUERY\n");
 
 
   else if (type==PROTO_MT_REP_BASE_RESERVED_FIRST)
@@ -58,6 +60,8 @@ static inline void printMessageType(Proto_Msg_Types type) {
     fprintf(stderr, "PROTO_MT_REP_BASE_GOODBYE\n");
   else if (type==PROTO_MT_REP_BASE_RESERVED_LAST)
     fprintf(stderr, "PROTO_MT_REP_BASE_RESERVED_LAST\n");
+  else if (type==PROTO_MT_REP_BASE_MAPQUERY)
+    fprintf(stderr, "PROTO_MT_REP_BASE_MAPQUERY\n");
 
 
   else if (type==PROTO_MT_EVENT_BASE_RESERVED_FIRST)

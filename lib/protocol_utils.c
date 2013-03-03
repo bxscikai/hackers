@@ -132,7 +132,7 @@ extern void printMap(void *map) {
     int j;
     for (j=0; j<maze->dimension.y; j++) {
   
-      fprintf(stderr, "%c", getCellChar(maze->mapBody[j][i].type));
+      fprintf(stderr, "%c", getCellChar(maze->mapBody[i][j].type));
     }
     fprintf(stderr, "\n");
   }

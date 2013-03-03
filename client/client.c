@@ -218,8 +218,11 @@ int containsString(char *source, char *substr) {
   int i =0;
   while (pch != NULL)
   {
-    if (strcmp(pch, substr)==0) 
-        return 1;
+    if (strcmp(pch, substr)==0)  
+      return 1;    
+
+    pch = strtok (NULL, " ");
+
   }
   return -1;
 }
@@ -284,6 +287,7 @@ docmd(Client *C, char *cmd)
       }
       return 1;
   }
+  strcpy(input,cmd);
 
   if (strcmp(cmd, "disconnect\n")==0) {
     doRPCCmd(C, 'g');
@@ -309,7 +313,7 @@ docmd(Client *C, char *cmd)
   else if (strcmp(cmd, "numjail 2\n")==0) {
     doRPCCmd(C, 'q');  // query map
     if (client->game.map.numHome2!=0)
-      fprintf(stderr, "%d\n", client->game.map.numHome2);    
+      fprintf(stderr, "%d\n", client->game.map.numJail2);    
   }
   else if (strcmp(cmd, "numwall\n")==0) {
     doRPCCmd(C, 'q');  // query map
@@ -330,7 +334,7 @@ docmd(Client *C, char *cmd)
     doRPCCmd(C, 'q');  // query map   
     printMap(&client->game.map);
   }                 
-  else if (containsString(cmd, "cinfo")) {
+  else if (containsString(input, "cinfo")>0) {
     doRPCCmd(C, 'q');  // query map     
     cinfo(cmd, C);
   }
@@ -354,8 +358,9 @@ docmd(Client *C, char *cmd)
     rc = proto_client_update(C->ph);
     rc=1;
   }
-  else
+  else {
     fprintf(stderr, "Unknown command\n");
+  }
 
   return rc;
 }
