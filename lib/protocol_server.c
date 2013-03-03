@@ -419,6 +419,9 @@ proto_server_init(void)
     else if (i==PROTO_MT_EVENT_REQ_UPDATE) {
       proto_server_set_req_handler(i, proto_server_mt_rpc_update_handler);
     }
+    else if (i==PROTO_MT_REQ_BASE_MAPQUERY) {
+      proto_server_mt_rpc_querymap_handler(i, proto_server_mt_rpc_update_handler);
+    }
     else {
       proto_server_set_req_handler(i, proto_server_mt_null_handler);
     }
@@ -539,6 +542,13 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
 }
 
 static int 
+proto_server_mt_rpc_querymap_handler(Proto_Session *s)
+{
+  
+  return 1;
+}
+
+static int 
 proto_server_mt_rpc_move_handler(Proto_Session *s) {
 
   NOT_YET_IMPLEMENTED
@@ -641,6 +651,8 @@ proto_server_parse_map(char *filename)
 extern char* convertToString(Maze *map) {
   char *convertedString;
 }
+
+
 
 
 ////////////// End of Newly added Capture the flag code ///////////////

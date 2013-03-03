@@ -25,6 +25,19 @@
 #include "net.h"
 #include "protocol.h"
 #include "protocol_session.h"
+#include <pthread.h>
+
+typedef struct {
+  Proto_Session rpc_session;
+  Proto_Session event_session;
+  pthread_t EventHandlerTid;
+  Proto_MT_Handler session_lost_handler;
+  Proto_MT_Handler base_event_handlers[PROTO_MT_EVENT_BASE_RESERVED_LAST 
+               - PROTO_MT_REQ_BASE_RESERVED_FIRST
+               - 1];
+  Game game;
+
+} Proto_Client;
 
 typedef void * Proto_Client_Handle;
 

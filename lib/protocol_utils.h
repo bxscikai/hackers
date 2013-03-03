@@ -94,6 +94,8 @@ static inline void print_mem(void const *vp, size_t n)
 extern void
 marshall_mtonly(void *session, Proto_Msg_Types mt);
 
+
+// Capture the flag logic
 extern char getCellChar(int type);
 extern int cellTypeFromChar(char cell);
 extern void printMap(void *map);
