@@ -25,25 +25,11 @@
 #include <sys/types.h>
 #include <strings.h>
 #include <errno.h>
-#include <pthread.h>
 
-#include "net.h"
 #include "protocol.h"
 #include "protocol_utils.h"
 #include "protocol_client.h"
 
-
-typedef struct {
-  Proto_Session rpc_session;
-  Proto_Session event_session;
-  pthread_t EventHandlerTid;
-  Proto_MT_Handler session_lost_handler;
-  Proto_MT_Handler base_event_handlers[PROTO_MT_EVENT_BASE_RESERVED_LAST 
-               - PROTO_MT_REQ_BASE_RESERVED_FIRST
-               - 1];
-  Game game;
-
-} Proto_Client;
 
 extern Proto_Session *
 proto_client_rpc_session(Proto_Client_Handle ch)
@@ -354,6 +340,17 @@ proto_client_goodbye(Proto_Client_Handle ch)
   return do_generic_dummy_rpc(ch,PROTO_MT_REQ_BASE_GOODBYE);  
 }
 
+extern int 
+proto_client_querymap(Proto_Client_Handle ch)
+{
+  Proto_Client *client = ch;
+
+  // If we already cached the map, do not query the server again
+  if (client->game.map.dimension.x>=0 && client->game.map.dimension.y>=0)
+    return 1;
+
+  return do_generic_dummy_rpc(ch,PROTO_MT_REQ_BASE_MAPQUERY);  
+}
 
 // Connection terminated, actually close connection
 extern void killConnection(Proto_Client_Handle *c) {
@@ -416,7 +413,7 @@ proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
   bzero(&h, sizeof(Proto_Msg_Hdr));
 
   // RESPOND TO PLAYER MOVE
-  
+
   // if (s->rhdr.pstate.playerMove.raw==NOT_YOUR_TURN)
   //   fprintf(stderr, "Not your turn!\n");
   // else if (s->rhdr.pstate.playerMove.raw==INVALID_MOVE)

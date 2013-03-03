@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "../lib/types.h"
 #include "../lib/protocol_client.h"
 #include "../lib/protocol_utils.h"
@@ -143,6 +144,11 @@ doRPCCmd(Client *C, char c)
     rc = proto_client_goodbye(C->ph);
     rc = -1;
     break;
+  case 'q':
+    if (PROTO_PRINT_DUMPS==1) printf("query map: rc=%x\n", rc);
+    rc = proto_client_querymap(C->ph);
+    break;
+
   default:
     printf("%s: unknown command %c\n", __func__, c);
   }
@@ -203,13 +209,68 @@ check_if_connect(char *mystring){
   return 1;
 }
 
+int containsString(char *source, char *substr) {
+
+  char str1[50];
+  strcpy(str1, source);
+  char * pch = strtok (str1," ");
+  int i =0;
+  while (pch != NULL)
+  {
+    if (strcmp(pch, substr)==0) 
+        return 1;
+  }
+  return -1;
+}
+
+void cinfo(char *string, Client *C) {
+
+// cinfo <x,y>
+  Proto_Client *client = (Proto_Client *) C->ph;
+  char *pch;
+  pch = strtok (string," ");  
+  int segmentNumber=0;
+  int innersegmentNumber=0;
+  int row = 0;
+  int column=0;
+
+  // Parse input to get row and column for cinfo command
+  while (pch != NULL)
+  {
+    if (segmentNumber==1)  {      
+      pch = strtok(pch, ",");
+      while (pch != NULL) {
+        fprintf(stderr, "segment: %s\n", pch);
+        if (innersegmentNumber==0)
+          row = atoi(pch);
+        else if (innersegmentNumber==1) {
+          column = atoi(pch);
+          break;
+        }
+        pch = strtok (NULL, ",");
+        innersegmentNumber++;
+      }   
+    }
+    segmentNumber++;        
+    pch = strtok (NULL, " ");
+
+  }
+
+  Cell mycell = client->game.map.mapBody[row][column];
+  fprintf(stderr, "%c\n", getCellChar(mycell.type));
+
+}
+
 int 
 docmd(Client *C, char *cmd)
 {
   int rc = 1;
+  Proto_Client *client = (Proto_Client *) C->ph;
 
   // If this is a connect attempt
-  int connectAttempt = check_if_connect(cmd);
+  char input[50];
+  strcpy(input, cmd);
+  int connectAttempt = check_if_connect(input);
   if (connectAttempt==1) {
   // Ok startup our connection to the server
       if (startConnection(C, globals.host, globals.port, update_event_handler)<0) {
@@ -222,6 +283,7 @@ docmd(Client *C, char *cmd)
       }
       return 1;
   }
+  fprintf(stderr, "Command before: %s\n", cmd);
 
   if (strcmp(cmd, "disconnect\n")==0) {
     doRPCCmd(C, 'g');
@@ -229,25 +291,50 @@ docmd(Client *C, char *cmd)
   }
   else if (strcmp(cmd, "where\n")==0) 
     where();
-  else if (strcmp(cmd, "1\n")==0) 
-    rc = proto_client_move(C->ph, '1');
-  else if (strcmp(cmd, "2\n")==0) 
-    rc = proto_client_move(C->ph, '2');  
-  else if (strcmp(cmd, "3\n")==0) 
-    rc = proto_client_move(C->ph, '3');
-  else if (strcmp(cmd, "4\n")==0) 
-    rc = proto_client_move(C->ph, '4');  
-  else if (strcmp(cmd, "5\n")==0) 
-    rc = proto_client_move(C->ph, '5');  
-  else if (strcmp(cmd, "6\n")==0) 
-    rc = proto_client_move(C->ph, '6');  
-  else if (strcmp(cmd, "7\n")==0) 
-    rc = proto_client_move(C->ph, '7');  
-  else if (strcmp(cmd, "8\n")==0) 
-    rc = proto_client_move(C->ph, '8');  
-  else if (strcmp(cmd, "9\n")==0) 
-    rc = proto_client_move(C->ph, '9');                 
-  else if (strcmp(cmd, "d\n")==0) 
+  else if (strcmp(cmd, "numhome 1\n")==0) {
+    doRPCCmd(C, 'q');  // query map
+    if (client->game.map.numHome1!=0)
+      fprintf(stderr, "%d\n", client->game.map.numHome1);
+  }
+  else if (strcmp(cmd, "numhome 2\n")==0) {
+    doRPCCmd(C, 'q');  // query map
+    if (client->game.map.numHome2!=0)
+      fprintf(stderr, "%d\n", client->game.map.numHome2);    
+  }
+  else if (strcmp(cmd, "numjail 1\n")==0) {
+    doRPCCmd(C, 'q');  // query map
+    if (client->game.map.numJail1!=0)
+      fprintf(stderr, "%d\n", client->game.map.numJail1);    
+  }
+  else if (strcmp(cmd, "numjail 2\n")==0) {
+    doRPCCmd(C, 'q');  // query map
+    if (client->game.map.numHome2!=0)
+      fprintf(stderr, "%d\n", client->game.map.numHome2);    
+  }
+  else if (strcmp(cmd, "numwall\n")==0) {
+    doRPCCmd(C, 'q');  // query map
+    if (client->game.map.numWall!=0)
+      fprintf(stderr, "%d\n", client->game.map.numWall);    
+  }
+  else if (strcmp(cmd, "numfloor\n")==0) {
+    doRPCCmd(C, 'q');  // query map       
+    if (client->game.map.numFloor!=0)
+      fprintf(stderr, "%d\n", client->game.map.numFloor);    
+  }       
+  else if (strcmp(cmd, "dim\n")==0) {
+    doRPCCmd(C, 'q');  // query map  
+    if (client->game.map.dimension.x!=0 && client->game.map.dimension.y!=0)
+      fprintf(stderr, "%dx%d\n", client->game.map.dimension.x, client->game.map.dimension.y);    
+  }                  
+  else if (strcmp(cmd, "dump\n")==0) {
+    doRPCCmd(C, 'q');  // query map   
+    printMap(&client->game.map);
+  }                 
+  else if (containsString(cmd, "cinfo")) {
+    doRPCCmd(C, 'q');  // query map     
+    cinfo(cmd, C);
+  }
+  else if (strcmp(cmd, "d\n")==0)     
     proto_debug_on();  
   else if (strcmp(cmd, "D\n")==0) 
     proto_debug_off();
