@@ -571,15 +571,15 @@ proto_server_mt_rpc_update_handler(Proto_Session *s)
 static int 
 proto_server_mt_rpc_querymap_handler(Proto_Session *s)
 {
-  fprintf(stderr, "query map handler!\n"); 
-    // Send a reply with the identity of the user
+  // Send a reply with the map
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(h));
   h.type = PROTO_MT_REP_BASE_MAPQUERY;  
+  h.game.map = Proto_Server.game.map;
 
   proto_session_hdr_marshall(s, &h);
   proto_session_send_msg(s, 1);
-  
+
   return 1;
 }
 /////////// End of Custom Event Handlers ///////////////
@@ -636,7 +636,7 @@ proto_server_parse_map(char *filename)
         newcell.type=cellTypeFromChar(currentCell);
 
         if (currentCell!='\n')
-          Proto_Server.game.map.mapBody[i][numOfLines] = newcell;
+          Proto_Server.game.map.mapBody[numOfLines][i] = newcell;
 
         // Record map stats so we don't need to recompute them when queried
         if (newcell.type==HOME_1)

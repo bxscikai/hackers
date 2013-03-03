@@ -125,6 +125,7 @@ proto_session_hdr_unmarshall_game(Proto_Session *s){
   s->rhdr.game.map.numJail1 = ntohl(s->rhdr.game.map.numJail1);
   s->rhdr.game.map.numJail2 = ntohl(s->rhdr.game.map.numJail2);
   s->rhdr.game.map.numWall = ntohl(s->rhdr.game.map.numWall);
+  s->rhdr.game.map.numFloor = ntohl(s->rhdr.game.map.numFloor);
 
   //marshall the game state
   s->rhdr.game.state.Team1_Score = ntohl(s->rhdr.game.state.Team1_Score);
@@ -165,11 +166,32 @@ proto_session_hdr_marshall_game(Proto_Session *s, Game *g){
   s->shdr.game.map.numJail1 = htonl(g->map.numJail1);
   s->shdr.game.map.numJail2 = htonl(g->map.numJail2);
   s->shdr.game.map.numWall = htonl(g->map.numWall);
+  s->shdr.game.map.numFloor = htonl(g->map.numFloor);
 
   //marshall the game state
   s->shdr.game.state.Team1_Score = htonl(g->state.Team1_Score);
   s->shdr.game.state.Team2_Score = htonl(g->state.Team2_Score);
   s->shdr.game.state.status = htonl(g->state.status);
+}
+
+static void
+proto_session_hdr_marshall_mapBody(Proto_Session *s, char *map){
+  int i;
+  for (i=0; i<strlen(map); i++) {
+    char currentChar = map[i];
+    proto_session_body_marshall_char(s, currentChar);
+  }
+}
+
+static char*
+proto_session_hdr_unmarshall_mapBody(Proto_Session *s){
+  int i;
+  char mapString[s->rhdr.game.map.dimension.x * s->rhdr.game.map.dimension.y];
+
+  for (i=0; i<s->rhdr.blen; i++) {
+    proto_session_body_unmarshall_char(s, i, mapString[i]);
+  }
+  return mapString;
 }
 
 extern int
@@ -208,6 +230,7 @@ proto_session_hdr_marshall(Proto_Session *s, Proto_Msg_Hdr *h)
     s->shdr.version = htonl(PROTOCOL_BASE_VERSION);
   proto_session_hdr_marshall_type(s, h->type);
   proto_session_hdr_marshall_sver(s, h->sver);
+
   proto_session_hdr_marshall_game(s, &h->game);
   // we ignore the body length as we will explicity set it
   // on the send path to the amount of body data that was

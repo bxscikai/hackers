@@ -190,7 +190,7 @@ proto_client_init(Proto_Client_Handle *ch)
       else if (mt==PROTO_MT_REP_BASE_MOVE)
         proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_move_handler);
       else if (mt==PROTO_MT_REP_BASE_MAPQUERY)
-        proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_querymap_handler);
+        proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_querymap_handler);      
       else
         proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
   }
@@ -262,7 +262,6 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
   rc = proto_session_rpc(s);
   proto_session_hdr_unmarshall(s, &h);
 
-
   // Execute handler associated with the rpc reply
   reply_mt = s->rhdr.type;
 
@@ -273,8 +272,12 @@ do_generic_dummy_rpc(Proto_Client_Handle ch, Proto_Msg_Types mt)
     hdlr = c->base_event_handlers[reply_mt];
     rc = hdlr(s);
 
-    // SET PLAYER IDENTITY
+    // We got map data back, store it in our proto_client
+    if (s->rhdr.type==PROTO_MT_REP_BASE_MAPQUERY) {
+        c->game.map = s->rhdr.game.map;
+    }
 
+    // SET PLAYER IDENTITY
     
   }
 
@@ -417,10 +420,8 @@ proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
 static int 
 proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s)
 {
-  Proto_Msg_Hdr h;
-  bzero(&h, sizeof(Proto_Msg_Hdr));
+  // fprintf(stderr, "NumHome1: %d  NumHome2: %d  NumJail1: %d  NumJail2: %d  NumWall: %d  NumFloor: %d \n", s->rhdr.game.map.numHome1, s->rhdr.game.map.numHome2, s->rhdr.game.map.numJail1, s->rhdr.game.map.numJail2, s->rhdr.game.map.numWall, s->rhdr.game.map.numFloor);
 
-  fprintf(stderr, "Got reply from map query handler%s\n");
   return 1; // rc just needs to be >1
 }
 
