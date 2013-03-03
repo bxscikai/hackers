@@ -359,6 +359,7 @@ main(int argc, char **argv)
 {
   Client c;  
 
+  // initGlobals(argc, argv);
   fprintf(stderr, "Type 'connect <host:port>' to connect to a game.\n");
 
   if (clientInit(&c) < 0) {

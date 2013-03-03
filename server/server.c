@@ -115,9 +115,39 @@ shell(void *arg)
   return NULL;
 }
 
+
+// Reads the filename from std-in and tries to parse game map
+int
+readFile(int argc, char **argv)
+{
+
+  if (argc==1) {
+    fprintf(stderr, "No inputs\n");
+    return -1;
+  }
+  else if (argc==2) {
+
+    return proto_server_parse_map(argv[1]);    
+
+  }
+  else if (argc>=3) {
+    fprintf(stderr, "Too many inputs\n");
+    return -1;
+  }
+
+  return -1;
+}
+
 int
 main(int argc, char **argv)
 { 
+  // Read in map from input
+  int rc = readFile(argc, argv);
+
+  // Returns if map parsing failed
+  if (rc<0)
+    exit (-1);
+
   if (proto_server_init()<0) {
     fprintf(stderr, "ERROR: failed to initialize proto_server subsystem\n");
     exit(-1);

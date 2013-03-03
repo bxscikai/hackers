@@ -31,6 +31,7 @@
 #include "protocol.h"
 #include "protocol_utils.h"
 #include "protocol_server.h"
+#include "maze.h"
 
 #define PROTO_SERVER_MAX_EVENT_SUBSCRIBERS 1024
 
@@ -53,12 +54,7 @@ struct {
                PROTO_MT_REQ_BASE_RESERVED_FIRST];
 
   // Game logic
-  Proto_Game_State   gameState;
-  FDType             player_X;
-  FDType             player_O;
-  FDType             currentTurn;
-  int                gameStarted;
-
+  Game game;
 
 } Proto_Server;
 
@@ -390,7 +386,6 @@ proto_server_mt_null_handler(Proto_Session *s)
   bzero(&h, sizeof(h));
   h.type = proto_session_hdr_unmarshall_type(s);
   h.type += PROTO_MT_REP_BASE_RESERVED_FIRST;
-  h.version = 15;
   proto_session_hdr_marshall(s, &h);
 
   // setup a dummy body that just has a return code 
@@ -475,53 +470,12 @@ proto_server_init(void)
     return -3;
   }
 
-  // Initialize game board
-  Proto_Server.gameState.pos1.raw = -1;
-  Proto_Server.gameState.pos2.raw = -1;
-  Proto_Server.gameState.pos3.raw = -1;
-  Proto_Server.gameState.pos4.raw = -1;
-  Proto_Server.gameState.pos5.raw = -1;
-  Proto_Server.gameState.pos6.raw = -1;
-  Proto_Server.gameState.pos7.raw = -1;
-  Proto_Server.gameState.pos8.raw = -1;
-  Proto_Server.gameState.pos9.raw = -1;
-  Proto_Server.gameState.gameResult.raw = NOT_STARTED;
-
-  // Initialize players
-  Proto_Server.player_O = -1;
-  Proto_Server.player_X = -1;
-
-
   return 0;
 }
 
 
 extern void printGameState() {
-  fprintf(stderr, "==Current Game State==\n");
-
-  printGameBoard(&Proto_Server.gameState);
-
-  // Print turn
-  if (currentPlayer()==PLAYER_X)
-    fprintf(stderr, "X's Turn\n"); 
-  else if (currentPlayer()==PLAYER_O)
-    fprintf(stderr, "O's Turn\n"); 
-  else if (currentPlayer()==PLAYER_EMPTY)
-    fprintf(stderr, "Game hasn't started\n"); 
-
-  // Game condition
-  if (Proto_Server.gameState.gameResult.raw==WIN_O)
-    fprintf(stderr, "Game State: O Win\n");
-  else if (Proto_Server.gameState.gameResult.raw==WIN_X)
-    fprintf(stderr, "Game State: X Win\n");
-  else if (Proto_Server.gameState.gameResult.raw==TIE)
-    fprintf(stderr, "Game State: Tie\n");
-  else if (Proto_Server.gameState.gameResult.raw==NOT_STARTED)
-    fprintf(stderr, "Game State: Not Started\n");
-  else if (Proto_Server.gameState.gameResult.raw==PLAYING)
-    fprintf(stderr, "Game State: Playing\n");
-
-  fprintf(stderr, "======================\n");
+    NOT_YET_IMPLEMENTED
 }
 
 //////// Event Posting /////////
@@ -531,16 +485,7 @@ extern void setPostMessage(Proto_Session *event) {
   bzero(&h, sizeof(h));
   h.type = PROTO_MT_EVENT_BASE_UPDATE;
 
-  // Set game state to the server's game state
-  h.gstate = Proto_Server.gameState;
-
-  // Set the current turn to the server's current turn
-  if (Proto_Server.currentTurn==Proto_Server.player_X)
-    h.pstate.playerTurn.raw = 1;
-  else if (Proto_Server.currentTurn==Proto_Server.player_O)
-    h.pstate.playerTurn.raw = 2;
-  else
-    h.pstate.playerTurn.raw = -1;
+  NOT_YET_IMPLEMENTED
 
   proto_session_hdr_marshall(event, &h);
 }
@@ -550,20 +495,7 @@ extern void setPostMessage(Proto_Session *event) {
 
 // Reinit game state
 static void reinitialize_State() {
-  bzero(&Proto_Server.gameState, sizeof(Proto_Game_State));
-  Proto_Server.player_O = -1;
-  Proto_Server.player_X = -1;
-  Proto_Server.currentTurn = -1;
-  Proto_Server.gameStarted = 0;
-  Proto_Server.gameState.pos1.raw = -1;
-  Proto_Server.gameState.pos2.raw = -1;
-  Proto_Server.gameState.pos3.raw = -1;
-  Proto_Server.gameState.pos4.raw = -1;
-  Proto_Server.gameState.pos5.raw = -1;
-  Proto_Server.gameState.pos6.raw = -1;
-  Proto_Server.gameState.pos7.raw = -1;
-  Proto_Server.gameState.pos8.raw = -1;
-  Proto_Server.gameState.pos9.raw = -1;
+  NOT_YET_IMPLEMENTED
 }
 
 // Disconnects from the calling client and sends ack to confirm disconnection
@@ -587,7 +519,7 @@ proto_server_mt_rpc_goodbye_handler(Proto_Session *s)
     proto_session_send_msg(s, 1);
 
     // Telling other client the player quit
-    Proto_Server.gameState.gameResult.raw=RESIGNED;
+    // Proto_Server.gameState.gameResult.raw=RESIGNED;
     proto_server_post_event();
 
     // Reinitialize server state
@@ -603,208 +535,17 @@ proto_server_mt_rpc_goodbye_handler(Proto_Session *s)
 static int 
 proto_server_mt_rpc_hello_handler(Proto_Session *s)
 {
-
-  // Send a reply with the identity of the user
-  Proto_Msg_Hdr h;
-  bzero(&h, sizeof(h));
-  h.type = PROTO_MT_REP_BASE_HELLO;  
-
-  if (Proto_Server.player_X==-1 && Proto_Server.player_O==-1) {
-    Proto_Server.player_X = s->fd;
-    h.pstate.playerIdentity.raw=PLAYER_X;
-  }
-  else if (Proto_Server.player_X!=-1 && Proto_Server.player_O==-1) {
-    Proto_Server.player_O = s->fd;
-    h.pstate.playerIdentity.raw=  PLAYER_O;
-  }
-  else {
-    h.pstate.playerIdentity.raw=  PLAYER_S;
-  }
-
-
-  // fprintf(stderr, "Telling client identity as %d\n", h.pstate.playerIdentity.raw);
-
-  // fprintf(stderr, "Hello sending bytes before marshall:\n");
-  // print_mem(&s->shdr, sizeof(Proto_Msg_Hdr));
-
-  proto_session_hdr_marshall(s, &h);
-  proto_session_send_msg(s, 1);
-
-    // Start game if we have 2 players
-  if (Proto_Server.player_X!=-1 && Proto_Server.player_O!=-1 && Proto_Server.gameStarted!=1) {
-
-    if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Trying to post event!\n" );
-
-    // Start game
-    Proto_Server.gameStarted = 1;
-    Proto_Server.gameState.gameResult.raw = PLAYING;
-
-    // Assign X as first turn
-    Proto_Server.currentTurn = Proto_Server.player_X;
-
-    // Broadcast game state
-    proto_server_post_event();
-  }
-
+  NOT_YET_IMPLEMENTED
   return 1;
 }
 
 static int 
 proto_server_mt_rpc_move_handler(Proto_Session *s) {
 
-    // Send a reply with the identity of the user
-  Proto_Msg_Hdr h;
-  bzero(&h, sizeof(h));
-  h.type = PROTO_MT_REP_BASE_MOVE;
-
-  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Server moving at position: %d \n", s->rhdr.pstate.playerMove.raw);
-
-  // Its not the player's turn yet
-  if (s->fd!=Proto_Server.currentTurn) {
-    // -1 indicate its not the player's turn yet
-    h.pstate.playerMove.raw = NOT_YOUR_TURN;
-    goto send_msg;
-  }
-
-//////////////// MOVE LOGIC ////////////////
-
-  if (s->rhdr.pstate.playerMove.raw==1) {
-    if (Proto_Server.gameState.pos1.raw==-1)  {
-      Proto_Server.gameState.pos1.raw = currentPlayer();
-      h.pstate.playerMove.raw = SUCCESS;
-    }
-    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
-  }
-  else if (s->rhdr.pstate.playerMove.raw==2) {
-    if (Proto_Server.gameState.pos2.raw==-1)  {
-      Proto_Server.gameState.pos2.raw = currentPlayer();
-      h.pstate.playerMove.raw = SUCCESS;
-    }
-    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
-  }
-  else if (s->rhdr.pstate.playerMove.raw==3) {
-    if (Proto_Server.gameState.pos3.raw==-1)  {
-      Proto_Server.gameState.pos3.raw = currentPlayer();
-      h.pstate.playerMove.raw = SUCCESS;
-    }
-    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
-  }
-  else if (s->rhdr.pstate.playerMove.raw==4) {
-    if (Proto_Server.gameState.pos4.raw==-1)  {
-      Proto_Server.gameState.pos4.raw = currentPlayer();
-      h.pstate.playerMove.raw = SUCCESS;
-    }
-    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
-  }
-  else if (s->rhdr.pstate.playerMove.raw==5) {
-    if (Proto_Server.gameState.pos5.raw==-1)  {
-      Proto_Server.gameState.pos5.raw = currentPlayer();
-      h.pstate.playerMove.raw = SUCCESS;
-    }
-    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
-  }        
-  else if (s->rhdr.pstate.playerMove.raw==6) {
-    if (Proto_Server.gameState.pos6.raw==-1)  {
-      Proto_Server.gameState.pos6.raw = currentPlayer();
-      h.pstate.playerMove.raw = SUCCESS;
-    }
-    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
-  }
-  else if (s->rhdr.pstate.playerMove.raw==7) {
-    if (Proto_Server.gameState.pos7.raw==-1)  {
-      Proto_Server.gameState.pos7.raw = currentPlayer();
-      h.pstate.playerMove.raw = SUCCESS;
-    }
-    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
-  }
-  else if (s->rhdr.pstate.playerMove.raw==8) {
-    if (Proto_Server.gameState.pos8.raw==-1)  {
-      Proto_Server.gameState.pos8.raw = currentPlayer();
-      h.pstate.playerMove.raw = SUCCESS;
-    }
-    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
-  }
-  else if (s->rhdr.pstate.playerMove.raw==9) {
-    if (Proto_Server.gameState.pos9.raw==-1)  {
-      Proto_Server.gameState.pos9.raw = currentPlayer();
-      h.pstate.playerMove.raw = SUCCESS;
-    }
-    else h.pstate.playerMove.raw = INVALID_MOVE;  // Signify invalid move      
-  }      
-//////////////// END OF MOVE LOGIC ////////////////
-
-  // Switch player turn
-  if (h.pstate.playerMove.raw==SUCCESS) {
-      if (Proto_Server.player_X==Proto_Server.currentTurn)
-        Proto_Server.currentTurn = Proto_Server.player_O;
-      else if (Proto_Server.player_O==Proto_Server.currentTurn)
-        Proto_Server.currentTurn = Proto_Server.player_X;
-  }
-
-  // fprintf(stderr, "Hello sending bytes before marshall:\n");
-  // print_mem(&s->shdr, sizeof(Proto_Msg_Hdr));
-
-  Proto_Server.gameState.gameResult.raw = checkOutcome();
-
-  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Game outcome: %d\n", Proto_Server.gameState.gameResult.raw);
-  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "New Game State: %d %d %d %d %d %d %d %d %d\n", Proto_Server.gameState.pos1.raw, Proto_Server.gameState.pos2.raw, Proto_Server.gameState.pos3.raw, Proto_Server.gameState.pos4.raw, Proto_Server.gameState.pos5.raw, Proto_Server.gameState.pos6.raw, Proto_Server.gameState.pos7.raw ,Proto_Server.gameState.pos8.raw ,Proto_Server.gameState.pos9.raw);
-
-send_msg:
-  proto_session_hdr_marshall(s, &h);
-  proto_session_send_msg(s, 1);
-
-    // Broadcast game state
-    if (h.pstate.playerMove.raw==SUCCESS)
-      proto_server_post_event();
-  
-
+  NOT_YET_IMPLEMENTED
   return 1;
-
 }
 
-static Player_Types currentPlayer() {
-  if (Proto_Server.currentTurn==Proto_Server.player_X)
-    return PLAYER_X;
-  else if (Proto_Server.currentTurn==Proto_Server.player_O)
-    return PLAYER_O;
-  else
-    return PLAYER_EMPTY;
-}
-
-// Check game outcome to see if it has ended or not
-static Game_Outcome checkOutcome() {
-
-  if ((Proto_Server.gameState.pos1.raw==PLAYER_X && Proto_Server.gameState.pos2.raw==PLAYER_X && Proto_Server.gameState.pos3.raw==PLAYER_X)||
-      (Proto_Server.gameState.pos4.raw==PLAYER_X && Proto_Server.gameState.pos5.raw==PLAYER_X && Proto_Server.gameState.pos6.raw==PLAYER_X)||
-      (Proto_Server.gameState.pos7.raw==PLAYER_X && Proto_Server.gameState.pos8.raw==PLAYER_X && Proto_Server.gameState.pos9.raw==PLAYER_X)||
-      (Proto_Server.gameState.pos1.raw==PLAYER_X && Proto_Server.gameState.pos4.raw==PLAYER_X && Proto_Server.gameState.pos7.raw==PLAYER_X)||
-      (Proto_Server.gameState.pos2.raw==PLAYER_X && Proto_Server.gameState.pos5.raw==PLAYER_X && Proto_Server.gameState.pos8.raw==PLAYER_X)||
-      (Proto_Server.gameState.pos3.raw==PLAYER_X && Proto_Server.gameState.pos6.raw==PLAYER_X && Proto_Server.gameState.pos9.raw==PLAYER_X)||
-      (Proto_Server.gameState.pos1.raw==PLAYER_X && Proto_Server.gameState.pos5.raw==PLAYER_X && Proto_Server.gameState.pos9.raw==PLAYER_X)||
-      (Proto_Server.gameState.pos3.raw==PLAYER_X && Proto_Server.gameState.pos5.raw==PLAYER_X && Proto_Server.gameState.pos7.raw==PLAYER_X)
-    ) {
-    return WIN_X;
-  }
-
-  else if ((Proto_Server.gameState.pos1.raw==PLAYER_O && Proto_Server.gameState.pos2.raw==PLAYER_O && Proto_Server.gameState.pos3.raw==PLAYER_O)||
-      (Proto_Server.gameState.pos4.raw==PLAYER_O && Proto_Server.gameState.pos5.raw==PLAYER_O && Proto_Server.gameState.pos6.raw==PLAYER_O)||
-      (Proto_Server.gameState.pos7.raw==PLAYER_O && Proto_Server.gameState.pos8.raw==PLAYER_O && Proto_Server.gameState.pos9.raw==PLAYER_O)||
-      (Proto_Server.gameState.pos1.raw==PLAYER_O && Proto_Server.gameState.pos4.raw==PLAYER_O && Proto_Server.gameState.pos7.raw==PLAYER_O)||
-      (Proto_Server.gameState.pos2.raw==PLAYER_O && Proto_Server.gameState.pos5.raw==PLAYER_O && Proto_Server.gameState.pos8.raw==PLAYER_O)||
-      (Proto_Server.gameState.pos3.raw==PLAYER_O && Proto_Server.gameState.pos6.raw==PLAYER_O && Proto_Server.gameState.pos9.raw==PLAYER_O)||
-      (Proto_Server.gameState.pos1.raw==PLAYER_O && Proto_Server.gameState.pos5.raw==PLAYER_O && Proto_Server.gameState.pos9.raw==PLAYER_O)||
-      (Proto_Server.gameState.pos3.raw==PLAYER_O && Proto_Server.gameState.pos5.raw==PLAYER_O && Proto_Server.gameState.pos7.raw==PLAYER_O)
-    ) {
-    return WIN_O;
-  }
-
-  else if (Proto_Server.gameState.pos1.raw!=-1 && Proto_Server.gameState.pos2.raw!=-1 && Proto_Server.gameState.pos3.raw!=-1 && Proto_Server.gameState.pos4.raw!=-1 && Proto_Server.gameState.pos5.raw!=-1 &&
-           Proto_Server.gameState.pos6.raw!=-1 && Proto_Server.gameState.pos7.raw!=-1 && Proto_Server.gameState.pos8.raw!=-1 && Proto_Server.gameState.pos9.raw!=-1) {
-    return TIE;
-  }
-
-  return PLAYING;
-}
 
 
 // Client requesting board update
@@ -818,3 +559,82 @@ proto_server_mt_rpc_update_handler(Proto_Session *s)
 }
 
 /////////// End of Custom Event Handlers ///////////////
+
+
+////////////// Newly added Capture the flag code ///////////////
+
+extern int
+proto_server_parse_map(char *filename) 
+{
+  FILE *fr; //file pointer    
+  bzero(&Proto_Server.game.map, sizeof(Maze));
+
+    fr = fopen (filename, "r");
+
+   char * line = NULL;
+   size_t len = 0;
+   ssize_t read;
+
+   if (fr == NULL)
+       fprintf(stderr, "FAILED\n");
+
+    // PASS ONE, we are trying to find the map dimensions to know how much memory to allocate
+    int numOfLines = 0;
+    while ((read = getline(&line, &len, fr)) != -1) {        
+      numOfLines++;
+      Proto_Server.game.map.dimension.x = (int)read-1;      
+    }
+    Proto_Server.game.map.dimension.y = (int)numOfLines;
+
+    // Allocate memory for the multidimensional array
+    Proto_Server.game.map.mapBody = malloc(Proto_Server.game.map.dimension.y * sizeof(Cell *));
+    for(int i = 0; i < Proto_Server.game.map.dimension.y; i++)
+    {
+      Proto_Server.game.map.mapBody[i] = malloc(Proto_Server.game.map.dimension.x * sizeof(Cell));
+    }
+
+    fprintf(stderr, "Map dimensions: %dx%d\n", Proto_Server.game.map.dimension.x, Proto_Server.game.map.dimension.y);
+
+   // PASS TWO, We are iterating through each line in the map and parsing the cells
+   rewind(fr); 
+
+   // File iteration loop
+    numOfLines=0;
+    while ((read = getline(&line, &len, fr)) != -1) {               
+
+      // We are iterating through each character in the map
+      for (int i=0; i<read; i++) {
+        Cell newcell;
+        newcell.occupied=0;
+        char currentCell = line[i];
+        newcell.type=cellTypeFromChar(currentCell);
+
+        if (currentCell!='\n')
+          Proto_Server.game.map.mapBody[i][numOfLines] = newcell;
+
+        // Record map stats so we don't need to recompute them when queried
+        if (newcell.type==HOME_1)
+          Proto_Server.game.map.numHome1++;
+        else if (newcell.type==HOME_2)
+          Proto_Server.game.map.numHome2++;
+        else if (newcell.type==JAIL_1)
+          Proto_Server.game.map.numJail1++;
+        else if (newcell.type==JAIL_2)
+          Proto_Server.game.map.numJail2++;
+        else if (newcell.type==WALL)
+          Proto_Server.game.map.numWall++;
+        else if (newcell.type==FLOOR)
+          Proto_Server.game.map.numFloor++;                            
+
+      }
+      numOfLines++;
+       printf("%s", line);
+   }
+
+  fclose(fr);
+
+  printMap(&Proto_Server.game.map);
+  return 1;
+
+}
+////////////// End of Newly added Capture the flag code ///////////////

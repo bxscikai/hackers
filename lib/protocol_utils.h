@@ -71,7 +71,6 @@ static inline void printMessageType(Proto_Msg_Types type) {
   else 
   	fprintf(stderr, "No matching type, raw int: %d\n", type );
   
-
 }
 
 static inline void printHeader(Proto_Msg_Hdr *header) {
@@ -83,28 +82,7 @@ static inline void printHeader(Proto_Msg_Hdr *header) {
   fprintf(stderr, "---END OF HEADER----\n");
 }
 
-static inline char printGamePiece(int piece, int position) {
-  if (piece==-1)
-    return ('0' + position);
-  else if (piece==1)
-    return 'X';
-  else if (piece==2)
-    return 'O';
 
-  return ' ';
-}
-
-static inline void printGameBoard(Proto_Game_State *gstate) {
-
-  fprintf(stderr, "\n");
-  fprintf(stderr, "%c|%c|%c\n", printGamePiece(gstate->pos1.raw, 1), printGamePiece(gstate->pos2.raw, 2), printGamePiece(gstate->pos3.raw, 3));
-  fprintf(stderr, "-----\n");
-  fprintf(stderr, "%c|%c|%c\n", printGamePiece(gstate->pos4.raw, 4), printGamePiece(gstate->pos5.raw, 5), printGamePiece(gstate->pos6.raw, 6));
-  fprintf(stderr, "-----\n");
-  fprintf(stderr, "%c|%c|%c\n", printGamePiece(gstate->pos7.raw, 7), printGamePiece(gstate->pos8.raw, 8), printGamePiece(gstate->pos9.raw, 9));
-  fprintf(stderr, "\n");
-
-}
 
 static inline void print_mem(void const *vp, size_t n)
 {
@@ -117,5 +95,9 @@ static inline void print_mem(void const *vp, size_t n)
 
 extern void
 marshall_mtonly(void *session, Proto_Msg_Types mt);
+
+extern char getCellChar(int type);
+extern int cellTypeFromChar(char cell);
+extern void printMap(void *map);
 
 #endif

@@ -15,8 +15,13 @@
 //                 V1:  int
 //                 V2:  int
 //     BLEN     : int length of body
+#include <assert.h>
 
 #define PROTOCOL_BASE_VERSION 0
+#define NOT_YET_IMPLEMENTED assert(0); \
+                            fprintf(stderr, "NOT YET IMPLEMENTED\n"); \
+                            exit(-1);
+
 
 typedef enum  {
 

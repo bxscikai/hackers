@@ -26,6 +26,7 @@
 #include "protocol.h"
 #include "protocol_session.h"
 
+
 extern int proto_server_init(void);
 
 extern int proto_server_set_session_lost_handler(Proto_MT_Handler h);
@@ -40,8 +41,6 @@ extern void proto_server_post_event(void);
 
 // Game logic
 extern void setPostMessage(Proto_Session *event);
-static Player_Types currentPlayer();
-static Game_Outcome checkOutcome();
 extern void printGameState();
 static void reinitialize_State();
 // Handlers
@@ -49,5 +48,8 @@ static int proto_server_mt_rpc_goodbye_handler(Proto_Session *s);
 static int proto_server_mt_rpc_hello_handler(Proto_Session *s);
 static int proto_server_mt_rpc_move_handler(Proto_Session *s);
 static int proto_server_mt_rpc_update_handler(Proto_Session *s);
+
+// Capture the flag logic
+extern int proto_server_parse_map(char *filename);
 
 #endif

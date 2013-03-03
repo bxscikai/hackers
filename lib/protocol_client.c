@@ -438,7 +438,7 @@ proto_server_mt_event_update_handler(Proto_Session *s)
 {
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(Proto_Msg_Hdr));
-  printGameBoard(&s->rhdr.gstate);
+  // printGameBoard(&s->rhdr.gstate);
 
   marshall_mtonly(s, PROTO_MT_EVENT_BASE_UPDATE);
   proto_session_send_msg(s, 0);
