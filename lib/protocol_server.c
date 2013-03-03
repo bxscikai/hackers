@@ -33,6 +33,7 @@
 #include "protocol_server.h"
 
 #define PROTO_SERVER_MAX_EVENT_SUBSCRIBERS 1024
+#define MAX_CHAR_NUM_IN_MAP 50000
 
 struct {
   FDType   RPCListenFD;
@@ -658,12 +659,33 @@ proto_server_parse_map(char *filename)
   fclose(fr);
 
   printMap(&Proto_Server.game.map);
+
+  fprintf(stderr, "CONVERT CONVERT CONVERTTTTTT\n");
+  fprintf(stderr, "%s\n", convertToString(&Proto_Server.game.map));
+
   return 1;
 
 }
 
-extern char* convertToString(Maze *map) {
-  char *convertedString;
+extern char * convertToString(void *map) {
+  Maze *maze = (Maze *)map;
+  int width = maze->dimension.x;
+  int height = maze->dimension.y;
+
+  char str[(width+1) * height];
+  fprintf(stderr, "size: %d\n", (width+1) * height);
+
+  int i;
+  int count = 0;
+  for(i=0; i<height; i++){
+    int j;
+    for(j=0; j<width; j++){
+      str[count] = getCellChar(maze->mapBody[i][j].type);
+      count++;
+    }
+    str[count] = '\n';
+  }
+  return str;
 }
 
 
