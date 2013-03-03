@@ -579,7 +579,7 @@ proto_server_parse_map(char *filename)
 
     // PASS ONE, we are trying to find the map dimensions to know how much memory to allocate
     int numOfLines = 0;
-    while (fgets(&line, MAX_LINE_LEN, fr) !=NULL) {
+    while (fgets(line, MAX_LINE_LEN, fr) !=NULL) {
       numOfLines++;
       Proto_Server.game.map.dimension.x = (int)strlen(line)-1;      
       // fprintf(stderr, "%s", line);
@@ -600,7 +600,7 @@ proto_server_parse_map(char *filename)
 
    // File iteration loop
     numOfLines=0;
-    while (fgets(&line, MAX_LINE_LEN, fr) !=NULL) {              
+    while (fgets(line, MAX_LINE_LEN, fr) !=NULL) {              
 
       // We are iterating through each character in the map
       for (int i=0; i<Proto_Server.game.map.dimension.x; i++) {
@@ -628,7 +628,6 @@ proto_server_parse_map(char *filename)
 
       }
       numOfLines++;
-       printf("%s", line);
    }
 
   fclose(fr);
@@ -637,4 +636,10 @@ proto_server_parse_map(char *filename)
   return 1;
 
 }
+
+extern char* convertToString(Maze *map) {
+  char *convertedString;
+}
+
+
 ////////////// End of Newly added Capture the flag code ///////////////
