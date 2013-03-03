@@ -128,8 +128,10 @@ extern int cellTypeFromChar(char cell) {
 extern void printMap(void *map) {
   Maze *maze = (Maze *)map;
     fprintf(stderr, "PRINTING MAP\n");
-  for (int i=0; i<maze->dimension.x; i++) {
-    for (int j=0; j<maze->dimension.y; j++) {
+  int i;
+  for (i=0; i<maze->dimension.x; i++) {
+    int j;
+    for (j=0; j<maze->dimension.y; j++) {
   
       fprintf(stderr, "%c", getCellChar(maze->mapBody[j][i].type));
     }

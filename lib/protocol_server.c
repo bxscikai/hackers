@@ -588,7 +588,8 @@ proto_server_parse_map(char *filename)
 
     // Allocate memory for the multidimensional array
     Proto_Server.game.map.mapBody = malloc(Proto_Server.game.map.dimension.y * sizeof(Cell *));
-    for(int i = 0; i < Proto_Server.game.map.dimension.y; i++)
+    int i;
+    for(i = 0; i < Proto_Server.game.map.dimension.y; i++)
     {
       Proto_Server.game.map.mapBody[i] = malloc(Proto_Server.game.map.dimension.x * sizeof(Cell));
     }
@@ -603,7 +604,8 @@ proto_server_parse_map(char *filename)
     while ((read = getline(&line, &len, fr)) != -1) {               
 
       // We are iterating through each character in the map
-      for (int i=0; i<read; i++) {
+      int i;
+      for (i=0; i<read; i++) {
         Cell newcell;
         newcell.occupied=0;
         char currentCell = line[i];
