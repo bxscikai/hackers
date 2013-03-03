@@ -571,18 +571,18 @@ proto_server_parse_map(char *filename)
 
     fr = fopen (filename, "r");
 
-   char * line = NULL;
+   char line[MAX_LINE_LEN];
    size_t len = 0;
-   ssize_t read;
 
    if (fr == NULL)
        fprintf(stderr, "FAILED\n");
 
     // PASS ONE, we are trying to find the map dimensions to know how much memory to allocate
     int numOfLines = 0;
-    while ((read = getline(&line, &len, fr)) != -1) {        
+    while (fgets(&line, MAX_LINE_LEN, fr) !=NULL) {
       numOfLines++;
-      Proto_Server.game.map.dimension.x = (int)read-1;      
+      Proto_Server.game.map.dimension.x = (int)strlen(line)-1;      
+      // fprintf(stderr, "%s", line);
     }
     Proto_Server.game.map.dimension.y = (int)numOfLines;
 
@@ -600,10 +600,10 @@ proto_server_parse_map(char *filename)
 
    // File iteration loop
     numOfLines=0;
-    while ((read = getline(&line, &len, fr)) != -1) {               
+    while (fgets(&line, MAX_LINE_LEN, fr) !=NULL) {              
 
       // We are iterating through each character in the map
-      for (int i=0; i<read; i++) {
+      for (int i=0; i<Proto_Server.game.map.dimension.x; i++) {
         Cell newcell;
         newcell.occupied=0;
         char currentCell = line[i];

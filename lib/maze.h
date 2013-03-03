@@ -4,6 +4,7 @@
 // Define constants
 #define MAX_MAP_DIMENSIONS 200   
 #define MAX_NUM_PLAYERS 10
+#define MAX_LINE_LEN 500
 
 // Defines data structures used for the game
 
