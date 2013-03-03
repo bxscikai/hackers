@@ -420,7 +420,7 @@ proto_server_init(void)
       proto_server_set_req_handler(i, proto_server_mt_rpc_update_handler);
     }
     else if (i==PROTO_MT_REQ_BASE_MAPQUERY) {
-      proto_server_mt_rpc_querymap_handler(i, proto_server_mt_rpc_update_handler);
+      proto_server_set_req_handler(i, proto_server_mt_rpc_querymap_handler);
     }
     else {
       proto_server_set_req_handler(i, proto_server_mt_null_handler);

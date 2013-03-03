@@ -48,6 +48,7 @@ static int proto_server_mt_rpc_goodbye_handler(Proto_Session *s);
 static int proto_server_mt_rpc_hello_handler(Proto_Session *s);
 static int proto_server_mt_rpc_move_handler(Proto_Session *s);
 static int proto_server_mt_rpc_update_handler(Proto_Session *s);
+static int proto_server_mt_rpc_querymap_handler(Proto_Session *s);
 
 // Capture the flag logic
 extern int proto_server_parse_map(char *filename);
