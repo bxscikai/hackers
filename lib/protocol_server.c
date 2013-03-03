@@ -630,7 +630,6 @@ proto_server_parse_map(char *filename)
 
       }
       numOfLines++;
-       printf("%s", line);
    }
 
   fclose(fr);
@@ -639,4 +638,10 @@ proto_server_parse_map(char *filename)
   return 1;
 
 }
+
+extern char* convertToString(Maze *map) {
+  char *convertedString;
+}
+
+
 ////////////// End of Newly added Capture the flag code ///////////////
