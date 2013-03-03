@@ -93,6 +93,84 @@ proto_session_hdr_marshall_type(Proto_Session *s, Proto_Msg_Types t)
   s->shdr.type = htonl(t);
 }
 
+static void
+proto_session_hdr_unmarshall_game(Proto_Session *s){
+  // marshall the player arrays
+  int i;
+  int array_len = sizeof(s->rhdr.game.Team1_Players) / sizeof(s->rhdr.game.Team1_Players[0]);
+
+  for(i = 0; i< array_len; i++){
+    s->rhdr.game.Team1_Players[i].cellPosition.type = ntohl(s->rhdr.game.Team1_Players[i].cellPosition.type);
+    s->rhdr.game.Team1_Players[i].cellPosition.occupied = ntohl(s->rhdr.game.Team1_Players[i].cellPosition.occupied);
+    s->rhdr.game.Team1_Players[i].team = ntohl(s->rhdr.game.Team1_Players[i].team);
+    s->rhdr.game.Team1_Players[i].holdingFlag = ntohl(s->rhdr.game.Team1_Players[i].holdingFlag);
+    s->rhdr.game.Team1_Players[i].canMove = ntohl(s->rhdr.game.Team1_Players[i].canMove);
+  }
+
+  int j;
+
+  for(j = 0; j< array_len; j++){
+    s->rhdr.game.Team2_Players[i].cellPosition.type = ntohl(s->rhdr.game.Team2_Players[i].cellPosition.type);
+    s->rhdr.game.Team2_Players[i].cellPosition.occupied = ntohl(s->rhdr.game.Team2_Players[i].cellPosition.occupied);
+    s->rhdr.game.Team2_Players[i].team = ntohl(s->rhdr.game.Team2_Players[i].team);
+    s->rhdr.game.Team2_Players[i].holdingFlag = ntohl(s->rhdr.game.Team2_Players[i].holdingFlag);
+    s->rhdr.game.Team2_Players[i].canMove = ntohl(s->rhdr.game.Team2_Players[i].canMove);
+  }
+
+  //marshall the map
+  s->rhdr.game.map.dimension.x = ntohl(s->rhdr.game.map.dimension.x);
+  s->rhdr.game.map.dimension.y = ntohl(s->rhdr.game.map.dimension.y);
+  s->rhdr.game.map.numHome1 = ntohl(s->rhdr.game.map.numHome1);
+  s->rhdr.game.map.numHome2 = ntohl(s->rhdr.game.map.numHome2);
+  s->rhdr.game.map.numJail1 = ntohl(s->rhdr.game.map.numJail1);
+  s->rhdr.game.map.numJail2 = ntohl(s->rhdr.game.map.numJail2);
+  s->rhdr.game.map.numWall = ntohl(s->rhdr.game.map.numWall);
+
+  //marshall the game state
+  s->rhdr.game.state.Team1_Score = ntohl(s->rhdr.game.state.Team1_Score);
+  s->rhdr.game.state.Team2_Score = ntohl(s->rhdr.game.state.Team2_Score);
+  s->rhdr.game.state.status = ntohl(s->rhdr.game.state.status);
+}
+
+static void
+proto_session_hdr_marshall_game(Proto_Session *s, Game *g){
+  // marshall the player arrays
+
+  int i;
+  int array_len = sizeof(g->Team1_Players) / sizeof(g->Team1_Players[0]);
+
+  for(i = 0; i< array_len; i++){
+    s->shdr.game.Team1_Players[i].cellPosition.type = htonl(g->Team1_Players[i].cellPosition.type);
+    s->shdr.game.Team1_Players[i].cellPosition.occupied = htonl(g->Team1_Players[i].cellPosition.occupied);
+    s->shdr.game.Team1_Players[i].team = htonl(g->Team1_Players[i].team);
+    s->shdr.game.Team1_Players[i].holdingFlag = htonl(g->Team1_Players[i].holdingFlag);
+    s->shdr.game.Team1_Players[i].canMove = htonl(g->Team1_Players[i].canMove);
+  }
+
+  int j;
+
+  for(j = 0; j< array_len; j++){
+    s->shdr.game.Team2_Players[i].cellPosition.type = htonl(g->Team2_Players[i].cellPosition.type);
+    s->shdr.game.Team2_Players[i].cellPosition.occupied = htonl(g->Team2_Players[i].cellPosition.occupied);
+    s->shdr.game.Team2_Players[i].team = htonl(g->Team2_Players[i].team);
+    s->shdr.game.Team2_Players[i].holdingFlag = htonl(g->Team2_Players[i].holdingFlag);
+    s->shdr.game.Team2_Players[i].canMove = htonl(g->Team2_Players[i].canMove);
+  }
+
+  //marshall the map
+  s->shdr.game.map.dimension.x = htonl(g->map.dimension.x);
+  s->shdr.game.map.dimension.y = htonl(g->map.dimension.y);
+  s->shdr.game.map.numHome1 = htonl(g->map.numHome1);
+  s->shdr.game.map.numHome2 = htonl(g->map.numHome2);
+  s->shdr.game.map.numJail1 = htonl(g->map.numJail1);
+  s->shdr.game.map.numJail2 = htonl(g->map.numJail2);
+  s->shdr.game.map.numWall = htonl(g->map.numWall);
+
+  //marshall the game state
+  s->shdr.game.state.Team1_Score = htonl(g->state.Team1_Score);
+  s->shdr.game.state.Team2_Score = htonl(g->state.Team2_Score);
+  s->shdr.game.state.status = htonl(g->state.status);
+}
 
 extern int
 proto_session_hdr_unmarshall_version(Proto_Session *s)
@@ -115,6 +193,7 @@ proto_session_hdr_unmarshall(Proto_Session *s, Proto_Msg_Hdr *h)
   proto_session_hdr_unmarshall_version(s);
   proto_session_hdr_unmarshall_type(s);
   proto_session_hdr_unmarshall_sver(s, &h->sver);
+  proto_session_hdr_unmarshall_game(s);
   proto_session_hdr_unmarshall_blen(s);
 }
    
@@ -129,6 +208,7 @@ proto_session_hdr_marshall(Proto_Session *s, Proto_Msg_Hdr *h)
     s->shdr.version = htonl(PROTOCOL_BASE_VERSION);
   proto_session_hdr_marshall_type(s, h->type);
   proto_session_hdr_marshall_sver(s, h->sver);
+  proto_session_hdr_marshall_game(s, &h->game);
   // we ignore the body length as we will explicity set it
   // on the send path to the amount of body data that was
   // marshalled.
