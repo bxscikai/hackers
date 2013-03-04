@@ -661,7 +661,8 @@ proto_server_parse_map(char *filename)
   printMap(&Proto_Server.game.map);
 
   fprintf(stderr, "CONVERT CONVERT CONVERTTTTTT\n");
-  fprintf(stderr, "%s\n", convertToString(&Proto_Server.game.map));
+  char *returnstr = convertToString(&Proto_Server.game.map);
+  // fprintf(stderr, "%s\n", returnstr);
 
   return 1;
 
@@ -673,7 +674,6 @@ extern char * convertToString(void *map) {
   int height = maze->dimension.y;
 
   char str[(width+1) * height];
-  fprintf(stderr, "size: %d\n", (width+1) * height);
 
   int i;
   int count = 0;
@@ -684,7 +684,13 @@ extern char * convertToString(void *map) {
       count++;
     }
     str[count] = '\n';
+    count++;
   }
+
+  str[count] = '\0';
+
+  fprintf(stderr, "Print here: \n%s\n\n\n\n", str);
+
   return str;
 }
 
