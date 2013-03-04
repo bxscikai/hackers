@@ -244,7 +244,6 @@ void cinfo(char *string, Client *C) {
     if (segmentNumber==1)  {      
       pch = strtok(pch, ",");
       while (pch != NULL) {
-        fprintf(stderr, "segment: %s\n", pch);
         if (innersegmentNumber==0)
           row = atoi(pch);
         else if (innersegmentNumber==1) {
@@ -261,7 +260,7 @@ void cinfo(char *string, Client *C) {
   }
 
   Cell mycell = client->game.map.mapBody[row][column];
-  fprintf(stderr, "%c\n", getCellChar(mycell.type));
+  fprintf(stderr, "%s\n", cellTypeNameFromType(mycell.type));
 
 }
 

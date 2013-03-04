@@ -575,16 +575,17 @@ proto_server_mt_rpc_querymap_handler(Proto_Session *s)
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(h));
   h.type = PROTO_MT_REP_BASE_MAPQUERY;  
+
+  h.game.map.dimension.x=4;
+  h.game.map.dimension.y=2;
   h.game.map = Proto_Server.game.map;
 
   proto_session_hdr_marshall(s, &h);
 
-// static void  proto_session_hdr_marshall_mapBody(Proto_Session *s, char *map);
-// static char* proto_session_hdr_unmarshall_mapBody(Proto_Session *s);
-  char *map = "##\n#fFfF";
-  proto_session_hdr_marshall_mapBody(s, map);
-  
-
+  // Turn the map into a ascii string and send it to the client
+  char mapStr[(Proto_Server.game.map.dimension.x+1) * Proto_Server.game.map.dimension.y];
+  convertToString(&Proto_Server.game.map, mapStr);
+  proto_session_hdr_marshall_mapBody(s, mapStr);
   proto_session_send_msg(s, 1);
 
   return 1;
@@ -625,7 +626,7 @@ proto_server_parse_map(char *filename)
       Proto_Server.game.map.mapBody[i] = malloc(Proto_Server.game.map.dimension.x * sizeof(Cell));
     }
 
-    fprintf(stderr, "Map dimensions: %dx%d\n", Proto_Server.game.map.dimension.x, Proto_Server.game.map.dimension.y);
+    // fprintf(stderr, "Map dimensions: %dx%d\n", Proto_Server.game.map.dimension.x, Proto_Server.game.map.dimension.y);
 
    // PASS TWO, We are iterating through each line in the map and parsing the cells
    rewind(fr); 
@@ -665,14 +666,14 @@ proto_server_parse_map(char *filename)
 
   fclose(fr);
 
-  printMap(&Proto_Server.game.map);
+  // printMap(&Proto_Server.game.map);
 
   fprintf(stderr, "CONVERT CONVERT CONVERTTTTTT\n");
-  // Allocate memory for ascii map representation
+  // // Allocate memory for ascii map representation
   char returnstr[(Proto_Server.game.map.dimension.x+1) * Proto_Server.game.map.dimension.y];
-  // Convert string
+  // // Convert string
   convertToString(&Proto_Server.game.map, returnstr);
-  // Print
+  // // Print
   fprintf(stderr, "%s\n", returnstr);
 
   return 1;
@@ -698,7 +699,7 @@ extern void convertToString(void *map, char *str) {
     count++;
   }
 
-  str[count] = '\0';
+  str[(count-1)] = '\0';
 }
 
 

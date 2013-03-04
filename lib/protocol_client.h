@@ -36,6 +36,7 @@ typedef struct {
                - PROTO_MT_REQ_BASE_RESERVED_FIRST
                - 1];
   Game game;
+  char *mapString;
 
 } Proto_Client;
 
@@ -76,6 +77,7 @@ static int proto_server_mt_event_update_handler(Proto_Session *s);
 static int proto_server_mt_rpc_rep_move_handler(Proto_Session *s);
 static int proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s);
 
-
+// Parse map from string representation
+static void parseMapFromString(char *mapString, Maze *map);
 
 #endif

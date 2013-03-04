@@ -183,16 +183,21 @@ proto_session_hdr_marshall_mapBody(Proto_Session *s, char *map){
   }
 }
 
-extern char*
-proto_session_hdr_unmarshall_mapBody(Proto_Session *s){
-  int i;
-  char mapString[s->rhdr.game.map.dimension.x * s->rhdr.game.map.dimension.y];
 
+extern void
+proto_session_hdr_unmarshall_mapBody(Proto_Session *s, char *mapString){
+  int i;
+  
   for (i=0; i<s->rhdr.blen; i++) {
-    proto_session_body_unmarshall_char(s, i, mapString[i]);
+    char a;
+    proto_session_body_unmarshall_char(s, i, &a);
+    mapString[i] = a;
   }
-  return mapString;
+  mapString[i] = '\0';
+  // fprintf(stderr, "Final map: %s\n", mapString);
+
 }
+
 
 extern int
 proto_session_hdr_unmarshall_version(Proto_Session *s)
@@ -216,7 +221,7 @@ proto_session_hdr_unmarshall(Proto_Session *s, Proto_Msg_Hdr *h)
   proto_session_hdr_unmarshall_type(s);
   proto_session_hdr_unmarshall_sver(s, &h->sver);
   proto_session_hdr_unmarshall_game(s);
-  proto_session_hdr_unmarshall_blen(s);
+  // proto_session_hdr_unmarshall_blen(s);
 }
    
 extern void
@@ -357,8 +362,10 @@ proto_session_send_msg(Proto_Session *s, int reset)
   // ADD CODE
   net_writen(s->fd, &s->shdr, (int)sizeof(Proto_Msg_Hdr));
 
-  if (s->slen>0) 
+  if (s->slen>0) {
     net_writen(s->fd, &s->sbuf, (int)s->slen);
+    fprintf(stderr, "Sending extra bytes: %d\n", s->slen);
+  }
   
   if (proto_debug()) {
     fprintf(stderr, "%p: proto_session_send_msg: SENT:\n", pthread_self());

@@ -124,6 +124,27 @@ extern int cellTypeFromChar(char cell) {
   return INVALID;
 }
 
+extern char* cellTypeNameFromType(int type) {
+    if (type==FLOOR)
+      return "FLOOR";
+    else if (type==WALL)
+      return "WALL";
+    else if (type==HOME_1)
+      return "HOME_1";
+    else if (type==HOME_2)
+      return "HOME_2";
+    else if (type==JAIL_1)
+      return "JAIL_1";
+    else if (type==JAIL_2)
+      return "JAIL_2";
+    else if (type==FLAG_1)
+      return "FLAG_1";
+    else if (type==FLAG_2)
+      return "FLAG_2";
+
+    return "INVALID";  
+}
+
 extern void printMap(void *map) {
   Maze *maze = (Maze *)map;
     fprintf(stderr, "PRINTING MAP\n");

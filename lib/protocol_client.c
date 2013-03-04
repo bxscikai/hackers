@@ -421,10 +421,42 @@ static int
 proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s)
 {
   // fprintf(stderr, "NumHome1: %d  NumHome2: %d  NumJail1: %d  NumJail2: %d  NumWall: %d  NumFloor: %d \n", s->rhdr.game.map.numHome1, s->rhdr.game.map.numHome2, s->rhdr.game.map.numJail1, s->rhdr.game.map.numJail2, s->rhdr.game.map.numWall, s->rhdr.game.map.numFloor);
-  char *string = proto_session_hdr_unmarshall_mapBody(s);
-  fprintf(stderr, "The map: %s\n", string);
+  char string[(s->rhdr.game.map.dimension.x+1)*s->rhdr.game.map.dimension.y];
+  proto_session_hdr_unmarshall_mapBody(s, string);
+  parseMapFromString(string, &s->rhdr.game.map);
+  // fprintf(stderr, "The map: %s\n", string);
 
   return 1; // rc just needs to be >1
+}
+
+static void parseMapFromString(char *mapString, Maze *map) {
+
+  int row;
+  int column;
+  int i;
+  int count = 0;
+  // Allocate memory for map
+  map->mapBody = malloc(map->dimension.y * sizeof(Cell *));
+    
+  for(i = 0; i < map->dimension.y; i++) {
+    map->mapBody[i] = malloc(map->dimension.x * sizeof(Cell));
+  }
+
+  // fprintf(stderr, "Dim %dx%d\n", map->dimension.x, map->dimension.y);
+  // Parse map and store it
+  for (row=0; row<map->dimension.x;row++) {
+    for (column=0; column<map->dimension.y; column++) {
+
+      char c = mapString[(row * (map->dimension.x+1)) + column];
+      // fprintf(stderr, "%c", c);
+      Cell cell;
+      cell.type = cellTypeFromChar(c);
+      cell.occupied = 0;
+      map->mapBody[row][column] = cell;
+      count++;
+    }
+    // fprintf(stderr, "\n");
+  }
 }
 
 /////////// End of Custom Event Handlers ///////////////
