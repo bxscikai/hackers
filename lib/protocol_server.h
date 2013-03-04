@@ -52,5 +52,6 @@ static int proto_server_mt_rpc_querymap_handler(Proto_Session *s);
 
 // Capture the flag logic
 extern int proto_server_parse_map(char *filename);
-extern char * convertToString(void *map);
+// extern char * convertToString(void *map);
+extern void convertToString(void *map, char *str);
 #endif

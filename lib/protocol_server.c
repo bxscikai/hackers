@@ -581,7 +581,8 @@ proto_server_mt_rpc_querymap_handler(Proto_Session *s)
 
 // static void  proto_session_hdr_marshall_mapBody(Proto_Session *s, char *map);
 // static char* proto_session_hdr_unmarshall_mapBody(Proto_Session *s);
-  proto_session_hdr_marshall_mapBody(s, "##\n#fFfF");
+  char *map = "##\n#fFfF";
+  proto_session_hdr_marshall_mapBody(s, map);
   
 
   proto_session_send_msg(s, 1);
@@ -667,19 +668,23 @@ proto_server_parse_map(char *filename)
   printMap(&Proto_Server.game.map);
 
   fprintf(stderr, "CONVERT CONVERT CONVERTTTTTT\n");
-  char *returnstr = convertToString(&Proto_Server.game.map);
-  // fprintf(stderr, "%s\n", returnstr);
+  // Allocate memory for ascii map representation
+  char returnstr[(Proto_Server.game.map.dimension.x+1) * Proto_Server.game.map.dimension.y];
+  // Convert string
+  convertToString(&Proto_Server.game.map, returnstr);
+  // Print
+  fprintf(stderr, "%s\n", returnstr);
 
   return 1;
 
 }
 
-extern char * convertToString(void *map) {
+extern void convertToString(void *map, char *str) {
   Maze *maze = (Maze *)map;
   int width = maze->dimension.x;
   int height = maze->dimension.y;
 
-  char str[(width+1) * height];
+  // char str[(width+1) * height];
 
   int i;
   int count = 0;
@@ -694,10 +699,6 @@ extern char * convertToString(void *map) {
   }
 
   str[count] = '\0';
-
-  fprintf(stderr, "Print here: \n%s\n\n\n\n", str);
-
-  return str;
 }
 
 

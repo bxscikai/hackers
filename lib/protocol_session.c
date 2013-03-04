@@ -174,7 +174,7 @@ proto_session_hdr_marshall_game(Proto_Session *s, Game *g){
   s->shdr.game.state.status = htonl(g->state.status);
 }
 
-static void
+extern void
 proto_session_hdr_marshall_mapBody(Proto_Session *s, char *map){
   int i;
   for (i=0; i<strlen(map); i++) {
@@ -183,7 +183,7 @@ proto_session_hdr_marshall_mapBody(Proto_Session *s, char *map){
   }
 }
 
-static char*
+extern char*
 proto_session_hdr_unmarshall_mapBody(Proto_Session *s){
   int i;
   char mapString[s->rhdr.game.map.dimension.x * s->rhdr.game.map.dimension.y];
