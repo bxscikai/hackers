@@ -578,6 +578,12 @@ proto_server_mt_rpc_querymap_handler(Proto_Session *s)
   h.game.map = Proto_Server.game.map;
 
   proto_session_hdr_marshall(s, &h);
+
+// static void  proto_session_hdr_marshall_mapBody(Proto_Session *s, char *map);
+// static char* proto_session_hdr_unmarshall_mapBody(Proto_Session *s);
+  proto_session_hdr_marshall_mapBody(s, "##\n#fFfF");
+  
+
   proto_session_send_msg(s, 1);
 
   return 1;

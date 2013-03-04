@@ -421,6 +421,8 @@ static int
 proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s)
 {
   // fprintf(stderr, "NumHome1: %d  NumHome2: %d  NumJail1: %d  NumJail2: %d  NumWall: %d  NumFloor: %d \n", s->rhdr.game.map.numHome1, s->rhdr.game.map.numHome2, s->rhdr.game.map.numJail1, s->rhdr.game.map.numJail2, s->rhdr.game.map.numWall, s->rhdr.game.map.numFloor);
+  char *string = proto_session_hdr_unmarshall_mapBody(s);
+  fprintf(stderr, "The map: %s\n", string);
 
   return 1; // rc just needs to be >1
 }
