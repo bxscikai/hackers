@@ -105,16 +105,19 @@ proto_session_hdr_unmarshall_game(Proto_Session *s){
     s->rhdr.game.Team1_Players[i].team = ntohl(s->rhdr.game.Team1_Players[i].team);
     s->rhdr.game.Team1_Players[i].holdingFlag = ntohl(s->rhdr.game.Team1_Players[i].holdingFlag);
     s->rhdr.game.Team1_Players[i].canMove = ntohl(s->rhdr.game.Team1_Players[i].canMove);
+    s->rhdr.game.Team1_Players[i].playerID = ntohl(s->rhdr.game.Team1_Players[i].playerID);
+    s->rhdr.game.Team1_Players[i].isHost = ntohl(s->rhdr.game.Team1_Players[i].isHost);
+
   }
 
-  int j;
-
-  for(j = 0; j< array_len; j++){
+  for(i = 0; i< array_len; i++){
     s->rhdr.game.Team2_Players[i].cellPosition.type = ntohl(s->rhdr.game.Team2_Players[i].cellPosition.type);
     s->rhdr.game.Team2_Players[i].cellPosition.occupied = ntohl(s->rhdr.game.Team2_Players[i].cellPosition.occupied);
     s->rhdr.game.Team2_Players[i].team = ntohl(s->rhdr.game.Team2_Players[i].team);
     s->rhdr.game.Team2_Players[i].holdingFlag = ntohl(s->rhdr.game.Team2_Players[i].holdingFlag);
     s->rhdr.game.Team2_Players[i].canMove = ntohl(s->rhdr.game.Team2_Players[i].canMove);
+    s->rhdr.game.Team2_Players[i].playerID = ntohl(s->rhdr.game.Team2_Players[i].playerID);
+    s->rhdr.game.Team2_Players[i].isHost = ntohl(s->rhdr.game.Team2_Players[i].isHost);
   }
 
   //marshall the map
@@ -146,16 +149,18 @@ proto_session_hdr_marshall_game(Proto_Session *s, Game *g){
     s->shdr.game.Team1_Players[i].team = htonl(g->Team1_Players[i].team);
     s->shdr.game.Team1_Players[i].holdingFlag = htonl(g->Team1_Players[i].holdingFlag);
     s->shdr.game.Team1_Players[i].canMove = htonl(g->Team1_Players[i].canMove);
+    s->shdr.game.Team1_Players[i].playerID = htonl(g->Team1_Players[i].playerID);
+    s->shdr.game.Team1_Players[i].isHost = htonl(g->Team1_Players[i].isHost);    
   }
 
-  int j;
-
-  for(j = 0; j< array_len; j++){
+  for(i = 0; i< array_len; i++){
     s->shdr.game.Team2_Players[i].cellPosition.type = htonl(g->Team2_Players[i].cellPosition.type);
     s->shdr.game.Team2_Players[i].cellPosition.occupied = htonl(g->Team2_Players[i].cellPosition.occupied);
     s->shdr.game.Team2_Players[i].team = htonl(g->Team2_Players[i].team);
     s->shdr.game.Team2_Players[i].holdingFlag = htonl(g->Team2_Players[i].holdingFlag);
     s->shdr.game.Team2_Players[i].canMove = htonl(g->Team2_Players[i].canMove);
+    s->shdr.game.Team2_Players[i].playerID = htonl(g->Team2_Players[i].playerID);
+    s->shdr.game.Team2_Players[i].isHost = htonl(g->Team2_Players[i].isHost);        
   }
 
   //marshall the map

@@ -75,6 +75,8 @@ typedef struct
 	TeamType team;
 	int holdingFlag;
 	int canMove;
+	int playerID;
+	int isHost;
 
 } Player;
 

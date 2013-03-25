@@ -70,6 +70,8 @@ static inline void printMessageType(Proto_Msg_Types type) {
     fprintf(stderr, "PROTO_MT_EVENT_BASE_UPDATE\n");
   else if (type==PROTO_MT_EVENT_REQ_UPDATE)
     fprintf(stderr, "PROTO_MT_EVENT_REQ_UPDATE\n");  
+  else if (type==PROTO_MT_EVENT_LOBBY_UPDATE)
+    fprintf(stderr, "PROTO_MT_EVENT_LOBBY_UPDATE\n");  
   else if (type==PROTO_MT_EVENT_BASE_RESERVED_LAST)
     fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_LAST\n");
   else 

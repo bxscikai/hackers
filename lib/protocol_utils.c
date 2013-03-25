@@ -74,6 +74,9 @@ proto_dump_mt(Proto_Msg_Types type)
   case PROTO_MT_EVENT_BASE_UPDATE: 
     fprintf(stderr, "PROTO_MT_EVENT_BASE_UPDATE");
     break;
+  case PROTO_MT_EVENT_LOBBY_UPDATE: 
+    fprintf(stderr, "PROTO_MT_EVENT_LOBBY_UPDATE");
+    break;    
   case PROTO_MT_EVENT_BASE_RESERVED_LAST: 
     fprintf(stderr, "PROTO_MT_EVENT_BASE_RESERVED_LAST");
     break;

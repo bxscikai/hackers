@@ -36,11 +36,10 @@ extern PortType proto_server_rpcport(void);
 extern PortType proto_server_listenport(void);
 extern Proto_Session *proto_server_event_session(void);
 extern int    proto_server_start_rpc_loop(void);
-
-extern void proto_server_post_event(void);
+extern void proto_server_post_event(Proto_Msg_Types mt);
 
 // Game logic
-extern void setPostMessage(Proto_Session *event);
+extern void setPostMessage(Proto_Session *event, Proto_Msg_Types mt);
 extern void printGameState();
 static void reinitialize_State();
 // Handlers
@@ -49,9 +48,13 @@ static int proto_server_mt_rpc_hello_handler(Proto_Session *s);
 static int proto_server_mt_rpc_move_handler(Proto_Session *s);
 static int proto_server_mt_rpc_update_handler(Proto_Session *s);
 static int proto_server_mt_rpc_querymap_handler(Proto_Session *s);
-
+static int proto_server_mt_rpc_lobby_update_handler(Proto_Session *s);
 // Capture the flag logic
 extern int proto_server_parse_map(char *filename);
 // extern char * convertToString(void *map);
 extern void convertToString(void *map, char *str);
+static int getNumberOfPlayersForTeam(int team);
+static void insertPlayerForTeam(int team, Player *player);
+
+
 #endif
