@@ -191,6 +191,8 @@ proto_client_init(Proto_Client_Handle *ch)
         proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_move_handler);
       else if (mt==PROTO_MT_REP_BASE_MAPQUERY)
         proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_querymap_handler);      
+      else if (mt==PROTO_MT_EVENT_LOBBY_UPDATE)
+        proto_client_set_event_handler(c, mt, proto_server_mt_rpc_lobby_update_handler);      
       else
         proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
   }
@@ -213,6 +215,8 @@ int
 proto_client_connect(Proto_Client_Handle ch, char *host, PortType port)
 {
   Proto_Client *c = (Proto_Client *)ch;
+  c->rpc_session.client = c;
+  c->event_session.client = c;
 
   if (net_setup_connection(&(c->rpc_session.fd), host, port)<0) 
     return -1;
@@ -377,14 +381,68 @@ proto_server_mt_rpc_rep_goodbye_handler(Proto_Session *s)
   return -1;
 }
 
+// Send ACK to client
+static int sendACK(Proto_Session *s, Proto_Msg_Types mt) {
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(Proto_Msg_Hdr));
+  marshall_mtonly(s, mt);
+  proto_session_send_msg(s, 0);  
+}
+
 static int 
 proto_server_mt_rpc_rep_hello_handler(Proto_Session *s)
 {
-  Proto_Msg_Hdr h;
-  bzero(&h, sizeof(Proto_Msg_Hdr));
+  Proto_Client *c = s->client;
+  c->playerID = s->rhdr.version;
+  fprintf(stderr, "Connected to server with fd=%d\n", c->playerID);
 
-  return 2; // rc just needs to be >1
+  // Make server send lobby updates
+  sendACK(s, PROTO_MT_EVENT_LOBBY_UPDATE);
+
+  return 1;
 }
+
+static int 
+proto_server_mt_rpc_lobby_update_handler(Proto_Session *s)
+{
+
+  fprintf(stderr, "Received lobby update\n");
+
+  Proto_Client *c = s->client;
+  Player clientPlayer;
+  int numOfPlayersTeam1 = 0;
+  int numOfPlayersTeam2 = 0;
+  int i;
+
+  // Get players on each team
+  for (i=0; i<MAX_NUM_PLAYERS; i++) {
+    Player current = s->rhdr.game.Team1_Players[i];
+    if (current.playerID>0)
+      numOfPlayersTeam1++;
+    if (c->playerID == current.playerID)
+      clientPlayer = current;
+  }
+  for (i=0; i<MAX_NUM_PLAYERS; i++) {
+    Player current = s->rhdr.game.Team2_Players[i];
+    if (current.playerID>0)
+      numOfPlayersTeam2++;
+    if (c->playerID == current.playerID)
+      clientPlayer = current;    
+  }
+
+  fprintf(stderr, "\n---Lobby Update---\n");
+  fprintf(stderr, "Number of players on Team 1: %d\n", numOfPlayersTeam1);
+  fprintf(stderr, "Number of players on Team 2: %d\n", numOfPlayersTeam2);
+  if (clientPlayer.isHost==1)
+    fprintf(stderr, "You are the host, start the game with 'Start' command when ready\n");
+  fprintf(stderr, "---End of Lobby Update---\n");
+
+  // Let the server know it received the update
+  sendACK(s, PROTO_MT_EVENT_LOBBY_UPDATE);
+
+  return 1;
+}
+
 
 static int 
 proto_server_mt_event_update_handler(Proto_Session *s)

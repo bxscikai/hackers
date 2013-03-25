@@ -29,6 +29,7 @@
 typedef struct {
   FDType fd;
   void *extra;   // space to attach session specific data
+  void *client;  // Pointer to client
   int slen;   // send length
   int rlen;   // reply length
   Proto_Msg_Hdr shdr; // sender header

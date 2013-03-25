@@ -177,11 +177,11 @@ proto_server_event_listen(void *arg)
 
 // Post event update to specific client
 static int 
-postEventToFd(FDType fd) {
+postEventToFd(FDType fd, Proto_Msg_Types mt) {
   int rc;
 
   Proto_Server.EventSession.fd = fd;
-  setPostMessage(&Proto_Server.EventSession);
+  setPostMessage(&Proto_Server.EventSession, mt);
   if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Server Trying to send event to specific client with fd = %d\n", Proto_Server.EventSession.fd);
   rc = proto_session_send_msg(&Proto_Server.EventSession, 0);  
 
@@ -199,7 +199,7 @@ postEventToFd(FDType fd) {
 }
 
 void
-proto_server_post_event(void) 
+proto_server_post_event(Proto_Msg_Types mt) 
 {
   int i;
   int num;
@@ -211,8 +211,7 @@ proto_server_post_event(void)
   
   fprintf(stderr, "Broadcasting update event to %d subscribers\n", Proto_Server.EventNumSubscribers);
 
-
-  printGameState();
+  // printGameState();
 
 
   while (num) {
@@ -235,7 +234,7 @@ proto_server_post_event(void)
       // on client behaviour  (use time out to limit impact... drop
       // clients that misbehave but be carefull of introducing deadlocks
       // HACK
-        setPostMessage(&Proto_Server.EventSession);
+        setPostMessage(&Proto_Server.EventSession, mt);
         if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Server Trying to send event update to %d\n", Proto_Server.EventSession.fd);
         int rc = proto_session_send_msg(&Proto_Server.EventSession, 0);
 
@@ -417,12 +416,12 @@ proto_server_init(void)
       proto_server_set_req_handler(i, proto_server_mt_rpc_hello_handler);
     else if (i==PROTO_MT_REQ_BASE_MOVE)
       proto_server_set_req_handler(i, proto_server_mt_rpc_move_handler);
-    else if (i==PROTO_MT_EVENT_REQ_UPDATE) {
-      proto_server_set_req_handler(i, proto_server_mt_rpc_update_handler);
-    }
-    else if (i==PROTO_MT_REQ_BASE_MAPQUERY) {
+    else if (i==PROTO_MT_EVENT_REQ_UPDATE) 
+      proto_server_set_req_handler(i, proto_server_mt_rpc_update_handler);    
+    else if (i==PROTO_MT_REQ_BASE_MAPQUERY) 
       proto_server_set_req_handler(i, proto_server_mt_rpc_querymap_handler);
-    }
+    else if (i==PROTO_MT_EVENT_LOBBY_UPDATE) 
+      proto_server_set_req_handler(i, proto_server_mt_rpc_lobby_update_handler);    
     else {
       proto_server_set_req_handler(i, proto_server_mt_null_handler);
     }
@@ -482,13 +481,15 @@ extern void printGameState() {
 }
 
 //////// Event Posting /////////
-extern void setPostMessage(Proto_Session *event) {
+extern void setPostMessage(Proto_Session *event, Proto_Msg_Types mt) {
 
   Proto_Msg_Hdr h;  
   bzero(&h, sizeof(h));
-  h.type = PROTO_MT_EVENT_BASE_UPDATE;
+  h.type = mt;
 
-  NOT_YET_IMPLEMENTED
+  if (mt==PROTO_MT_EVENT_LOBBY_UPDATE) {
+    h.game = Proto_Server.game;
+  }
 
   proto_session_hdr_marshall(event, &h);
 }
@@ -523,7 +524,7 @@ proto_server_mt_rpc_goodbye_handler(Proto_Session *s)
 
     // Telling other client the player quit
     // Proto_Server.gameState.gameResult.raw=RESIGNED;
-    proto_server_post_event();
+    // proto_server_post_event();
 
     // Reinitialize server state
     reinitialize_State();
@@ -534,18 +535,96 @@ proto_server_mt_rpc_goodbye_handler(Proto_Session *s)
   return rc;
 }
 
-// Assigns client with either X or O depending on the game state
+static int getNumberOfPlayersForTeam(int team) {
+
+    int numOfPlayers = 0;
+    int i;
+
+    if (team!=1 && team!=2)
+      return 0;
+
+    for (i=0; i<MAX_NUM_PLAYERS;i++) {
+      Player currentPlayer;
+      if (team==1)
+        currentPlayer = Proto_Server.game.Team1_Players[i];
+      else if (team==2)
+        currentPlayer = Proto_Server.game.Team2_Players[i];
+
+      if (currentPlayer.playerID>0)
+        numOfPlayers++;
+    }
+
+    return numOfPlayers;
+}
+
+static void insertPlayerForTeam(int team, Player *player) {
+
+    int i;
+    for (i=0; i<MAX_NUM_PLAYERS;i++) {
+      Player currentPlayer;
+      if (team==1)
+        currentPlayer = Proto_Server.game.Team1_Players[i];
+      else if (team==2)
+        currentPlayer = Proto_Server.game.Team2_Players[i];
+
+      if (currentPlayer.playerID<=0) {
+        if (team==1)
+          Proto_Server.game.Team1_Players[i] = *player;
+        else if (team==2)
+          Proto_Server.game.Team2_Players[i] = *player;
+        return;
+      }
+        
+    }
+}
+
 static int 
 proto_server_mt_rpc_hello_handler(Proto_Session *s)
 {
   // Send a reply with the identity of the user
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(h));
-  h.type = PROTO_MT_REP_BASE_HELLO;  
+  h.type = PROTO_MT_REP_BASE_HELLO;
 
+  int numOfPlayersTeam1 = getNumberOfPlayersForTeam(1);
+  int numOfPlayersTeam2 = getNumberOfPlayersForTeam(2);  
+
+  Player newplayer;
+  newplayer.isHost=0;
+  newplayer.holdingFlag=0;
+  newplayer.canMove=1;
+  newplayer.playerID = s->fd;
+
+  if (numOfPlayersTeam1==0 && numOfPlayersTeam2==0) {
+    newplayer.team = TEAM_1;
+    newplayer.isHost = 1;
+    insertPlayerForTeam(1, &newplayer);
+  }
+  else if (numOfPlayersTeam1>numOfPlayersTeam2) {
+    newplayer.team = TEAM_2;
+    insertPlayerForTeam(2, &newplayer);
+  }
+  else if (numOfPlayersTeam1<numOfPlayersTeam2) {
+    newplayer.team = TEAM_1;
+    insertPlayerForTeam(1, &newplayer);
+  }
+  else if (numOfPlayersTeam1==numOfPlayersTeam2) {
+    newplayer.team = TEAM_1;
+    insertPlayerForTeam(1, &newplayer);
+  }
+
+  h.game = Proto_Server.game;
+  h.version = newplayer.playerID;
   proto_session_hdr_marshall(s, &h);
   proto_session_send_msg(s, 1);
 
+  return 1;
+}
+
+static int 
+proto_server_mt_rpc_lobby_update_handler(Proto_Session *s)
+{  
+  proto_server_post_event(PROTO_MT_EVENT_LOBBY_UPDATE);
   return 1;
 }
 
@@ -563,7 +642,7 @@ static int
 proto_server_mt_rpc_update_handler(Proto_Session *s)
 {
   int rc=1;
-  postEventToFd(s->fd);
+  postEventToFd(s->fd, PROTO_MT_EVENT_BASE_UPDATE);
 
   return rc;
 }
@@ -668,7 +747,6 @@ proto_server_parse_map(char *filename)
 
   // printMap(&Proto_Server.game.map);
 
-  fprintf(stderr, "CONVERT CONVERT CONVERTTTTTT\n");
   // // Allocate memory for ascii map representation
   char returnstr[(Proto_Server.game.map.dimension.x+1) * Proto_Server.game.map.dimension.y];
   // // Convert string
