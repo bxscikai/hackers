@@ -316,13 +316,13 @@ docmd(Client *C, char *cmd)
   }
   else if (strcmp(cmd, "numwall\n")==0) {
     doRPCCmd(C, 'q');  // query map
-    if (client->game.map.numWall!=0)
-      fprintf(stderr, "%d\n", client->game.map.numWall);    
+    if (client->game.map.numFixedWall!=0 && client->game.map.numNonfixedWall!=0)
+      fprintf(stderr, "%d\n", client->game.map.numFixedWall + client->game.map.numNonfixedWall);    
   }
   else if (strcmp(cmd, "numfloor\n")==0) {
     doRPCCmd(C, 'q');  // query map       
-    if (client->game.map.numFloor!=0)
-      fprintf(stderr, "%d\n", client->game.map.numFloor);    
+    if (client->game.map.numFloor1!=0 && client->game.map.numFloor2!=0)
+      fprintf(stderr, "%d\n", client->game.map.numFloor1+client->game.map.numFloor2);    
   }       
   else if (strcmp(cmd, "dim\n")==0) {
     doRPCCmd(C, 'q');  // query map  

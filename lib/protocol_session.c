@@ -127,13 +127,13 @@ proto_session_hdr_unmarshall_game(Proto_Session *s){
   s->rhdr.game.map.numHome2 = ntohl(s->rhdr.game.map.numHome2);
   s->rhdr.game.map.numJail1 = ntohl(s->rhdr.game.map.numJail1);
   s->rhdr.game.map.numJail2 = ntohl(s->rhdr.game.map.numJail2);
-  s->rhdr.game.map.numWall = ntohl(s->rhdr.game.map.numWall);
-  s->rhdr.game.map.numFloor = ntohl(s->rhdr.game.map.numFloor);
+  s->rhdr.game.map.numFixedWall = ntohl(s->rhdr.game.map.numFixedWall);
+  s->rhdr.game.map.numNonfixedWall = ntohl(s->rhdr.game.map.numNonfixedWall);
+  s->rhdr.game.map.numFloor1 = ntohl(s->rhdr.game.map.numFloor1);
+  s->rhdr.game.map.numFloor2 = ntohl(s->rhdr.game.map.numFloor2);
 
   //marshall the game state
-  s->rhdr.game.state.Team1_Score = ntohl(s->rhdr.game.state.Team1_Score);
-  s->rhdr.game.state.Team2_Score = ntohl(s->rhdr.game.state.Team2_Score);
-  s->rhdr.game.state.status = ntohl(s->rhdr.game.state.status);
+  s->rhdr.game.status= ntohl(s->rhdr.game.status);
 }
 
 static void
@@ -170,13 +170,13 @@ proto_session_hdr_marshall_game(Proto_Session *s, Game *g){
   s->shdr.game.map.numHome2 = htonl(g->map.numHome2);
   s->shdr.game.map.numJail1 = htonl(g->map.numJail1);
   s->shdr.game.map.numJail2 = htonl(g->map.numJail2);
-  s->shdr.game.map.numWall = htonl(g->map.numWall);
-  s->shdr.game.map.numFloor = htonl(g->map.numFloor);
+  s->shdr.game.map.numFixedWall = htonl(g->map.numFixedWall);
+  s->shdr.game.map.numNonfixedWall = htonl(g->map.numNonfixedWall);
+  s->shdr.game.map.numFloor1 = htonl(g->map.numFloor1);
+  s->shdr.game.map.numFloor2 = htonl(g->map.numFloor2);  
 
   //marshall the game state
-  s->shdr.game.state.Team1_Score = htonl(g->state.Team1_Score);
-  s->shdr.game.state.Team2_Score = htonl(g->state.Team2_Score);
-  s->shdr.game.state.status = htonl(g->state.status);
+  s->shdr.game.status = htonl(g->status);
 }
 
 extern void

@@ -27,7 +27,7 @@ extern int PROTO_DEBUG;
 
 extern void proto_dump_mt(Proto_Msg_Types type);
 extern void proto_dump_pstate(Game *game);
-extern void proto_dump_gstate(GameState *gs);
+extern void proto_dump_gstatus(GameStatus gs);
 extern void proto_dump_msghdr(Proto_Msg_Hdr *hdr);
 
 static inline void proto_debug_on(void) { PROTO_DEBUG = 1; }

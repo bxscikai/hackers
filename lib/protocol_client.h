@@ -47,7 +47,7 @@ extern Proto_Session *proto_client_rpc_session(Proto_Client_Handle ch);
 extern Proto_Session *proto_client_event_session(Proto_Client_Handle ch);
 
 //Created to get gamestate to for client drawing
-extern GameState *proto_client_game_state(Proto_Client_Handle ch);
+extern GameStatus *proto_client_game_status(Proto_Client_Handle ch);
 
 extern int proto_client_init(Proto_Client_Handle *ch);
 extern int proto_client_connect(Proto_Client_Handle ch, char *host, PortType p);

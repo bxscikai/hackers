@@ -734,10 +734,12 @@ proto_server_parse_map(char *filename)
           Proto_Server.game.map.numJail1++;
         else if (newcell.type==JAIL_2)
           Proto_Server.game.map.numJail2++;
-        else if (newcell.type==WALL)
-          Proto_Server.game.map.numWall++;
-        else if (newcell.type==FLOOR)
-          Proto_Server.game.map.numFloor++;                            
+        else if (newcell.type==WALL_FIXED)
+          Proto_Server.game.map.numFixedWall++;
+        else if (newcell.type==FLOOR_1)
+          Proto_Server.game.map.numFloor1++;                            
+        else if (newcell.type==FLOOR_2)
+          Proto_Server.game.map.numFloor2++;                                    
 
       }
       numOfLines++;
