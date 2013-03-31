@@ -220,7 +220,7 @@ proto_dump_msghdr(Proto_Msg_Hdr *hdr)
     fprintf(stderr, " game: \n");
     proto_dump_game_players(&(hdr->game));
     fprintf(stderr, " gstate: \n"); 
-    proto_dump_gstate(&(hdr->game.status));
+    proto_dump_gstate(hdr->game.status);
     fprintf(stderr, " blen=%d\n", hdr->blen);
 
   }
