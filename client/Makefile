@@ -25,10 +25,9 @@ include ../client/config.mk
 client_objs = $(objs)
 libs = $(DAGAMELIB) -lpthread
 
-client: $(client_objs) $(DAGAMELIBARCHIVE)
-	gcc $(CFLAGS) -o $@ $(client_objs) $(libs) 
+# client: $(client_objs) $(DAGAMELIBARCHIVE)
+# 	gcc $(CFLAGS) -o $@ $(client_objs) $(libs) ${UILIBS}
 
-## For UI
 ttymodse.o: ttymodes.c
 	gcc $(CFLAGS) ttymodes.c -c
 
@@ -38,8 +37,11 @@ tty.o: tty.c tty.h ttymodes.h
 uistandalone.o: uistandalone.c uistandalone.h
 	gcc ${CFLAGS} uistandalone.c -c
 
-uitest.o: uitest.c uistandalone.h
-	gcc $(CFLAGS) uitest.c -c 
+client.o: client.c uistandalone.h
+	gcc $(CFLAGS) client.c -c 
 
-uitest: uistandalone.o uitest.o tty.o ttymodes.o
-	gcc $(CFLAGS) uistandalone.o uitest.o tty.o ttymodes.o -o uitest ${UILIBS}
+client: uistandalone.o client.o tty.o ttymodes.o
+	gcc $(CFLAGS) uistandalone.o client.o tty.o ttymodes.o -o client $(libs) $(UILIBS)
+
+
+

@@ -33,8 +33,7 @@ CFLAGS := -g $(UIINCDIR) -std=c99
 MODULE := $(shell basename $CURDIR)
 
 DAGAMELIBHDRS := types.h net.h protocol.h protocol_utils.h            \
-	protocol_session.h protocol_client.h protocol_server.h maze.h \
-	player.h ui.h game.h
+	protocol_session.h protocol_client.h protocol_server.h maze.h
 DAGAMELIBFILE := libdagame.a
 DAGAMELIBARCHIVE := ../lib/$(DAGAMELIBFILE)
 DAGAMELIB := -L../lib -ldagame

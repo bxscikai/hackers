@@ -24,7 +24,7 @@
 #include <stdlib.h> /* for exit() */
 #include <pthread.h>
 #include <assert.h>
-#include "types.h"
+#include "../lib/types.h"
 #include "uistandalone.h"
 
 /* A lot of this code comes from http://www.libsdl.org/cgi/docwiki.cgi */
