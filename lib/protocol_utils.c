@@ -86,9 +86,11 @@ proto_dump_mt(Proto_Msg_Types type)
 }
 
 extern char getCellChar(int type) {
-    if (type==FLOOR)
+    if (type==FLOOR_1)
       return ' ';
-    else if (type==WALL)
+    if (type==FLOOR_2)
+      return ' ';
+    else if (type==WALL_FIXED)
       return '#';
     else if (type==HOME_1)
       return 'h';
@@ -108,9 +110,9 @@ extern char getCellChar(int type) {
 
 extern int cellTypeFromChar(char cell) {
     if (cell=='#')
-    return WALL;
+    return WALL_FIXED;
   else if (cell==' ')
-    return FLOOR;
+    return FLOOR_1;
   else if (cell=='h')
     return HOME_1;
   else if (cell=='H')
@@ -128,10 +130,14 @@ extern int cellTypeFromChar(char cell) {
 }
 
 extern char* cellTypeNameFromType(int type) {
-    if (type==FLOOR)
-      return "FLOOR";
-    else if (type==WALL)
-      return "WALL";
+    if (type==FLOOR_1)
+      return "FLOOR_1";
+    else if (type==FLOOR_2)
+      return "FLOOR_2";    
+    else if (type==WALL_FIXED)
+      return "WALL_FIXED";
+    else if (type==WALL_UNFIXED)
+      return "WALL_UNFIXED";    
     else if (type==HOME_1)
       return "HOME_1";
     else if (type==HOME_2)
@@ -160,7 +166,7 @@ extern void printMap(void *map) {
     }
     fprintf(stderr, "\n");
   }
-   fprintf(stderr, "NumHome1: %d  NumHome2: %d  NumJail1: %d  NumJail2: %d  NumWall: %d  NumFloor: %d \n", maze->numHome1, maze->numHome2, maze->numJail1, maze->numJail2, maze->numWall, maze->numFloor);
+   fprintf(stderr, "NumHome1: %d  NumHome2: %d  NumJail1: %d  NumJail2: %d  NumWall: %d  NumFloor: %d \n", maze->numHome1, maze->numHome2, maze->numJail1, maze->numJail2, maze->numFixedWall + maze->numNonfixedWall, maze->numFloor1 + maze->numFloor2);
   
 }
  
@@ -190,12 +196,16 @@ proto_dump_game_players(Game *g)
 }
 
 extern void
-proto_dump_gstate(GameState *gs)
+proto_dump_gstate(GameStatus gs)
 {
-  fprintf(stderr, "Game State:\n");
-  fprintf(stderr, "Team 1 score: %d\n", gs->Team1_Score);
-  fprintf(stderr, "Team 2 score: %d\n", gs->Team2_Score);
-  fprintf(stderr, "Game status: %d\n", gs->status);
+  if (gs==TEAM_1_WON) 
+    fprintf(stderr, "TEAM_1_WON\n");
+  else if (gs==TEAM_2_WON)
+    fprintf(stderr, "TEAM_2_WON\n");
+  else if (gs==NOT_STARTED)
+    fprintf(stderr, "NOT_STARTED\n");  
+  else if (gs==IN_PROGRESS)
+    fprintf(stderr, "IN_PROGRESS\n");    
 }
 
 extern void
@@ -210,7 +220,7 @@ proto_dump_msghdr(Proto_Msg_Hdr *hdr)
     fprintf(stderr, " game: \n");
     proto_dump_game_players(&(hdr->game));
     fprintf(stderr, " gstate: \n"); 
-    proto_dump_gstate(&(hdr->game.state));
+    proto_dump_gstate(&(hdr->game.status));
     fprintf(stderr, " blen=%d\n", hdr->blen);
 
   }

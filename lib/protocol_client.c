@@ -45,11 +45,11 @@ proto_client_event_session(Proto_Client_Handle ch)
   return &(c->event_session);
 }
 
-extern GameState *
-proto_client_game_state(Proto_Client_Handle ch)
+extern GameStatus *
+proto_client_game_status(Proto_Client_Handle ch)
 {
   Proto_Client *c = ch;
-  return &(c->game.state);
+  return &(c->game.status);
 }
 
 extern int
@@ -135,7 +135,7 @@ proto_client_event_dispatcher(void * arg)
         if (hdlr(s)<0) goto leave;
          
         // Sync server game state with local game state        
-        c->game.state = s->rhdr.game.state;
+        c->game.status = s->rhdr.game.status;
         // c->playerState.playerTurn.raw = s->rhdr.pstate.playerTurn.raw;
 
         // CHECK TO SEE IF GAME OVER
@@ -203,7 +203,7 @@ proto_client_init(Proto_Client_Handle *ch)
     //   Proto_MT_Handler handler =  c->base_event_handlers[mt];
     // fprintf(stderr, "Handler at index: %d  is: %p\n", mt, handler);
     // }
-  c->game.state.status = NOT_STARTED;
+  c->game.status = NOT_STARTED;
 
   *ch = c;
 
@@ -319,7 +319,7 @@ proto_client_update(Proto_Client_Handle ch)
 {
   // If the game hasn't started, don't bother
   Proto_Client *client = ch;
-  if (client->game.state.status!=PLAYER1_TURN || client->game.state.status!=PLAYER2_TURN)
+
     return 1;
 
   return do_generic_dummy_rpc(ch,PROTO_MT_EVENT_REQ_UPDATE);  
