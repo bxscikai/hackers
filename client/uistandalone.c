@@ -25,6 +25,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include "../lib/types.h"
+#include "../lib/maze.h"
 #include "uistandalone.h"
 
 /* A lot of this code comes from http://www.libsdl.org/cgi/docwiki.cgi */
@@ -314,16 +315,38 @@ draw_cell(UI *ui, SPRITE_INDEX si, SDL_Rect *t, SDL_Surface *s)
 }
 
 static sval
-ui_paintmap(UI *ui) 
+ui_paintmap(UI *ui, void *map) 
 {
+  Maze *maze = (Maze *)map;
   SDL_Rect t;
-  int i, j;
-  t.y = 0; t.x = 0; t.h = ui->tile_h; t.w = ui->tile_w; 
+  int i = 0;
+  int j = 0;
+  t.y = 0; t.x = 0; t.h = ui->tile_h; t.w = ui->tile_w;
 
-  for (t.y=0; t.y<ui->screen->h; t.y+=t.h) {
-    for (t.x=0; t.x<ui->screen->w; t.x+=t.w){
-      draw_cell(ui, FLOOR_S, &t, ui->screen);
+  for (i=0, t.y=0; i<maze->dimension.x; i++) {
+    for (j=0, t.x=0; j<maze->dimension.y; j++){
+      int cell_type = maze->mapBody[i][j].type;
+
+      fprintf(stderr, "%d\t%d\t%d\t%d\t%d\n", t.x, t.y, i, j, cell_type);
+
+      if(cell_type == FLOOR_1 || cell_type == FLOOR_2){
+        draw_cell(ui, FLOOR_S, &t, ui->screen); 
+      }else if (cell_type == WALL_FIXED){
+        draw_cell(ui, REDWALL_S, &t, ui->screen);
+      }else if (cell_type == HOME_1 || cell_type == HOME_2){
+        draw_cell(ui, FLOOR_S, &t, ui->screen);
+      } else if (cell_type == JAIL_1 || cell_type == JAIL_2){
+        draw_cell(ui, FLOOR_S, &t, ui->screen);
+      } else if (cell_type == FLAG_1){
+        draw_cell(ui, REDFLAG_S, &t, ui->screen);
+      } else if (cell_type == FLAG_2){
+        draw_cell(ui, GREENFLAG_S, &t, ui->screen);
+      } else{
+        draw_cell(ui, FLOOR_S, &t, ui->screen);
+      }
+      t.x+=t.w;
     }
+    t.y+=t.h;
   }
 
   dummyPlayer_paint(ui, &t);
@@ -405,7 +428,7 @@ ui_userevent(UI *ui, SDL_UserEvent *e)
 }
 
 static sval
-ui_process(UI *ui)
+ui_process(UI *ui, void *map)
 {
   SDL_Event e;
   sval rc = 1;
@@ -426,7 +449,7 @@ ui_process(UI *ui)
     default:
       fprintf(stderr, "%s: e.type=%d NOT Handled\n", __func__, e.type);
     }
-    if (rc==2) { ui_paintmap(ui); }
+    if (rc==2) { ui_paintmap(ui, map); }
     if (rc<0) break;
   }
   return rc;
@@ -477,7 +500,7 @@ ui_quit(UI *ui)
 }
 
 extern void
-ui_main_loop(UI *ui, uval h, uval w)
+ui_main_loop(UI *ui, uval h, uval w, void *map)
 {
   sval rc;
   
@@ -487,11 +510,11 @@ ui_main_loop(UI *ui, uval h, uval w)
 
   dummyPlayer_init(ui);
 
-  ui_paintmap(ui);
+  ui_paintmap(ui, map);
    
   
   while (1) {
-    if (ui_process(ui)<0) break;
+    if (ui_process(ui, map)<0) break;
   }
 
   ui_shutdown_sdl();

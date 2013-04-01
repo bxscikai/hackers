@@ -339,6 +339,7 @@ docmd(Client *C, char *cmd)
   else if (strcmp(cmd, "dump\n")==0) {
     doRPCCmd(C, 'q');  // query map   
     printMap(&client->game.map);
+    ui_update(ui);
   }                 
   else if (containsString(input, "cinfo")>0) {
     doRPCCmd(C, 'q');  // query map     
@@ -465,7 +466,22 @@ main(int argc, char **argv)
     startConnection(&c, globals.host, globals.port, update_event_handler);
   }
 
-  shell(&c);
+  //shell(&c);
+
+  // Init for UI stuff
+  pthread_t tid;
+
+  tty_init(STDIN_FILENO);
+
+  ui_init(&(ui));
+
+  pthread_create(&tid, NULL, shell, NULL);
+
+  // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
+  // SO JUMP THROW HOOPS :-(
+  Proto_Client *client = (Proto_Client *) c.ph;
+  doRPCCmd(&c, 'q'); //query for the map
+  ui_main_loop(ui, (32 * client->game.map.dimension.x), (32 * client->game.map.dimension.y), &client->game.map);
 
   return 0;
 }
