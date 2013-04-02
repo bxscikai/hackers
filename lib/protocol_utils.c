@@ -169,6 +169,22 @@ extern void printMap(void *map) {
 }
  
 
+extern Player* getPlayer(Game *game, int playerID) {
+  int i;
+  Player *player;
+
+  for (i=0; i<MAX_NUM_PLAYERS; i++) {
+    player = &(game->Team1_Players[i]);
+    if (player->playerID==playerID)
+      return player;
+    player = &(game->Team2_Players[i]);
+    if (player->playerID==playerID)
+      return player;    
+  }
+  return NULL;
+}
+
+
 extern void
 proto_dump_game_players(Game *g)
 {

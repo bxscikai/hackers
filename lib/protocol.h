@@ -78,6 +78,7 @@ typedef struct {
   Proto_StateVersion sver;
   Game               game;
   int                blen;
+  ReturnCode         returnCode;
 } __attribute__((__packed__)) Proto_Msg_Hdr;
 
 

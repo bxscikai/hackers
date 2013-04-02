@@ -594,6 +594,13 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
   bzero(&h, sizeof(h));
   h.type = PROTO_MT_REP_BASE_HELLO;
 
+  // Make sure this player hasn't joined already
+  if (getPlayer(&Proto_Server.game, s->fd)!=NULL) {
+    h.version = RPC_HELLO_ALREADYJOINED;
+    proto_session_hdr_marshall(s, &h);
+    proto_session_send_msg(s, 1);    
+  }
+
   int numOfPlayersTeam1 = getNumberOfPlayersForTeam(1);
   int numOfPlayersTeam2 = getNumberOfPlayersForTeam(2);  
 

@@ -25,6 +25,14 @@ typedef enum  {
 
 } CellType;
 
+typedef enum {
+
+	RPC_SUCCESS,
+	RPC_HELLO_ALREADYJOINED
+
+} ReturnCode;
+
+
 // Team types
 typedef enum  {  
 

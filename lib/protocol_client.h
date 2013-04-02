@@ -71,7 +71,6 @@ extern int proto_client_querymap(Proto_Client_Handle ch);
 
 // Helper methods
 extern void killConnection(Proto_Client_Handle *c);
-extern Player* getPlayer(Proto_Client_Handle ch, int playerID);
 
 // Reply handlers
 static int proto_server_mt_rpc_rep_goodbye_handler(Proto_Session *s);

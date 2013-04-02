@@ -87,6 +87,13 @@ proto_session_hdr_unmarshall_blen(Proto_Session *s)
   s->rhdr.blen = ntohl(s->rhdr.blen);
 }
 
+
+extern void
+proto_session_hdr_marshall_returnCode(Proto_Session *s)
+{
+  s->shdr.returnCode = htonl(s->shdr.returnCode);
+}
+
 static void
 proto_session_hdr_marshall_type(Proto_Session *s, Proto_Msg_Types t)
 {
@@ -230,6 +237,13 @@ proto_session_hdr_unmarshall_version(Proto_Session *s)
   return s->rhdr.version;
 }
 
+extern int
+proto_session_hdr_unmarshall_returncode(Proto_Session *s)
+{
+  s->rhdr.returnCode = htonl(s->rhdr.returnCode);
+  return s->rhdr.returnCode;
+}
+
 extern Proto_Msg_Types
 proto_session_hdr_unmarshall_type(Proto_Session *s)
 {
@@ -245,6 +259,7 @@ proto_session_hdr_unmarshall(Proto_Session *s, Proto_Msg_Hdr *h)
   proto_session_hdr_unmarshall_type(s);
   proto_session_hdr_unmarshall_sver(s, &h->sver);
   proto_session_hdr_unmarshall_game(s);
+  proto_session_hdr_unmarshall_returncode(s);
   // proto_session_hdr_unmarshall_blen(s);
 }
    
@@ -259,7 +274,7 @@ proto_session_hdr_marshall(Proto_Session *s, Proto_Msg_Hdr *h)
     s->shdr.version = htonl(PROTOCOL_BASE_VERSION);
   proto_session_hdr_marshall_type(s, h->type);
   proto_session_hdr_marshall_sver(s, h->sver);
-
+  proto_session_hdr_marshall_returnCode(s);
   proto_session_hdr_marshall_game(s, &h->game);
   // we ignore the body length as we will explicity set it
   // on the send path to the amount of body data that was

@@ -349,8 +349,8 @@ docmd(Client *C, char *cmd)
     doRPCCmd(C, 'q');  // query map     
     cinfo(cmd, C);
   }
-  else if (strcmp(cmd, "start\n"==0)) {
-    Player *player = getPlayer(client, client->playerID);
+  else if (strcmp(cmd, "start\n")==0) {
+    Player *player = getPlayer(&client->game, client->playerID);
     if (player->isHost==1) 
       doRPCCmd(C, 's');  // query map   
     else
@@ -477,18 +477,18 @@ main(int argc, char **argv)
     startConnection(&c, globals.host, globals.port, update_event_handler);
   }
 
-  //shell(&c);
 
   if (DISPLAYUI==1) {
 
-    // Init for UI stuff
     pthread_t tid;
+    pthread_create(&tid, NULL, shell, NULL);
+
+    // Init for UI stuff
 
     tty_init(STDIN_FILENO);
 
     ui_init(&(ui));
 
-    pthread_create(&tid, NULL, shell, NULL);
 
     // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
     // SO JUMP THROW HOOPS :-(
@@ -497,9 +497,13 @@ main(int argc, char **argv)
     ui_main_loop(ui, (32 * client->game.map.dimension.x), (32 * client->game.map.dimension.y), &client->game.map);
 
   }
+  else {
+      shell(&c);
+  }
 
   return 0;
 }
+
 
 extern sval
 ui_keypress(UI *ui, SDL_KeyboardEvent *e)

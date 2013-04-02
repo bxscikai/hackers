@@ -508,20 +508,6 @@ proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s)
 ///////////////////////// HELPER METHODS //////////////////////////////
 
 
-extern Player* getPlayer(Proto_Client_Handle ch, int playerID) {
-  int i;
-  Proto_Client *client = ch;
-  Player *player;
-
-  for (i=0; i<MAX_NUM_PLAYERS; i++) {
-    player = &(client->game.Team1_Players[i]);
-    if (player->playerID==playerID)
-      return player;
-    player = &(client->game.Team2_Players[i]);
-    if (player->playerID==playerID)
-      return player;    
-  }
-}
 
 static void parseMapFromString(char *mapString, Maze *map) {
 
