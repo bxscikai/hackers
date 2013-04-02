@@ -599,7 +599,7 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
 
   Player newplayer;
   newplayer.isHost=0;
-  newplayer.holdingFlag=0;
+  newplayer.inventory.type = NONE;
   newplayer.canMove=1;
   newplayer.playerID = s->fd;
 
@@ -723,15 +723,12 @@ proto_server_parse_map(char *filename)
     while (fgets(line, MAX_LINE_LEN, fr) !=NULL) {              
 
       // We are iterating through each character in the map
-      int i;
+      int i,j;
       for (i=0; i<Proto_Server.game.map.dimension.x; i++) {
         Cell newcell;
         newcell.occupied=0;
         char currentCell = line[i];
         newcell.type=cellTypeFromChar(currentCell);
-
-        if (currentCell!='\n')
-          Proto_Server.game.map.mapBody[numOfLines][i] = newcell;
 
         // Record map stats so we don't need to recompute them when queried
         if (newcell.type==HOME_1)
@@ -744,10 +741,25 @@ proto_server_parse_map(char *filename)
           Proto_Server.game.map.numJail2++;
         else if (newcell.type==WALL_FIXED)
           Proto_Server.game.map.numFixedWall++;
-        else if (newcell.type==FLOOR_1)
-          Proto_Server.game.map.numFloor1++;                            
-        else if (newcell.type==FLOOR_2)
-          Proto_Server.game.map.numFloor2++;                                    
+        else if (newcell.type==WALL_UNFIXED)
+          Proto_Server.game.map.numNonfixedWall++;        
+        // Decide if floor tile is Floor1 or Floor2
+        else if (newcell.type==FLOOR_1) 
+        {
+          if (i<=Proto_Server.game.map.dimension.x * 0.5) { 
+            Proto_Server.game.map.numFloor1++;
+            newcell.type = FLOOR_1;
+          }
+          else if (i>Proto_Server.game.map.dimension.x*0.5) {
+            Proto_Server.game.map.numFloor2++;
+            newcell.type = FLOOR_2;
+          }
+        }
+
+
+        if (currentCell!='\n')
+          Proto_Server.game.map.mapBody[numOfLines][i] = newcell;
+                                   
 
       }
       numOfLines++;
@@ -755,7 +767,76 @@ proto_server_parse_map(char *filename)
 
   fclose(fr);
 
-  // printMap(&Proto_Server.game.map);
+  ///// Now we have the entire map, cache certain cell sets for faster access /////////
+
+  Proto_Server.game.map.floorCells_1 = malloc(Proto_Server.game.map.numFloor1 * sizeof(Cell*));
+  Proto_Server.game.map.floorCells_2 = malloc(Proto_Server.game.map.numFloor2 * sizeof(Cell*));
+  Proto_Server.game.map.homeCells_1 = malloc(Proto_Server.game.map.numHome1 * sizeof(Cell*));
+  Proto_Server.game.map.homeCells_2 = malloc(Proto_Server.game.map.numHome2 * sizeof(Cell*));
+  int floorCell1Index = 0;
+  int floorCell2Index = 0;
+  int homeCell1Index = 0;
+  int homeCell2Index = 0;  
+
+  for (i=0; i<Proto_Server.game.map.dimension.x; i++) {
+    int j;
+    for (j=0; j<Proto_Server.game.map.dimension.y; j++) {
+  
+      Cell *cell = &Proto_Server.game.map.mapBody[i][j];
+      // Cache floor1 and floor2 cells in its own arrays
+      if (cell->type == FLOOR_1) {
+        Proto_Server.game.map.floorCells_1[floorCell1Index] = cell;
+        floorCell1Index++;
+      }
+      else if (cell->type==FLOOR_2) {
+        Proto_Server.game.map.floorCells_2[floorCell2Index] = cell;
+        floorCell2Index++;        
+      }
+      else if (cell->type==HOME_1) {
+        Proto_Server.game.map.homeCells_1[homeCell1Index] = cell;
+        homeCell1Index++;        
+      }
+      else if (cell->type==HOME_2) {
+        Proto_Server.game.map.homeCells_2[homeCell2Index] = cell;
+        homeCell2Index++;        
+      }      
+      // Count the number of unfixed walls now we have all the cells in the map
+      else if (cell->type==WALL_UNFIXED) {
+          Cell *leftCell;
+          Cell *rightCell;
+          Cell *topCell;
+          Cell *bottomCell;
+
+          if (i>0)
+            leftCell = &Proto_Server.game.map.mapBody[i-1][j];
+          if (i<Proto_Server.game.map.dimension.x-1)
+            rightCell = &Proto_Server.game.map.mapBody[i+1][j];
+          if (j>0)
+            topCell = &Proto_Server.game.map.mapBody[i][j-1];
+          if (j<Proto_Server.game.map.dimension.y-1)
+            bottomCell = &Proto_Server.game.map.mapBody[i][j+1];
+
+          // Condition for exterior wall
+          if (i==0 || j==0 || i==Proto_Server.game.map.dimension.x-1 || j==Proto_Server.game.map.dimension.y-1
+            // Condition of wall near jail or home
+            || leftCell->type==JAIL_1 || leftCell->type==JAIL_2 || leftCell->type==HOME_1 || leftCell->type==HOME_2
+            || rightCell->type==JAIL_1 || rightCell->type==JAIL_2 || rightCell->type==HOME_1 || rightCell->type==HOME_2
+            || topCell->type==JAIL_1 || topCell->type==JAIL_2 || topCell->type==HOME_1 || topCell->type==HOME_2
+            || bottomCell->type==JAIL_1 || bottomCell->type==JAIL_2 || bottomCell->type==HOME_1 || bottomCell->type==HOME_2
+            ) 
+          {
+            cell->type = WALL_FIXED;
+            Proto_Server.game.map.numNonfixedWall--;
+            Proto_Server.game.map.numFixedWall++;
+          }
+      }
+
+    }
+  }
+
+  ///// End of caching certain cell sets for faster access /////////
+
+  printMap(&Proto_Server.game.map);
 
   // // Allocate memory for ascii map representation
   char returnstr[(Proto_Server.game.map.dimension.x+1) * Proto_Server.game.map.dimension.y];

@@ -91,7 +91,9 @@ extern char getCellChar(int type) {
     if (type==FLOOR_2)
       return ' ';
     else if (type==WALL_FIXED)
-      return '#';
+      return '@';
+    else if (type==WALL_UNFIXED)
+      return '#';    
     else if (type==HOME_1)
       return 'h';
     else if (type==HOME_2)
@@ -110,7 +112,7 @@ extern char getCellChar(int type) {
 
 extern int cellTypeFromChar(char cell) {
     if (cell=='#')
-    return WALL_FIXED;
+    return WALL_UNFIXED;
   else if (cell==' ')
     return FLOOR_1;
   else if (cell=='h')
@@ -121,10 +123,6 @@ extern int cellTypeFromChar(char cell) {
     return JAIL_1;
   else if (cell=='J')
     return JAIL_2;
-  else if (cell=='f')
-    return FLAG_1;
-  else if (cell=='F')
-    return FLAG_2;
 
   return INVALID;
 }
@@ -178,9 +176,8 @@ proto_dump_game_players(Game *g)
   int array_len = sizeof(g->Team1_Players) / sizeof(g->Team1_Players[0]);
   fprintf(stderr, "Team 1 Players:\n");
   for(i=0; i<array_len; i++){
-    fprintf(stderr, "PLAYER %d position: type=%d occupied= %d\n", i+1, g->Team1_Players[i].cellPosition.type, g->Team1_Players[i].cellPosition.occupied);
+    fprintf(stderr, "PLAYER %d position: (%d,%d) \n", i+1, g->Team1_Players[i].cellposition.x, g->Team1_Players[i].cellposition.y);
     fprintf(stderr, "team: %d\n", g->Team1_Players[i].team);
-    fprintf(stderr, "holding flag?: %d\n", g->Team1_Players[i].holdingFlag);
     fprintf(stderr, "can move?: %d\n", g->Team1_Players[i].canMove);
   }
 
@@ -188,9 +185,8 @@ proto_dump_game_players(Game *g)
 
   int j;
   for(j=0; j<array_len; j++){
-    fprintf(stderr, "PLAYER %d position: type=%d occupied= %d\n", j+1, g->Team2_Players[i].cellPosition.type, g->Team2_Players[i].cellPosition.occupied);
+    fprintf(stderr, "PLAYER %d position: (%d,%d) \n", j+1, g->Team2_Players[i].cellposition.x, g->Team2_Players[i].cellposition.y);
     fprintf(stderr, "team: %d\n", g->Team2_Players[i].team);
-    fprintf(stderr, "holding flag?: %d\n", g->Team2_Players[i].holdingFlag);
     fprintf(stderr, "can move?: %d\n", g->Team2_Players[i].canMove);
   }
 }
