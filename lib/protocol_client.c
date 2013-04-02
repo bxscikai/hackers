@@ -193,6 +193,8 @@ proto_client_init(Proto_Client_Handle *ch)
         proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_querymap_handler);      
       else if (mt==PROTO_MT_EVENT_LOBBY_UPDATE)
         proto_client_set_event_handler(c, mt, proto_server_mt_rpc_lobby_update_handler);      
+      else if (mt==PROTO_MT_REP_BASE_START_GAME)
+        proto_client_set_event_handler(c, mt, proto_server_mt_rep_start_game);      
       else
         proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
   }
@@ -361,6 +363,12 @@ proto_client_querymap(Proto_Client_Handle ch)
   return do_generic_dummy_rpc(ch,PROTO_MT_REQ_BASE_MAPQUERY);  
 }
 
+extern int 
+proto_client_startgame(Proto_Client_Handle ch)
+{
+  return do_generic_dummy_rpc(ch,PROTO_MT_REQ_BASE_START_GAME);  
+}
+
 // Connection terminated, actually close connection
 extern void killConnection(Proto_Client_Handle *c) {
 
@@ -458,6 +466,13 @@ proto_server_mt_event_update_handler(Proto_Session *s)
 }
 
 static int 
+proto_server_mt_rep_start_game(Proto_Session *s)
+{
+
+  return 1;
+}
+
+static int 
 proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
 {
   Proto_Msg_Hdr h;
@@ -486,6 +501,13 @@ proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s)
 
   return 1; // rc just needs to be >1
 }
+
+/////////// End of Custom Event Handlers ///////////////
+
+
+///////////////////////// HELPER METHODS //////////////////////////////
+
+
 
 static void parseMapFromString(char *mapString, Maze *map) {
 
@@ -517,4 +539,4 @@ static void parseMapFromString(char *mapString, Maze *map) {
   }
 }
 
-/////////// End of Custom Event Handlers ///////////////
+/////////// END OF HELPER METHODS ///////////////

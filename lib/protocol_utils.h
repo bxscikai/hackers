@@ -30,6 +30,7 @@ extern void proto_dump_pstate(Game *game);
 extern void proto_dump_gstatus(GameStatus gs);
 extern void proto_dump_msghdr(Proto_Msg_Hdr *hdr);
 
+
 static inline void proto_debug_on(void) { PROTO_DEBUG = 1; }
 static inline void proto_debug_off(void) { PROTO_DEBUG = 0; }
 static inline int  proto_debug(void) {return PROTO_DEBUG; }
@@ -106,5 +107,6 @@ extern char getCellChar(int type);
 extern int cellTypeFromChar(char cell);
 extern char* cellTypeNameFromType(int type);
 extern void printMap(void *map);
+extern Player* getPlayer(Game *game, int playerID);
 
 #endif

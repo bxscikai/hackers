@@ -29,6 +29,7 @@ typedef enum  {
   // Requests
   PROTO_MT_REQ_BASE_RESERVED_FIRST,
   PROTO_MT_REQ_BASE_HELLO,
+  PROTO_MT_REQ_BASE_START_GAME,
   PROTO_MT_REQ_BASE_MOVE,
   PROTO_MT_REQ_BASE_GOODBYE,
   PROTO_MT_REQ_BASE_MAPQUERY,
@@ -38,6 +39,7 @@ typedef enum  {
   // Replys
   PROTO_MT_REP_BASE_RESERVED_FIRST,
   PROTO_MT_REP_BASE_HELLO,
+  PROTO_MT_REP_BASE_START_GAME,
   PROTO_MT_REP_BASE_MOVE,
   PROTO_MT_REP_BASE_GOODBYE,
   PROTO_MT_REP_BASE_MAPQUERY,
@@ -76,6 +78,7 @@ typedef struct {
   Proto_StateVersion sver;
   Game               game;
   int                blen;
+  ReturnCode         returnCode;
 } __attribute__((__packed__)) Proto_Msg_Hdr;
 
 

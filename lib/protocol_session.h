@@ -52,7 +52,9 @@ extern void proto_session_hdr_marshall(Proto_Session *s, Proto_Msg_Hdr *h);
 extern Proto_Msg_Types proto_session_hdr_unmarshall_type(Proto_Session *s);
 extern void proto_session_hdr_unmarshall(Proto_Session *s, Proto_Msg_Hdr *h);
 
-//
+extern void proto_session_hdr_marshall_returnCode(Proto_Session *s);
+extern int proto_session_hdr_unmarshall_returncode(Proto_Session *s);
+
 extern int proto_session_hdr_unmarshall_version(Proto_Session *s);
 
 extern void  proto_session_hdr_marshall_mapBody(Proto_Session *s, char *map);

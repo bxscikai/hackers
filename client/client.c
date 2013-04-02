@@ -152,6 +152,10 @@ doRPCCmd(Client *C, char c)
     rc = proto_client_goodbye(C->ph);
     rc = -1;
     break;
+  case 's':
+    if (PROTO_PRINT_DUMPS==1) printf("start: rc=%x\n", rc);
+    rc = proto_client_startgame(C->ph);
+    break;    
   case 'q':
     if (PROTO_PRINT_DUMPS==1) printf("query map: rc=%x\n", rc);
     rc = proto_client_querymap(C->ph);
@@ -345,6 +349,13 @@ docmd(Client *C, char *cmd)
     doRPCCmd(C, 'q');  // query map     
     cinfo(cmd, C);
   }
+  else if (strcmp(cmd, "start\n")==0) {
+    Player *player = getPlayer(&client->game, client->playerID);
+    if (player->isHost==1) 
+      doRPCCmd(C, 's');  // query map   
+    else
+      fprintf(stderr, "You cannot start the game because you are not the host\n");
+  }
   else if (strcmp(cmd, "d\n")==0)     
     proto_debug_on();  
   else if (strcmp(cmd, "D\n")==0) 
@@ -466,27 +477,32 @@ main(int argc, char **argv)
     startConnection(&c, globals.host, globals.port, update_event_handler);
   }
 
-  //shell(&c);
 
-  // Init for UI stuff
-  pthread_t tid;
+  if (DISPLAYUI==1) {
 
-  tty_init(STDIN_FILENO);
+    pthread_t tid;
+    pthread_create(&tid, NULL, shell, NULL);
 
-  ui_init(&(ui));
+    // Init for UI stuff
 
-  pthread_create(&tid, NULL, shell, NULL);
+    tty_init(STDIN_FILENO);
 
-  // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
-  // SO JUMP THROW HOOPS :-(
-  Proto_Client *client = (Proto_Client *) c.ph;
-  doRPCCmd(&c, 'q'); //query for the map
+    ui_init(&(ui));
 
-  //window will be consistently 20x20
-  ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game.map);
-
+    // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
+    // SO JUMP THROW HOOPS :-(
+    Proto_Client *client = (Proto_Client *) c.ph;
+    doRPCCmd(&c, 'q'); //query for the map
+  
+      //window will be consistently 20x20
+    ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game.map);
+    
+  }else {
+      shell(&c);
+  }
   return 0;
 }
+
 
 extern sval
 ui_keypress(UI *ui, SDL_KeyboardEvent *e)

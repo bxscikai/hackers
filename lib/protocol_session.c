@@ -87,6 +87,13 @@ proto_session_hdr_unmarshall_blen(Proto_Session *s)
   s->rhdr.blen = ntohl(s->rhdr.blen);
 }
 
+
+extern void
+proto_session_hdr_marshall_returnCode(Proto_Session *s)
+{
+  s->shdr.returnCode = htonl(s->shdr.returnCode);
+}
+
 static void
 proto_session_hdr_marshall_type(Proto_Session *s, Proto_Msg_Types t)
 {
@@ -100,24 +107,27 @@ proto_session_hdr_unmarshall_game(Proto_Session *s){
   int array_len = sizeof(s->rhdr.game.Team1_Players) / sizeof(s->rhdr.game.Team1_Players[0]);
 
   for(i = 0; i< array_len; i++){
-    s->rhdr.game.Team1_Players[i].cellPosition.type = ntohl(s->rhdr.game.Team1_Players[i].cellPosition.type);
-    s->rhdr.game.Team1_Players[i].cellPosition.occupied = ntohl(s->rhdr.game.Team1_Players[i].cellPosition.occupied);
+    s->rhdr.game.Team1_Players[i].cellposition.x = ntohl(s->rhdr.game.Team1_Players[i].cellposition.x);
+    s->rhdr.game.Team1_Players[i].cellposition.y = ntohl(s->rhdr.game.Team1_Players[i].cellposition.y);
     s->rhdr.game.Team1_Players[i].team = ntohl(s->rhdr.game.Team1_Players[i].team);
-    s->rhdr.game.Team1_Players[i].holdingFlag = ntohl(s->rhdr.game.Team1_Players[i].holdingFlag);
     s->rhdr.game.Team1_Players[i].canMove = ntohl(s->rhdr.game.Team1_Players[i].canMove);
     s->rhdr.game.Team1_Players[i].playerID = ntohl(s->rhdr.game.Team1_Players[i].playerID);
     s->rhdr.game.Team1_Players[i].isHost = ntohl(s->rhdr.game.Team1_Players[i].isHost);
-
+    s->rhdr.game.Team1_Players[i].inventory.type = ntohl(s->rhdr.game.Team1_Players[i].inventory.type);
+    s->rhdr.game.Team1_Players[i].inventory.cellposition.x = ntohl(s->rhdr.game.Team1_Players[i].inventory.cellposition.x);
+    s->rhdr.game.Team1_Players[i].inventory.cellposition.y = ntohl(s->rhdr.game.Team1_Players[i].inventory.cellposition.y);
   }
 
   for(i = 0; i< array_len; i++){
-    s->rhdr.game.Team2_Players[i].cellPosition.type = ntohl(s->rhdr.game.Team2_Players[i].cellPosition.type);
-    s->rhdr.game.Team2_Players[i].cellPosition.occupied = ntohl(s->rhdr.game.Team2_Players[i].cellPosition.occupied);
+    s->rhdr.game.Team2_Players[i].cellposition.x = ntohl(s->rhdr.game.Team2_Players[i].cellposition.x);
+    s->rhdr.game.Team2_Players[i].cellposition.y = ntohl(s->rhdr.game.Team2_Players[i].cellposition.y);
     s->rhdr.game.Team2_Players[i].team = ntohl(s->rhdr.game.Team2_Players[i].team);
-    s->rhdr.game.Team2_Players[i].holdingFlag = ntohl(s->rhdr.game.Team2_Players[i].holdingFlag);
     s->rhdr.game.Team2_Players[i].canMove = ntohl(s->rhdr.game.Team2_Players[i].canMove);
     s->rhdr.game.Team2_Players[i].playerID = ntohl(s->rhdr.game.Team2_Players[i].playerID);
     s->rhdr.game.Team2_Players[i].isHost = ntohl(s->rhdr.game.Team2_Players[i].isHost);
+    s->rhdr.game.Team2_Players[i].inventory.type = ntohl(s->rhdr.game.Team2_Players[i].inventory.type);
+    s->rhdr.game.Team2_Players[i].inventory.cellposition.x = ntohl(s->rhdr.game.Team2_Players[i].inventory.cellposition.x);
+    s->rhdr.game.Team2_Players[i].inventory.cellposition.y = ntohl(s->rhdr.game.Team2_Players[i].inventory.cellposition.y);    
   }
 
   //marshall the map
@@ -132,6 +142,12 @@ proto_session_hdr_unmarshall_game(Proto_Session *s){
   s->rhdr.game.map.numFloor1 = ntohl(s->rhdr.game.map.numFloor1);
   s->rhdr.game.map.numFloor2 = ntohl(s->rhdr.game.map.numFloor2);
 
+  for (i=0 ; i<NUMOFOBJECTS; i++) {
+    s->rhdr.game.map.objects[i].type           = ntohl(s->rhdr.game.map.objects[i].type);
+    s->rhdr.game.map.objects[i].cellposition.x = ntohl(s->rhdr.game.map.objects[i].cellposition.x);
+    s->rhdr.game.map.objects[i].cellposition.y = ntohl(s->rhdr.game.map.objects[i].cellposition.y);
+  }
+
   //marshall the game state
   s->rhdr.game.status= ntohl(s->rhdr.game.status);
 }
@@ -144,23 +160,27 @@ proto_session_hdr_marshall_game(Proto_Session *s, Game *g){
   int array_len = sizeof(g->Team1_Players) / sizeof(g->Team1_Players[0]);
 
   for(i = 0; i< array_len; i++){
-    s->shdr.game.Team1_Players[i].cellPosition.type = htonl(g->Team1_Players[i].cellPosition.type);
-    s->shdr.game.Team1_Players[i].cellPosition.occupied = htonl(g->Team1_Players[i].cellPosition.occupied);
+    s->shdr.game.Team1_Players[i].cellposition.x = htonl(g->Team1_Players[i].cellposition.x);
+    s->shdr.game.Team1_Players[i].cellposition.y = htonl(g->Team1_Players[i].cellposition.y);
     s->shdr.game.Team1_Players[i].team = htonl(g->Team1_Players[i].team);
-    s->shdr.game.Team1_Players[i].holdingFlag = htonl(g->Team1_Players[i].holdingFlag);
     s->shdr.game.Team1_Players[i].canMove = htonl(g->Team1_Players[i].canMove);
     s->shdr.game.Team1_Players[i].playerID = htonl(g->Team1_Players[i].playerID);
     s->shdr.game.Team1_Players[i].isHost = htonl(g->Team1_Players[i].isHost);    
+    s->shdr.game.Team1_Players[i].inventory.type = htonl(g->Team1_Players[i].inventory.type);    
+    s->shdr.game.Team1_Players[i].inventory.cellposition.x = htonl(g->Team1_Players[i].inventory.cellposition.x);    
+    s->shdr.game.Team1_Players[i].inventory.cellposition.y = htonl(g->Team1_Players[i].inventory.cellposition.y);    
   }
 
   for(i = 0; i< array_len; i++){
-    s->shdr.game.Team2_Players[i].cellPosition.type = htonl(g->Team2_Players[i].cellPosition.type);
-    s->shdr.game.Team2_Players[i].cellPosition.occupied = htonl(g->Team2_Players[i].cellPosition.occupied);
+    s->shdr.game.Team2_Players[i].cellposition.x = htonl(g->Team2_Players[i].cellposition.x);
+    s->shdr.game.Team2_Players[i].cellposition.y = htonl(g->Team2_Players[i].cellposition.y);
     s->shdr.game.Team2_Players[i].team = htonl(g->Team2_Players[i].team);
-    s->shdr.game.Team2_Players[i].holdingFlag = htonl(g->Team2_Players[i].holdingFlag);
     s->shdr.game.Team2_Players[i].canMove = htonl(g->Team2_Players[i].canMove);
     s->shdr.game.Team2_Players[i].playerID = htonl(g->Team2_Players[i].playerID);
     s->shdr.game.Team2_Players[i].isHost = htonl(g->Team2_Players[i].isHost);        
+    s->shdr.game.Team2_Players[i].inventory.type = htonl(g->Team2_Players[i].inventory.type);        
+    s->shdr.game.Team2_Players[i].inventory.cellposition.x = htonl(g->Team2_Players[i].inventory.cellposition.x);        
+    s->shdr.game.Team2_Players[i].inventory.cellposition.y = htonl(g->Team2_Players[i].inventory.cellposition.y);            
   }
 
   //marshall the map
@@ -174,6 +194,12 @@ proto_session_hdr_marshall_game(Proto_Session *s, Game *g){
   s->shdr.game.map.numNonfixedWall = htonl(g->map.numNonfixedWall);
   s->shdr.game.map.numFloor1 = htonl(g->map.numFloor1);
   s->shdr.game.map.numFloor2 = htonl(g->map.numFloor2);  
+
+  for (i=0 ; i<NUMOFOBJECTS; i++) {
+    s->shdr.game.map.objects[i].type           = htonl(g->map.objects[i].type);
+    s->shdr.game.map.objects[i].cellposition.x = htonl(g->map.objects[i].cellposition.x);
+    s->shdr.game.map.objects[i].cellposition.y = htonl(g->map.objects[i].cellposition.y);
+  }
 
   //marshall the game state
   s->shdr.game.status = htonl(g->status);
@@ -211,6 +237,13 @@ proto_session_hdr_unmarshall_version(Proto_Session *s)
   return s->rhdr.version;
 }
 
+extern int
+proto_session_hdr_unmarshall_returncode(Proto_Session *s)
+{
+  s->rhdr.returnCode = htonl(s->rhdr.returnCode);
+  return s->rhdr.returnCode;
+}
+
 extern Proto_Msg_Types
 proto_session_hdr_unmarshall_type(Proto_Session *s)
 {
@@ -226,6 +259,7 @@ proto_session_hdr_unmarshall(Proto_Session *s, Proto_Msg_Hdr *h)
   proto_session_hdr_unmarshall_type(s);
   proto_session_hdr_unmarshall_sver(s, &h->sver);
   proto_session_hdr_unmarshall_game(s);
+  proto_session_hdr_unmarshall_returncode(s);
   // proto_session_hdr_unmarshall_blen(s);
 }
    
@@ -240,7 +274,7 @@ proto_session_hdr_marshall(Proto_Session *s, Proto_Msg_Hdr *h)
     s->shdr.version = htonl(PROTOCOL_BASE_VERSION);
   proto_session_hdr_marshall_type(s, h->type);
   proto_session_hdr_marshall_sver(s, h->sver);
-
+  proto_session_hdr_marshall_returnCode(s);
   proto_session_hdr_marshall_game(s, &h->game);
   // we ignore the body length as we will explicity set it
   // on the send path to the amount of body data that was
