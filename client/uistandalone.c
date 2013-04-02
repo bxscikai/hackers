@@ -57,6 +57,16 @@ struct UI_Player_Struct {
 };
 typedef struct UI_Player_Struct UI_Player;
 
+// Kludgy dummy player for testing purposes
+struct DummyPlayerDesc {
+  pthread_mutex_t lock;
+  UI_Player *uip;
+  int id;
+  int x, y;
+  int team;
+  int state;
+} dummyPlayer;
+
 static inline SDL_Surface *
 ui_player_img(UI *ui, int team)
 {  
@@ -323,16 +333,20 @@ ui_paintmap(UI *ui, void *map)
   int j = 0;
   t.y = 0; t.x = 0; t.h = ui->tile_h; t.w = ui->tile_w;
 
+  //fprintf(stderr, "%d\t%d\n", dummyPlayer.x, dummyPlayer.y);
+
   for (i=0, t.y=0; i<maze->dimension.x; i++) {
     for (j=0, t.x=0; j<maze->dimension.y; j++){
       int cell_type = maze->mapBody[i][j].type;
 
-      fprintf(stderr, "%d\t%d\t%d\t%d\t%d\n", t.x, t.y, i, j, cell_type);
+      //fprintf(stderr, "%d\t%d\t%d\t%d\t%d\n", t.x, t.y, i, j, cell_type);
 
       if(cell_type == FLOOR_1 || cell_type == FLOOR_2){
         draw_cell(ui, FLOOR_S, &t, ui->screen); 
       }else if (cell_type == WALL_FIXED){
         draw_cell(ui, REDWALL_S, &t, ui->screen);
+      }else if (cell_type == WALL_UNFIXED){
+        draw_cell(ui, GREENWALL_S, &t, ui->screen);
       }else if (cell_type == HOME_1 || cell_type == HOME_2){
         draw_cell(ui, FLOOR_S, &t, ui->screen);
       } else if (cell_type == JAIL_1 || cell_type == JAIL_2){
@@ -533,17 +547,6 @@ ui_init(UI **ui)
   (*ui)->tile_w = SPRITE_W;
 
 }
-
-
-// Kludgy dummy player for testing purposes
-struct DummyPlayerDesc {
-  pthread_mutex_t lock;
-  UI_Player *uip;
-  int id;
-  int x, y;
-  int team;
-  int state;
-} dummyPlayer;
 
 static void 
 dummyPlayer_init(UI *ui) 
