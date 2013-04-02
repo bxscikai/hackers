@@ -333,10 +333,61 @@ ui_paintmap(UI *ui, void *map)
   int j = 0;
   t.y = 0; t.x = 0; t.h = ui->tile_h; t.w = ui->tile_w;
 
-  //fprintf(stderr, "%d\t%d\n", dummyPlayer.x, dummyPlayer.y);
+  int start_x;
+  int end_x;
+  int start_y;
+  int end_y;
 
-  for (i=0, t.y=0; i<maze->dimension.x; i++) {
-    for (j=0, t.x=0; j<maze->dimension.y; j++){
+  //Keep window consistently 20x20
+  if (dummyPlayer.x < 10 && dummyPlayer.y < 10){
+    start_x = 0;
+    end_x = 19;
+    start_y = 0;
+    end_y = 19;
+  }else if (dummyPlayer.x > 190 && dummyPlayer.y > 190){
+    start_y = 180;
+    end_y = 199;
+    start_x = 180;
+    end_x = 199;
+  }else if (dummyPlayer.x < 10 && dummyPlayer.y > 190){
+    start_y = 180;
+    end_y = 199;
+    start_x = 0;
+    end_x = 19;
+  }else if (dummyPlayer.x > 190 && dummyPlayer.y < 10){
+    start_y = 0;
+    end_y = 19;
+    start_x = 180;
+    end_x = 199;
+  }else if (dummyPlayer.x < 10){
+    start_x = 0;
+    end_x = 19;
+    start_y = dummyPlayer.y - 10;
+    end_y = dummyPlayer.y + 9;
+  }else if (dummyPlayer.y < 10){
+    start_x = dummyPlayer.x - 10;
+    end_x = dummyPlayer.x + 9;
+    start_y = 0;
+    end_y= 19;
+  }else if (dummyPlayer.x > 190){
+    start_x = 180;
+    end_x = 199;
+    start_y = dummyPlayer.y - 10;
+    end_y = dummyPlayer.y + 9;
+  }else if (dummyPlayer.y >190){
+    start_y = 180;
+    end_y = 199;
+    start_x = dummyPlayer.x - 10;
+    end_x = dummyPlayer.x + 9;
+  }else{
+    start_y = dummyPlayer.y - 10;
+    end_y = dummyPlayer.y + 9;
+    start_x = dummyPlayer.x - 10;
+    end_x = dummyPlayer.x + 9;
+  }
+
+  for (i= start_y, t.y=0; i<= end_y; i++) {
+    for (j= start_x, t.x=0; j<= end_x; j++) {
       int cell_type = maze->mapBody[i][j].type;
 
       //fprintf(stderr, "%d\t%d\t%d\t%d\t%d\n", t.x, t.y, i, j, cell_type);
@@ -561,7 +612,26 @@ static void
 dummyPlayer_paint(UI *ui, SDL_Rect *t)
 {
   pthread_mutex_lock(&dummyPlayer.lock);
-    t->y = dummyPlayer.y * t->h; t->x = dummyPlayer.x * t->w;
+    if(dummyPlayer.x <= 10 && dummyPlayer.y <= 10){
+      t->y = dummyPlayer.y * t->h; t->x = dummyPlayer.x * t->w;
+    }else if(dummyPlayer.x >= 190 && dummyPlayer.y <= 10){
+      t->y = dummyPlayer.y * t->h; t->x = (20 - (200 - dummyPlayer.x)) * t->w;
+    }else if(dummyPlayer.x <= 10 && dummyPlayer.y >= 190){
+      t->y = (20 - (200 - dummyPlayer.y)) * t->h; t->x = dummyPlayer.x * t->w;
+    }else if(dummyPlayer.x >= 190 && dummyPlayer.y >= 190){
+      t->y = (20 - (200 - dummyPlayer.y)) * t->h; t->x = (20 - (200 - dummyPlayer.x)) * t->w;
+
+    }else if(dummyPlayer.y <= 10){
+      t->y = dummyPlayer.y * t->h; t->x = 10 * t->w;
+    }else if(dummyPlayer.x <= 10){
+      t->y = 10 * t->h; t->x = dummyPlayer.x * t->w;
+    }else if(dummyPlayer.y >= 190){
+      t->y = (20 - (200 - dummyPlayer.y)) * t->h; t->x = 10 * t->w;
+    }else if(dummyPlayer.x >= 190){
+      t->y = 10 * t->h; t->x = (20 - (200 - dummyPlayer.x)) * t->w;
+    }else{
+      t->y = 320; t->x = 320; //center of window
+    }
     dummyPlayer.uip->clip.x = dummyPlayer.uip->base_clip_x +
       pxSpriteOffSet(dummyPlayer.team, dummyPlayer.state);
     SDL_BlitSurface(dummyPlayer.uip->img, &(dummyPlayer.uip->clip), ui->screen, t);

@@ -481,7 +481,9 @@ main(int argc, char **argv)
   // SO JUMP THROW HOOPS :-(
   Proto_Client *client = (Proto_Client *) c.ph;
   doRPCCmd(&c, 'q'); //query for the map
-  ui_main_loop(ui, (32 * client->game.map.dimension.x), (32 * client->game.map.dimension.y), &client->game.map);
+
+  //window will be consistently 20x20
+  ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game.map);
 
   return 0;
 }
