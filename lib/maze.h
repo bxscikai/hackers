@@ -6,6 +6,7 @@
 #define MAX_NUM_PLAYERS 10
 #define MAX_LINE_LEN 500
 #define NUMOFOBJECTS 4
+#define DISPLAYUI 0
 
 // Defines data structures used for the game
 

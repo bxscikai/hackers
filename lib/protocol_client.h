@@ -62,6 +62,7 @@ extern int proto_client_set_event_handler(Proto_Client_Handle ch,
 // client side protocol rpc's
 extern int proto_client_hello(Proto_Client_Handle ch);
 extern int proto_client_move(Proto_Client_Handle ch, char d);
+extern int proto_client_startgame(Proto_Client_Handle ch);
 extern int proto_client_goodbye(Proto_Client_Handle ch);
 extern int proto_client_update(Proto_Client_Handle ch);
 extern int proto_client_querymap(Proto_Client_Handle ch);
@@ -70,6 +71,7 @@ extern int proto_client_querymap(Proto_Client_Handle ch);
 
 // Helper methods
 extern void killConnection(Proto_Client_Handle *c);
+extern Player* getPlayer(Proto_Client_Handle ch, int playerID);
 
 // Reply handlers
 static int proto_server_mt_rpc_rep_goodbye_handler(Proto_Session *s);
@@ -78,6 +80,8 @@ static int proto_server_mt_event_update_handler(Proto_Session *s);
 static int proto_server_mt_rpc_rep_move_handler(Proto_Session *s);
 static int proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s);
 static int proto_server_mt_rpc_lobby_update_handler(Proto_Session *s);
+static int proto_server_mt_rep_start_game(Proto_Session *s);
+
 
 // Parse map from string representation
 static void parseMapFromString(char *mapString, Maze *map);

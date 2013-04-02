@@ -366,6 +366,7 @@ ui_paintmap(UI *ui, void *map)
   dummyPlayer_paint(ui, &t);
 
   SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
+
   return 1;
 }
 
@@ -463,7 +464,14 @@ ui_process(UI *ui, void *map)
     default:
       fprintf(stderr, "%s: e.type=%d NOT Handled\n", __func__, e.type);
     }
-    if (rc==2) { ui_paintmap(ui, map); }
+    if (rc==2) { 
+      // ui_paintmap(ui, map); 
+      SDL_Rect t;
+      t.y = 0; t.x = 0; t.h = ui->tile_h; t.w = ui->tile_w;
+      dummyPlayer_paint(ui, &t);
+      SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
+
+    }
     if (rc<0) break;
   }
   return rc;

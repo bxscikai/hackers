@@ -422,9 +422,11 @@ proto_server_init(void)
       proto_server_set_req_handler(i, proto_server_mt_rpc_querymap_handler);
     else if (i==PROTO_MT_EVENT_LOBBY_UPDATE) 
       proto_server_set_req_handler(i, proto_server_mt_rpc_lobby_update_handler);    
-    else {
+    else if (i==PROTO_MT_REQ_BASE_START_GAME) 
+      proto_server_set_req_handler(i, proto_server_mt_rpc_start_game);    
+    else 
       proto_server_set_req_handler(i, proto_server_mt_null_handler);
-    }
+    
         
   }
 
@@ -576,6 +578,12 @@ static void insertPlayerForTeam(int team, Player *player) {
       }
         
     }
+}
+
+static int 
+proto_server_mt_rpc_start_game(Proto_Session *s)
+{
+  fprintf(stderr, "Received start game\n");
 }
 
 static int 
