@@ -43,9 +43,10 @@ typedef enum {
 
 typedef enum {
 
+	NONE,
 	JACKHAMMER,
 	FLAG_1,
-	FLAG_2
+	FLAG_2,
 
 } ObjectType;
 
@@ -67,7 +68,7 @@ typedef struct {
 typedef struct {
 
 	ObjectType type;
-	Cell cell;
+	Position cellposition;
 
 } Object;
 
@@ -75,6 +76,12 @@ typedef struct {
 typedef struct {
 
 	Cell **mapBody;
+	// Convenience of access cells for when we want to spawn at home location
+	// or spawn flag on floor cell 
+	Cell* *homeCells_1;
+	Cell* *homeCells_2;
+	Cell* *floorCells_1;
+	Cell* *floorCells_2;
 	Position dimension;
 	int numHome1;
 	int numHome2;
@@ -90,9 +97,9 @@ typedef struct {
 
 typedef struct 
 {
-	Cell cellPosition;
+	Position cellposition;
 	TeamType team;
-	int holdingFlag;
+	Object inventory;
 	int canMove;
 	int playerID;
 	int isHost;
