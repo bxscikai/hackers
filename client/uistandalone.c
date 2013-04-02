@@ -395,9 +395,9 @@ ui_paintmap(UI *ui, void *map)
       if(cell_type == FLOOR_1 || cell_type == FLOOR_2){
         draw_cell(ui, FLOOR_S, &t, ui->screen); 
       }else if (cell_type == WALL_FIXED){
-        draw_cell(ui, REDWALL_S, &t, ui->screen);
-      }else if (cell_type == WALL_UNFIXED){
         draw_cell(ui, GREENWALL_S, &t, ui->screen);
+      }else if (cell_type == WALL_UNFIXED){
+        draw_cell(ui, REDWALL_S, &t, ui->screen);
       }else if (cell_type == HOME_1 || cell_type == HOME_2){
         draw_cell(ui, FLOOR_S, &t, ui->screen);
       } else if (cell_type == JAIL_1 || cell_type == JAIL_2){
@@ -516,7 +516,7 @@ ui_process(UI *ui, void *map)
       fprintf(stderr, "%s: e.type=%d NOT Handled\n", __func__, e.type);
     }
     if (rc==2) { 
-      // ui_paintmap(ui, map); 
+      ui_paintmap(ui, map); 
       SDL_Rect t;
       t.y = 0; t.x = 0; t.h = ui->tile_h; t.w = ui->tile_w;
       dummyPlayer_paint(ui, &t);
