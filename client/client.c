@@ -144,7 +144,7 @@ doRPCCmd(Client *C, char c)
     }
     break;
   case 'm':
-    scanf("%c", &c);
+    if (PROTO_PRINT_DUMPS==1) printf("move: rc=%x\n", rc);
     rc = proto_client_move(C->ph, c);
     break;
   case 'g':
@@ -343,22 +343,42 @@ docmd(Client *C, char *cmd)
   else if (strcmp(cmd, "dump\n")==0) {
     doRPCCmd(C, 'q');  // query map   
     printMap(&client->game.map);
-    ui_update(ui);
+    if (DISPLAYUI==1)
+      ui_update(ui);
   }                 
   else if (containsString(input, "cinfo")>0) {
     doRPCCmd(C, 'q');  // query map     
     cinfo(cmd, C);
   }
   else if (strcmp(cmd, "start\n")==0) {
-    Player *player = getPlayer(&client->game, client->playerID);
-    if (player->isHost==1) 
       doRPCCmd(C, 's');  // query map   
-    else
-      fprintf(stderr, "You cannot start the game because you are not the host\n");
   }
-  else if (strcmp(cmd, "d\n")==0)     
+  // MOVEMENT
+  else if (strcmp(cmd, "w\n")==0) {
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      doRPCCmd(C, 'm');  // query map   
+  }
+  else if (strcmp(cmd, "a\n")==0) {
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = LEFT;
+      doRPCCmd(C, 'm');  // query map   
+  }
+  else if (strcmp(cmd, "d\n")==0) {
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = RIGHT;
+      doRPCCmd(C, 'm');  // query map   
+  }
+  else if (strcmp(cmd, "s\n")==0) {
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = DOWN;
+      doRPCCmd(C, 'm');  // query map   
+  }
+  // END OF MOVEMENT  
+
+  else if (strcmp(cmd, "O\n")==0)     
     proto_debug_on();  
-  else if (strcmp(cmd, "D\n")==0) 
+  else if (strcmp(cmd, "o\n")==0) 
     proto_debug_off();
   else if (strcmp(cmd, "rh\n")==0) 
     rc = proto_client_hello(C->ph);

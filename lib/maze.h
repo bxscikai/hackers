@@ -27,8 +27,21 @@ typedef enum  {
 
 typedef enum {
 
+	UP,
+	DOWN,
+	LEFT,
+	RIGHT
+
+} Direction;
+
+typedef enum {
+
 	RPC_SUCCESS,
-	RPC_HELLO_ALREADYJOINED
+	RPC_HELLO_ALREADYJOINED,
+	RPC_STARTGAME_NOT_HOST,
+	RPC_STARTGAME_UNEVEN_PLAYERS,
+	RPC_MOVE_MOVING_INTO_WALL,
+	RPC_MOVE_MOVING_INTO_PLAYER,
 
 } ReturnCode;
 
@@ -53,7 +66,8 @@ typedef enum {
 typedef enum {
 
 	NONE,
-	JACKHAMMER,
+	JACKHAMMER1,
+	JACKHAMMER2,
 	FLAG_1,
 	FLAG_2,
 
@@ -69,6 +83,7 @@ typedef struct {
 typedef struct {
 
 	CellType 	type;
+	Position    position;
 	int 		occupied;
 
 } Cell;

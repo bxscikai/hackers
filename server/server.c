@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <poll.h>
+#include <time.h>
 #include "../lib/types.h"
 #include "../lib/protocol_server.h"
 #include "../lib/protocol_utils.h"
@@ -141,6 +142,9 @@ readFile(int argc, char **argv)
 int
 main(int argc, char **argv)
 { 
+  // Set seed for our random number generator
+  srand(time(NULL));
+
   // Read in map from input
   int rc = readFile(argc, argv);
 

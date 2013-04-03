@@ -125,7 +125,7 @@ proto_client_event_dispatcher(void * arg)
       mt = proto_session_hdr_unmarshall_type(s);  
       proto_session_hdr_unmarshall(s, &h);
 
-      if (mt > PROTO_MT_EVENT_BASE_RESERVED_FIRST && 
+      if (mt > PROTO_MT_REQ_BASE_RESERVED_FIRST && 
     mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
 
     // We are getting the handler corresponding to our message type from our protocol_client 
@@ -135,7 +135,7 @@ proto_client_event_dispatcher(void * arg)
         if (hdlr(s)<0) goto leave;
          
         // Sync server game state with local game state        
-        c->game.status = s->rhdr.game.status;
+        // c->game.status = s->rhdr.game.status;
         // c->playerState.playerTurn.raw = s->rhdr.pstate.playerTurn.raw;
 
         // CHECK TO SEE IF GAME OVER
@@ -195,6 +195,8 @@ proto_client_init(Proto_Client_Handle *ch)
         proto_client_set_event_handler(c, mt, proto_server_mt_rpc_lobby_update_handler);      
       else if (mt==PROTO_MT_REP_BASE_START_GAME)
         proto_client_set_event_handler(c, mt, proto_server_mt_rep_start_game);      
+      else if (mt==PROTO_MT_EVENT_GAME_UPDATE)
+        proto_client_set_event_handler(c, mt, proto_server_mt_game_update_handler);              
       else
         proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
   }
@@ -330,17 +332,13 @@ proto_client_update(Proto_Client_Handle ch)
 extern int 
 proto_client_move(Proto_Client_Handle ch, char data)
 {
-  // Proto_Client *client = ch;
+  Proto_Client *client = ch;
   // client->rpc_session.shdr.pstate.playerMove.raw = (int) (data - '0');
 
-  // if (client->gameState.gameResult.raw!=PLAYING) {
-
-  //   if (client->gameState.gameResult.raw==NOT_STARTED)
-  //     fprintf(stderr, "Game hasn't started yet, waiting for another player!\n");
-  //   else
-  //     fprintf(stderr, "Game is already over!\n");
-  //   return 1;
-  // }
+  if (client->game.status != IN_PROGRESS) {
+      fprintf(stderr, "The game hasn't started yet!\n");
+      return 1;
+  }
 
   return do_generic_dummy_rpc(ch,PROTO_MT_REQ_BASE_MOVE);  
 }
@@ -402,6 +400,12 @@ proto_server_mt_rpc_rep_hello_handler(Proto_Session *s)
 {
   Proto_Client *c = s->client;
   c->playerID = s->rhdr.version;
+
+  if (s->rhdr.returnCode==RPC_HELLO_ALREADYJOINED) {
+    fprintf(stderr, "You have already joined the game!\n");
+    return 1;
+  }
+
   fprintf(stderr, "Connected to server with fd=%d\n", c->playerID);
 
   // Make server send lobby updates
@@ -465,9 +469,78 @@ proto_server_mt_event_update_handler(Proto_Session *s)
   return 1;
 }
 
+
+static int 
+proto_server_mt_game_update_handler(Proto_Session *s)
+{
+  // Update game states
+    Proto_Client *c = s->client;
+
+  // Copy player states to local state
+  for (int i=0; i<MAX_NUM_PLAYERS; i++)
+    c->game.Team1_Players[i] = s->rhdr.game.Team1_Players[i];
+  for (int i=0; i<MAX_NUM_PLAYERS; i++)
+    c->game.Team2_Players[i] = s->rhdr.game.Team2_Players[i];  
+  for (int i=0; i<NUMOFOBJECTS;i++)
+    c->game.map.objects[i] = s->rhdr.game.map.objects[i];
+  c->game.status = s->rhdr.game.status;
+
+  // Right now simply prints out all new player locations
+  printUpdate(&c->game);
+
+  // TIFFANY, THIS IS WHERE U UPDATE GAME UI FOR USER ///////////
+  // YOU CAN ACCESS THE GAME STRUCT IN c->game
+  // PLAYERS: c->game.Team1_Players, c->game.Team2_Players
+  // ITEMS:   c->game.map.objects
+  // Command instructions
+  // rh = hello, register yourself
+  // start = start game, must be host
+  // w,a,s,d = move up,left,down,right respectively
+  //////////////////////////////////////////////////////////////
+
+  return 1;
+}
+
+
 static int 
 proto_server_mt_rep_start_game(Proto_Session *s)
 {
+
+  Proto_Client *c = s->client;
+
+    // Don't initalize if the game started already
+  if (c->game.status==IN_PROGRESS)
+    return 1;
+
+  // Copy player states to local state
+  for (int i=0; i<MAX_NUM_PLAYERS; i++)
+    c->game.Team1_Players[i] = s->rhdr.game.Team1_Players[i];
+  for (int i=0; i<MAX_NUM_PLAYERS; i++)
+    c->game.Team2_Players[i] = s->rhdr.game.Team2_Players[i];  
+  for (int i=0; i<NUMOFOBJECTS;i++)
+    c->game.map.objects[i] = s->rhdr.game.map.objects[i];
+  c->game.status = s->rhdr.game.status;
+
+
+  // Handle error cases
+  if (s->rhdr.returnCode==RPC_STARTGAME_NOT_HOST)
+    fprintf(stderr, "Failed to start game, you are not the host\n");
+  else if (s->rhdr.returnCode==RPC_STARTGAME_UNEVEN_PLAYERS)
+    fprintf(stderr, "Failed to start game, uneven number of players on each side\n");
+
+  // Handle game start
+  else 
+  {
+    Player *player = getPlayer(&c->game, c->playerID);
+
+    if (player==NULL)
+      fprintf(stderr, "player not found\n");
+    else 
+      fprintf(stderr, "Player ID: %d  location is (%d,%d)\n", player->playerID, player->cellposition.x, player->cellposition.y);
+
+
+  }
+
 
   return 1;
 }
@@ -479,13 +552,12 @@ proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
   bzero(&h, sizeof(Proto_Msg_Hdr));
 
   // RESPOND TO PLAYER MOVE
-
-  // if (s->rhdr.pstate.playerMove.raw==NOT_YOUR_TURN)
-  //   fprintf(stderr, "Not your turn!\n");
-  // else if (s->rhdr.pstate.playerMove.raw==INVALID_MOVE)
-  //   fprintf(stderr, "Invalid move!\n");
-  // else if (s->rhdr.pstate.playerMove.raw==SUCCESS)
-  //   if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Move successfully!\n"); 
+  if (s->rhdr.returnCode==SUCCESS)
+    fprintf(stderr, "Move successful!\n");
+  else if (s->rhdr.returnCode==RPC_MOVE_MOVING_INTO_WALL)
+    fprintf(stderr, "Move failed, cannot move into wall\n");
+  else if (s->rhdr.returnCode==RPC_MOVE_MOVING_INTO_PLAYER)
+    fprintf(stderr, "Move failed, cannot move into another player\n");  
 
   return 1;
 }
@@ -497,6 +569,7 @@ proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s)
   char string[(s->rhdr.game.map.dimension.x+1)*s->rhdr.game.map.dimension.y];
   proto_session_hdr_unmarshall_mapBody(s, string);
   parseMapFromString(string, &s->rhdr.game.map);
+  printMap(&s->rhdr.game.map);
   // fprintf(stderr, "The map: %s\n", string);
 
   return 1; // rc just needs to be >1

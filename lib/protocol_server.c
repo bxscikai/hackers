@@ -54,6 +54,7 @@ struct {
                PROTO_MT_REQ_BASE_RESERVED_FIRST];
 
   // Game logic
+  pthread_mutex_t    GameLock;
   Game game;
 
 } Proto_Server;
@@ -437,6 +438,8 @@ proto_server_init(void)
     // fprintf(stderr, "Handler at index: %d  is: %p\n", i, handler);
     // }
 
+  // Initial states
+  Proto_Server.game.status = NOT_STARTED;
 
   for (i=0; i<PROTO_SERVER_MAX_EVENT_SUBSCRIBERS; i++) {
     Proto_Server.EventSubscribers[i]=-1;
@@ -444,6 +447,7 @@ proto_server_init(void)
   Proto_Server.EventNumSubscribers=0;
   Proto_Server.EventLastSubscriber=0;
   pthread_mutex_init(&Proto_Server.EventSubscribersLock, 0);
+  pthread_mutex_init(&Proto_Server.GameLock, 0);
 
 
   rc=net_setup_listen_socket(&(Proto_Server.RPCListenFD),
@@ -490,6 +494,12 @@ extern void setPostMessage(Proto_Session *event, Proto_Msg_Types mt) {
   h.type = mt;
 
   if (mt==PROTO_MT_EVENT_LOBBY_UPDATE) {
+    h.game = Proto_Server.game;
+  }
+  else if (mt==PROTO_MT_REP_BASE_START_GAME) {
+   h.game = Proto_Server.game; 
+  }
+  else if (mt==PROTO_MT_EVENT_GAME_UPDATE) {
     h.game = Proto_Server.game;
   }
 
@@ -583,8 +593,150 @@ static void insertPlayerForTeam(int team, Player *player) {
 static int 
 proto_server_mt_rpc_start_game(Proto_Session *s)
 {
-  fprintf(stderr, "Received start game\n");
+  Player *player = getPlayer(&Proto_Server.game, s->fd);
+  Proto_Msg_Hdr h;  
+  bzero(&h, sizeof(h));
+  h.type = PROTO_MT_REP_BASE_START_GAME;
+
+  // You are not the host, reject request
+  if (player->isHost==0) 
+    h.returnCode = RPC_STARTGAME_NOT_HOST;
+    
+  // Check if we have even number of players on each side
+  int numOfPlayersTeam1 = getNumberOfPlayersForTeam(1);
+  int numOfPlayersTeam2 = getNumberOfPlayersForTeam(2); 
+  if (numOfPlayersTeam1!=numOfPlayersTeam2) 
+    h.returnCode = RPC_STARTGAME_UNEVEN_PLAYERS;  
+
+  // Terminate early because we cannot start the game yet
+  if (h.returnCode>0) {
+    proto_session_hdr_marshall(s, &h);
+    proto_session_send_msg(s, 1);
+    return 1;
+  }
+
+
+  pthread_mutex_lock(&Proto_Server.GameLock); // Lock before update
+
+  // Randomly assign each player a random location in their home region
+  while (numOfPlayersTeam1!=0) {
+      Cell *cell = Proto_Server.game.map.homeCells_1[getRandNum(0, Proto_Server.game.map.numHome1)];
+      // We found an occupied cell, assign user this cell
+      if (cell->occupied==0) {
+        Player *player = &Proto_Server.game.Team1_Players[numOfPlayersTeam1-1];
+        cell->occupied = 1;
+        player->cellposition = cell->position;
+        numOfPlayersTeam1--;
+      }
+  }
+
+  while (numOfPlayersTeam2!=0) {
+      Cell *cell = Proto_Server.game.map.homeCells_2[getRandNum(0, Proto_Server.game.map.numHome2)];
+      // We found an occupied cell, assign user this cell
+      if (cell->occupied==0) {
+        Player *player = &Proto_Server.game.Team2_Players[numOfPlayersTeam2-1];
+        cell->occupied = 1;
+        player->cellposition = cell->position;
+        numOfPlayersTeam2--;
+      }
+  }
+
+  // Assigning location of flags
+  int assignedFlag1 = 0;
+  int assignedFlag2 = 0;
+  int i;
+
+  // Assign flag 1
+  while (assignedFlag1==0 ) {
+      Cell *cell = Proto_Server.game.map.floorCells_1[getRandNum(0, Proto_Server.game.map.numFloor1)];
+      // Check to make sure no one is in this cell
+      if (cell->occupied==0) {
+        // Make sure this item is not overlapping another item
+        int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+
+        if (cellcontainsObj==NONE) {
+          Object newObj;
+          newObj.cellposition = cell->position;
+          newObj.type = FLAG_1;              
+          assignedFlag1 = 1;
+          Proto_Server.game.map.objects[0] = newObj;
+        }
+      }
+  }
+
+  // Assign flag 2
+  while (assignedFlag2==0 ) {
+      Cell *cell = Proto_Server.game.map.floorCells_2[getRandNum(0, Proto_Server.game.map.numFloor2)];
+      // Check to make sure no one is in this cell
+      if (cell->occupied==0) {        
+        // Make sure this item is not overlapping another item
+        int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+
+        if (cellcontainsObj==NONE) {
+          Object newObj;
+          newObj.cellposition = cell->position;
+          newObj.type = FLAG_2;              
+          assignedFlag2 = 1;
+          Proto_Server.game.map.objects[1] = newObj;
+        }
+      }
+  }
+
+  // Assign jackhammers
+  int assignedjackhammer1 = 0;
+  int assignedjackhammer2 = 0;
+
+  // Assign hammer 1
+  while (assignedjackhammer1==0 ) {
+    Cell *cell = Proto_Server.game.map.homeCells_1[getRandNum(0, Proto_Server.game.map.numHome1)];
+    // Check to make sure no one is in this cell
+    if (cell->occupied==0) {
+      // Make sure this item is not overlapping another item
+      int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+
+      if (cellcontainsObj==NONE) {
+        Object newObj;
+        newObj.cellposition = cell->position;
+        newObj.type = JACKHAMMER1;              
+        assignedjackhammer1 = 1;
+        Proto_Server.game.map.objects[2] = newObj;
+      }
+    }
+  }
+
+  // Assign hammer 2
+  while (assignedjackhammer2==0 ) {
+    Cell *cell = Proto_Server.game.map.homeCells_2[getRandNum(0, Proto_Server.game.map.numHome2)];
+    // Check to make sure no one is in this cell
+    if (cell->occupied==0) {
+      // Make sure this item is not overlapping another item
+      int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+
+      if (cellcontainsObj==NONE) {
+        Object newObj;
+        newObj.cellposition = cell->position;
+        newObj.type = JACKHAMMER2;              
+        assignedjackhammer2 = 1;
+        Proto_Server.game.map.objects[3] = newObj;
+      }
+    }
+  }
+
+  Proto_Server.game.status = IN_PROGRESS;
+
+  pthread_mutex_unlock(&Proto_Server.GameLock); // Unlock before update
+
+  // Send reply to requesting client
+  h.game = Proto_Server.game;
+  proto_session_hdr_marshall(s, &h);
+  proto_session_send_msg(s, 1);
+
+  // Update all players to start game
+  proto_server_post_event(PROTO_MT_REP_BASE_START_GAME);
 }
+
+
+
 
 static int 
 proto_server_mt_rpc_hello_handler(Proto_Session *s)
@@ -594,11 +746,16 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
   bzero(&h, sizeof(h));
   h.type = PROTO_MT_REP_BASE_HELLO;
 
+  pthread_mutex_lock(&Proto_Server.GameLock); // Lock before update
+
+
   // Make sure this player hasn't joined already
+  // If the user has joined already, returned corresponding error code
   if (getPlayer(&Proto_Server.game, s->fd)!=NULL) {
-    h.version = RPC_HELLO_ALREADYJOINED;
+    h.returnCode = RPC_HELLO_ALREADYJOINED;
     proto_session_hdr_marshall(s, &h);
     proto_session_send_msg(s, 1);    
+    return 1;
   }
 
   int numOfPlayersTeam1 = getNumberOfPlayersForTeam(1);
@@ -628,6 +785,8 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
     insertPlayerForTeam(1, &newplayer);
   }
 
+  pthread_mutex_unlock(&Proto_Server.GameLock); // Unlock after update
+
   h.game = Proto_Server.game;
   h.version = newplayer.playerID;
   proto_session_hdr_marshall(s, &h);
@@ -646,7 +805,69 @@ proto_server_mt_rpc_lobby_update_handler(Proto_Session *s)
 static int 
 proto_server_mt_rpc_move_handler(Proto_Session *s) {
 
-  NOT_YET_IMPLEMENTED
+  // Make reply header
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(h));
+  h.type = PROTO_MT_REP_BASE_MOVE;
+
+  // printUpdate(&Proto_Server.game);
+
+  pthread_mutex_lock(&Proto_Server.GameLock); // Lock before update
+
+  Direction dir = s->rhdr.returnCode;
+  Cell *collisionCell;
+  Player *player = getPlayer(&Proto_Server.game, s->fd);
+
+
+  if (dir==UP) {
+    fprintf(stderr, "Client %d moves UP\n", s->fd);
+    collisionCell = &Proto_Server.game.map.mapBody[player->cellposition.y-1][player->cellposition.x];
+  }
+  else if (dir==DOWN) {
+    fprintf(stderr, "Client %d moves DOWN\n", s->fd);
+    collisionCell = &Proto_Server.game.map.mapBody[player->cellposition.y+1][player->cellposition.x];
+  }
+  else if (dir==LEFT) {
+    fprintf(stderr, "Client %d moves LEFT\n", s->fd);
+    collisionCell = &Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x-1];
+  }
+  else if (dir==RIGHT) {
+    fprintf(stderr, "Client %d moves RIGHT\n", s->fd);          
+    collisionCell = &Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x+1];
+  }
+  
+  printCell(collisionCell);
+
+  // Check for collision  
+  if (collisionCell->occupied==1) {
+    h.returnCode = RPC_MOVE_MOVING_INTO_PLAYER;    
+    fprintf(stderr, "MOVE INTO PLAYER\n");
+  }
+  else if (collisionCell->type==WALL_FIXED || collisionCell->type==WALL_UNFIXED) {
+    fprintf(stderr, "MOVE INTO WALL\n");
+    h.returnCode = RPC_MOVE_MOVING_INTO_WALL;
+  }
+  else {
+    // Move out of current cell
+    fprintf(stderr, "MOVE SUCCESSFUL\n");
+    Cell *prevPos = &Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x];
+    prevPos->occupied = 0;
+    collisionCell->occupied = 1;
+    
+    player->cellposition.x = collisionCell->position.x;
+    player->cellposition.y = collisionCell->position.y;
+    h.returnCode = SUCCESS;
+  }
+
+
+  pthread_mutex_unlock(&Proto_Server.GameLock); // Unlock after update
+
+    
+  proto_session_hdr_marshall(s, &h);
+  proto_session_send_msg(s, 1);
+
+  proto_server_post_event(PROTO_MT_EVENT_GAME_UPDATE);
+
   return 1;
 }
 
@@ -692,6 +913,7 @@ proto_server_mt_rpc_querymap_handler(Proto_Session *s)
 extern int
 proto_server_parse_map(char *filename) 
 {
+
   FILE *fr; //file pointer    
   bzero(&Proto_Server.game.map, sizeof(Maze));
 
@@ -734,6 +956,8 @@ proto_server_parse_map(char *filename)
       for (i=0; i<Proto_Server.game.map.dimension.x; i++) {
         Cell newcell;
         newcell.occupied=0;
+        newcell.position.x = i;
+        newcell.position.y = numOfLines;
         char currentCell = line[i];
         newcell.type=cellTypeFromChar(currentCell);
 

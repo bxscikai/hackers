@@ -26,6 +26,7 @@
 #include <strings.h>
 #include <errno.h>
 #include <pthread.h>
+#include <time.h>
 
 #include "net.h"
 #include "protocol.h"
@@ -47,6 +48,12 @@ proto_dump_mt(Proto_Msg_Types type)
   case PROTO_MT_REQ_BASE_MOVE: 
     fprintf(stderr, "PROTO_MT_REQ_BASE_MOVE");
     break;
+  case PROTO_MT_REQ_BASE_MAPQUERY: 
+    fprintf(stderr, "PROTO_MT_REQ_BASE_MAPQUERY");
+    break;
+  case PROTO_MT_REQ_BASE_START_GAME: 
+    fprintf(stderr, "PROTO_MT_REQ_BASE_START_GAME");
+    break;    
   case PROTO_MT_REQ_BASE_GOODBYE: 
     fprintf(stderr, "PROTO_MT_REQ_BASE_GOODBYE");
     break;
@@ -61,6 +68,12 @@ proto_dump_mt(Proto_Msg_Types type)
     break;
   case PROTO_MT_REP_BASE_MOVE:
     fprintf(stderr, "PROTO_MT_REP_BASE_MOVE");
+    break;
+  case PROTO_MT_REP_BASE_START_GAME:
+    fprintf(stderr, "PROTO_MT_REP_BASE_START_GAME");
+    break;
+  case PROTO_MT_REP_BASE_MAPQUERY:
+    fprintf(stderr, "PROTO_MT_REP_BASE_MAPQUERY");
     break;
   case PROTO_MT_REP_BASE_GOODBYE:
     fprintf(stderr, "PROTO_MT_REP_BASE_GOODBYE");
@@ -111,8 +124,10 @@ extern char getCellChar(int type) {
 }
 
 extern int cellTypeFromChar(char cell) {
-    if (cell=='#')
+  if (cell=='#')
     return WALL_UNFIXED;
+  else if (cell=='@')
+    return WALL_FIXED;
   else if (cell==' ')
     return FLOOR_1;
   else if (cell=='h')
@@ -150,6 +165,22 @@ extern char* cellTypeNameFromType(int type) {
       return "FLAG_2";
 
     return "INVALID";  
+}
+
+extern char* 
+objectNameFromType(ObjectType obj) {
+  if (obj==NONE)
+    return "NONE";
+  else if (obj==JACKHAMMER1)
+    return "JACKHAMMER1";
+  else if (obj==JACKHAMMER2)
+    return "JACKHAMMER2";  
+  else if (obj==FLAG_1)
+    return "FLAG_1";  
+  else if (obj==FLAG_2)
+    return "FLAG_2";
+  else
+    return "INVALID";
 }
 
 extern void printMap(void *map) {
@@ -244,11 +275,68 @@ marshall_mtonly(void *session, Proto_Msg_Types mt) {
   Proto_Session *s = (Proto_Session*)session;
   Proto_Msg_Hdr h; 
 
-  
-
   bzero(&h, sizeof(h));
   h.type = mt;
   proto_session_hdr_marshall(s, &h);
 
 };
 
+extern int 
+getRandNum(int min, int max) {
+  // srand(time(NULL));
+  int r = rand();
+  r = r % max;
+  r += min;
+  return r;
+}
+
+extern ObjectType 
+cellContainsObject(Game *game, Cell *cell) {
+
+  ObjectType returnobj = NONE;
+  int i;
+
+  for (i=0; i<NUMOFOBJECTS; i++) {
+    Object obj = game->map.objects[i];
+    if (obj.cellposition.x==cell->position.x && obj.cellposition.y==cell->position.y) {
+      returnobj = obj.type;
+      break;
+    }
+  }
+
+  return returnobj;
+}
+
+extern int printPlayers(Game *game) {
+  for (int i=0; i<MAX_NUM_PLAYERS; i++) {
+    Player player = game->Team1_Players[i];
+    if (player.playerID>0)
+      fprintf(stderr, "Team 1 player %d at (%d,%d)\n", player.playerID, player.cellposition.x, player.cellposition.y);    
+  }
+  for (int i=0; i<MAX_NUM_PLAYERS; i++) {
+    Player player = game->Team2_Players[i];
+    if (player.playerID>0)
+      fprintf(stderr, "Team 2 player %d at (%d,%d)\n", player.playerID, player.cellposition.x, player.cellposition.y);    
+  }  
+}
+
+extern int printItems (Game *game) {
+  // Print locations of all objects received
+  for (int i=0; i<NUMOFOBJECTS;i++) {
+    Object obj =  game->map.objects[i];
+    fprintf(stderr, "%s  (%d,%d)\n", objectNameFromType(obj.type), obj.cellposition.x, obj.cellposition.y);
+  }
+}
+
+extern int printUpdate(Game *game) {
+
+  fprintf(stderr, "----Game Update----\n");
+  printPlayers(game);
+  printItems(game);
+  fprintf(stderr, "----End of Game Update----\n");
+
+}
+
+extern void printCell(Cell *cell) {
+    fprintf(stderr, "Cell: %s at (%d,%d)  occupied: %d\n", cellTypeNameFromType(cell->type), cell->position.x, cell->position.y, cell->occupied);
+}

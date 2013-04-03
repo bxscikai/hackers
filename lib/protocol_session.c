@@ -89,9 +89,9 @@ proto_session_hdr_unmarshall_blen(Proto_Session *s)
 
 
 extern void
-proto_session_hdr_marshall_returnCode(Proto_Session *s)
+proto_session_hdr_marshall_returnCode(Proto_Session *s, ReturnCode rc)
 {
-  s->shdr.returnCode = htonl(s->shdr.returnCode);
+  s->shdr.returnCode = htonl(rc);
 }
 
 static void
@@ -274,7 +274,7 @@ proto_session_hdr_marshall(Proto_Session *s, Proto_Msg_Hdr *h)
     s->shdr.version = htonl(PROTOCOL_BASE_VERSION);
   proto_session_hdr_marshall_type(s, h->type);
   proto_session_hdr_marshall_sver(s, h->sver);
-  proto_session_hdr_marshall_returnCode(s);
+  proto_session_hdr_marshall_returnCode(s, h->returnCode);
   proto_session_hdr_marshall_game(s, &h->game);
   // we ignore the body length as we will explicity set it
   // on the send path to the amount of body data that was

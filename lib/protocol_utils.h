@@ -49,6 +49,8 @@ static inline void printMessageType(Proto_Msg_Types type) {
     fprintf(stderr, "PROTO_MT_REQ_BASE_RESERVED_LAST\n");
   else if (type==PROTO_MT_REQ_BASE_MAPQUERY)
     fprintf(stderr, "PROTO_MT_REQ_BASE_MAPQUERY\n");
+  else if (type==PROTO_MT_REQ_BASE_START_GAME)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_START_GAME\n");  
 
 
   else if (type==PROTO_MT_REP_BASE_RESERVED_FIRST)
@@ -63,6 +65,8 @@ static inline void printMessageType(Proto_Msg_Types type) {
     fprintf(stderr, "PROTO_MT_REP_BASE_RESERVED_LAST\n");
   else if (type==PROTO_MT_REP_BASE_MAPQUERY)
     fprintf(stderr, "PROTO_MT_REP_BASE_MAPQUERY\n");
+  else if (type==PROTO_MT_REP_BASE_START_GAME)
+    fprintf(stderr, "PROTO_MT_REP_BASE_START_GAME\n");
 
 
   else if (type==PROTO_MT_EVENT_BASE_RESERVED_FIRST)
@@ -98,8 +102,7 @@ static inline void print_mem(void const *vp, size_t n)
     printf("\n");
 };
 
-extern void
-marshall_mtonly(void *session, Proto_Msg_Types mt);
+extern void marshall_mtonly(void *session, Proto_Msg_Types mt);
 
 
 // Capture the flag logic
@@ -107,6 +110,12 @@ extern char getCellChar(int type);
 extern int cellTypeFromChar(char cell);
 extern char* cellTypeNameFromType(int type);
 extern void printMap(void *map);
+extern void printCell(Cell *cell);
 extern Player* getPlayer(Game *game, int playerID);
-
+extern int getRandNum(int min, int max);
+extern ObjectType cellContainsObject(Game *game, Cell *cell);
+extern char* objectNameFromType(ObjectType obj);
+extern int printPlayers(Game *game);
+extern int printItems (Game *game);
+extern int printUpdate(Game *game);
 #endif
