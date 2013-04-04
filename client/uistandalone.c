@@ -34,6 +34,9 @@
 static void dummyPlayer_init(UI *ui);
 static void dummyPlayer_paint(UI *ui, SDL_Rect *t);
 
+static void otherPlayer_init(UI *ui);
+static void paint_player(UI *ui, SDL_Rect *t, int start_x, int start_y);
+
 
 #define SPRITE_H 32
 #define SPRITE_W 32
@@ -58,14 +61,17 @@ struct UI_Player_Struct {
 typedef struct UI_Player_Struct UI_Player;
 
 // Kludgy dummy player for testing purposes
-struct DummyPlayerDesc {
+typedef struct {
   pthread_mutex_t lock;
   UI_Player *uip;
   int id;
   int x, y;
   int team;
   int state;
-} dummyPlayer;
+} Dumb_Player;
+
+Dumb_Player dummyPlayer; //this client's player
+Dumb_Player otherPlayer;
 
 static inline SDL_Surface *
 ui_player_img(UI *ui, int team)
@@ -416,6 +422,12 @@ ui_paintmap(UI *ui, void *map)
 
   dummyPlayer_paint(ui, &t);
 
+
+  // only paint players in the 20x20 range
+  if (otherPlayer.x >= start_x && otherPlayer.x <= end_x && otherPlayer.y >= start_y && otherPlayer.y <= end_y){
+    paint_player(ui, &t, start_x, start_y);
+  }
+
   SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
 
   return 1;
@@ -516,10 +528,7 @@ ui_process(UI *ui, void *map)
       fprintf(stderr, "%s: e.type=%d NOT Handled\n", __func__, e.type);
     }
     if (rc==2) { 
-      ui_paintmap(ui, map); 
-      SDL_Rect t;
-      t.y = 0; t.x = 0; t.h = ui->tile_h; t.w = ui->tile_w;
-      dummyPlayer_paint(ui, &t);
+      ui_paintmap(ui, map);
       SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
 
     }
@@ -583,6 +592,8 @@ ui_main_loop(UI *ui, uval h, uval w, void *map)
 
   dummyPlayer_init(ui);
 
+  otherPlayer_init(ui);
+
   ui_paintmap(ui, map);
    
   
@@ -616,6 +627,15 @@ dummyPlayer_init(UI *ui)
   ui_uip_init(ui, &dummyPlayer.uip, dummyPlayer.id, dummyPlayer.team); 
 }
 
+static void
+otherPlayer_init(UI *ui)
+{
+  pthread_mutex_init(&(otherPlayer.lock), NULL);
+  otherPlayer.id = 1;
+  otherPlayer.x = 20; otherPlayer.y = 9; otherPlayer.team = 1; otherPlayer.state = 0;
+  ui_uip_init(ui, &otherPlayer.uip, otherPlayer.id, otherPlayer.team); 
+}
+
 static void 
 dummyPlayer_paint(UI *ui, SDL_Rect *t)
 {
@@ -644,6 +664,17 @@ dummyPlayer_paint(UI *ui, SDL_Rect *t)
       pxSpriteOffSet(dummyPlayer.team, dummyPlayer.state);
     SDL_BlitSurface(dummyPlayer.uip->img, &(dummyPlayer.uip->clip), ui->screen, t);
   pthread_mutex_unlock(&dummyPlayer.lock);
+}
+
+static void
+paint_player(UI *ui, SDL_Rect *t, int start_x, int start_y)
+{
+  pthread_mutex_lock(&otherPlayer.lock);
+    t->y = (otherPlayer.y - start_y) * t->h; t->x = (otherPlayer.x - start_x) * t->w;
+    otherPlayer.uip->clip.x = otherPlayer.uip->base_clip_x +
+      pxSpriteOffSet(otherPlayer.team, otherPlayer.state);
+    SDL_BlitSurface(otherPlayer.uip->img, &(otherPlayer.uip->clip), ui->screen, t);
+  pthread_mutex_unlock(&otherPlayer.lock);
 }
 
 int
