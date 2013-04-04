@@ -477,11 +477,12 @@ proto_server_mt_game_update_handler(Proto_Session *s)
     Proto_Client *c = s->client;
 
   // Copy player states to local state
-  for (int i=0; i<MAX_NUM_PLAYERS; i++)
+  int i;
+  for (i=0; i<MAX_NUM_PLAYERS; i++)
     c->game.Team1_Players[i] = s->rhdr.game.Team1_Players[i];
-  for (int i=0; i<MAX_NUM_PLAYERS; i++)
+  for (i=0; i<MAX_NUM_PLAYERS; i++)
     c->game.Team2_Players[i] = s->rhdr.game.Team2_Players[i];  
-  for (int i=0; i<NUMOFOBJECTS;i++)
+  for (i=0; i<NUMOFOBJECTS;i++)
     c->game.map.objects[i] = s->rhdr.game.map.objects[i];
   c->game.status = s->rhdr.game.status;
 
@@ -513,11 +514,12 @@ proto_server_mt_rep_start_game(Proto_Session *s)
     return 1;
 
   // Copy player states to local state
-  for (int i=0; i<MAX_NUM_PLAYERS; i++)
+  int i;
+  for (i=0; i<MAX_NUM_PLAYERS; i++)
     c->game.Team1_Players[i] = s->rhdr.game.Team1_Players[i];
-  for (int i=0; i<MAX_NUM_PLAYERS; i++)
+  for (i=0; i<MAX_NUM_PLAYERS; i++)
     c->game.Team2_Players[i] = s->rhdr.game.Team2_Players[i];  
-  for (int i=0; i<NUMOFOBJECTS;i++)
+  for (i=0; i<NUMOFOBJECTS;i++)
     c->game.map.objects[i] = s->rhdr.game.map.objects[i];
   c->game.status = s->rhdr.game.status;
 

@@ -308,12 +308,13 @@ cellContainsObject(Game *game, Cell *cell) {
 }
 
 extern int printPlayers(Game *game) {
-  for (int i=0; i<MAX_NUM_PLAYERS; i++) {
+  int i;
+  for (i=0; i<MAX_NUM_PLAYERS; i++) {
     Player player = game->Team1_Players[i];
     if (player.playerID>0)
       fprintf(stderr, "Team 1 player %d at (%d,%d)\n", player.playerID, player.cellposition.x, player.cellposition.y);    
   }
-  for (int i=0; i<MAX_NUM_PLAYERS; i++) {
+  for (i=0; i<MAX_NUM_PLAYERS; i++) {
     Player player = game->Team2_Players[i];
     if (player.playerID>0)
       fprintf(stderr, "Team 2 player %d at (%d,%d)\n", player.playerID, player.cellposition.x, player.cellposition.y);    
@@ -322,7 +323,8 @@ extern int printPlayers(Game *game) {
 
 extern int printItems (Game *game) {
   // Print locations of all objects received
-  for (int i=0; i<NUMOFOBJECTS;i++) {
+  int i;
+  for (i=0; i<NUMOFOBJECTS;i++) {
     Object obj =  game->map.objects[i];
     fprintf(stderr, "%s  (%d,%d)\n", objectNameFromType(obj.type), obj.cellposition.x, obj.cellposition.y);
   }
