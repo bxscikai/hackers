@@ -512,10 +512,10 @@ main(int argc, char **argv)
     // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
     // SO JUMP THROW HOOPS :-(
     Proto_Client *client = (Proto_Client *) c.ph;
+    Player *me = getPlayer(&client->game, &client->playerID);
     doRPCCmd(&c, 'q'); //query for the map
-  
       //window will be consistently 20x20
-    ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game.map);
+    ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me);
     
   }else {
       shell(&c);

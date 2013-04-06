@@ -331,9 +331,10 @@ draw_cell(UI *ui, SPRITE_INDEX si, SDL_Rect *t, SDL_Surface *s)
 }
 
 static sval
-ui_paintmap(UI *ui, void *map) 
+ui_paintmap(UI *ui, void *game, Player *myPlayer) 
 {
-  Maze *maze = (Maze *)map;
+  Game *gameState = (Game *)game;
+  Maze *maze = &gameState->map;
   SDL_Rect t;
   int i = 0;
   int j = 0;
@@ -343,6 +344,8 @@ ui_paintmap(UI *ui, void *map)
   int end_x;
   int start_y;
   int end_y;
+
+  //fprintf(stderr, "My postion: %d, %d\n", myPlayer->cellposition.x, myPlayer->cellposition.y);
 
   //Keep window consistently 20x20
   if (dummyPlayer.x < 10 && dummyPlayer.y < 10){
@@ -506,7 +509,7 @@ ui_userevent(UI *ui, SDL_UserEvent *e)
 }
 
 static sval
-ui_process(UI *ui, void *map)
+ui_process(UI *ui, void *game, Player *myPlayer)
 {
   SDL_Event e;
   sval rc = 1;
@@ -528,7 +531,7 @@ ui_process(UI *ui, void *map)
       fprintf(stderr, "%s: e.type=%d NOT Handled\n", __func__, e.type);
     }
     if (rc==2) { 
-      ui_paintmap(ui, map);
+      ui_paintmap(ui, game, myPlayer);
       SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
 
     }
@@ -582,7 +585,7 @@ ui_quit(UI *ui)
 }
 
 extern void
-ui_main_loop(UI *ui, uval h, uval w, void *map)
+ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer)
 {
   sval rc;
   
@@ -594,16 +597,15 @@ ui_main_loop(UI *ui, uval h, uval w, void *map)
 
   otherPlayer_init(ui);
 
-  ui_paintmap(ui, map);
+  ui_paintmap(ui, game, myPlayer);
    
   
   while (1) {
-    if (ui_process(ui, map)<0) break;
+    if (ui_process(ui, game, myPlayer)<0) break;
   }
 
   ui_shutdown_sdl();
 }
-
 
 extern void
 ui_init(UI **ui)

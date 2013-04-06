@@ -29,7 +29,9 @@
 #include "protocol.h"
 #include "protocol_utils.h"
 #include "protocol_client.h"
+#include "../client/uistandalone.h"
 
+UI *ui;
 
 extern Proto_Session *
 proto_client_rpc_session(Proto_Client_Handle ch)
@@ -489,6 +491,11 @@ proto_server_mt_game_update_handler(Proto_Session *s)
   // Right now simply prints out all new player locations
   printUpdate(&c->game);
 
+  //UI CODE
+  // Player *player = getPlayer(&c->game, c->playerID);
+  // ui_paintmap(ui, &c->game, player);
+  // SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
+
   // TIFFANY, THIS IS WHERE U UPDATE GAME UI FOR USER ///////////
   // YOU CAN ACCESS THE GAME STRUCT IN c->game
   // PLAYERS: c->game.Team1_Players, c->game.Team2_Players
@@ -535,14 +542,15 @@ proto_server_mt_rep_start_game(Proto_Session *s)
   {
     Player *player = getPlayer(&c->game, c->playerID);
 
-    if (player==NULL)
+    if (player==NULL){
       fprintf(stderr, "player not found\n");
-    else 
+    }else{ 
       fprintf(stderr, "Player ID: %d  location is (%d,%d)\n", player->playerID, player->cellposition.x, player->cellposition.y);
 
-
+      // Start the UI
+      //ui_main_loop(ui, (32 * c->game.map.dimension.x * 0.1), (32 * c->game.map.dimension.y * 0.1), &c->game, player);
+    }
   }
-
 
   return 1;
 }
