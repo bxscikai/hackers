@@ -544,6 +544,8 @@ proto_server_mt_rep_start_game(Proto_Session *s)
       fprintf(stderr, "player not found\n");
     }else{ 
       fprintf(stderr, "Player ID: %d  location is (%d,%d)\n", player->playerID, player->cellposition.x, player->cellposition.y);
+      fprintf(stderr, "The Game has started, hit enter to begin.\n");
+      fprintf(stderr, "May the odds be ever in your favor.\n");
     }
   }
 

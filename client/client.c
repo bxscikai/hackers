@@ -285,7 +285,6 @@ int
 docmd(Client *C, char *cmd)
 {
   int rc = 1;
-  int start_game = 0;
   Proto_Client *client = (Proto_Client *) C->ph;
 
   // If this is a connect attempt
@@ -359,9 +358,6 @@ docmd(Client *C, char *cmd)
   }
   else if (strcmp(cmd, "start\n")==0) {
       doRPCCmd(C, 's');  // query map 
-      if(client->game.status == IN_PROGRESS){
-        start_game = 1;
-      }  
   }
   // MOVEMENT
   else if (strcmp(cmd, "w\n")==0) {
@@ -409,12 +405,8 @@ docmd(Client *C, char *cmd)
   else {
     fprintf(stderr, "Unknown command\n");
   }
-
-  if(start_game == 1){
-    return 2;
-  }else{
-    return rc;
-  }
+    
+  return rc;
 }
 
 void *
@@ -428,7 +420,6 @@ shell(void *arg)
 
   
   while (1) {
-
     // Clear input each time
     bzero(&input, INPUTSIZE);
     
@@ -447,9 +438,9 @@ shell(void *arg)
        menu=1;       
        // Proto_Game_State *gs = proto_client_game_state(C->ph);
     }
-    if (rc == 2)
+    if (((Proto_Client *) C->ph)->game.status == IN_PROGRESS && DISPLAYUI == 1)
     {
-      return;
+      return NULL;
     }
     else menu=1;
   }
@@ -513,45 +504,28 @@ main(int argc, char **argv)
   if (FASTINPUTMODE) {
     initGlobals(argc, argv);
     startConnection(&c, globals.host, globals.port, update_event_handler);
-  }
+  }    
 
-  if (DISPLAYUI==1) {
+  shell(&c);
+
+    if (DISPLAYUI==1) {
     //window will be consistently 20x20
-    pthread_t tid;
-    pthread_create(&tid, NULL, shell, NULL);
+      pthread_t tid;
+      pthread_create(&tid, NULL, shell, NULL);
 
-    // Init for UI stuff
+      // Init for UI stuff
 
-    tty_init(STDIN_FILENO);
+      tty_init(STDIN_FILENO);
 
-    ui_init(&(ui));
+      ui_init(&(ui));
 
-    // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
-    // SO JUMP THROW HOOPS :-(
-    Proto_Client *client = (Proto_Client *) c.ph;
-    Player *me = getPlayer(&client->game, client->playerID);
-    doRPCCmd(&c, 'q'); //query for the map
-    ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me);
-    
-  }else {
-      shell(&c);
-      //window will be consistently 20x20
-    pthread_t tid;
-    pthread_create(&tid, NULL, shell, NULL);
-
-    // Init for UI stuff
-
-    tty_init(STDIN_FILENO);
-
-    ui_init(&(ui));
-
-    // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
-    // SO JUMP THROW HOOPS :-(
-    Proto_Client *client = (Proto_Client *) c.ph;
-    Player *me = getPlayer(&client->game, client->playerID);
-    doRPCCmd(&c, 'q'); //query for the map
-    ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me);
-  }
+      // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
+      // SO JUMP THROW HOOPS :-(
+      Proto_Client *client = (Proto_Client *) c.ph;
+      Player *me = getPlayer(&client->game, client->playerID);
+      doRPCCmd(&c, 'q'); //query for the map
+      ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me);
+    }
   return 0;
 }
 
