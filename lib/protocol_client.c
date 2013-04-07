@@ -29,9 +29,7 @@
 #include "protocol.h"
 #include "protocol_utils.h"
 #include "protocol_client.h"
-#include "../client/uistandalone.h"
-
-UI *ui;
+#include "../client/client.h"
 
 extern Proto_Session *
 proto_client_rpc_session(Proto_Client_Handle ch)
@@ -546,9 +544,6 @@ proto_server_mt_rep_start_game(Proto_Session *s)
       fprintf(stderr, "player not found\n");
     }else{ 
       fprintf(stderr, "Player ID: %d  location is (%d,%d)\n", player->playerID, player->cellposition.x, player->cellposition.y);
-
-      // Start the UI
-      //ui_main_loop(ui, (32 * c->game.map.dimension.x * 0.1), (32 * c->game.map.dimension.y * 0.1), &c->game, player);
     }
   }
 

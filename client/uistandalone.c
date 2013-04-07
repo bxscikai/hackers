@@ -594,11 +594,10 @@ ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer)
   ui_init_sdl(ui, h, w, 32);
 
   dummyPlayer_init(ui);
-
+  
   otherPlayer_init(ui);
-
+  
   ui_paintmap(ui, game, myPlayer);
-   
   
   while (1) {
     if (ui_process(ui, game, myPlayer)<0) break;
