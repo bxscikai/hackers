@@ -31,7 +31,7 @@
 /* A lot of this code comes from http://www.libsdl.org/cgi/docwiki.cgi */
 
 /* Forward declaration of some dummy player code */
-static void dummyPlayer_init(UI *ui);
+static void dummyPlayer_init(UI *ui, Player *myPlayer);
 static void dummyPlayer_paint(UI *ui, SDL_Rect *t);
 
 static void otherPlayer_init(UI *ui);
@@ -331,7 +331,7 @@ draw_cell(UI *ui, SPRITE_INDEX si, SDL_Rect *t, SDL_Surface *s)
 }
 
 static sval
-ui_paintmap(UI *ui, void *game, Player *myPlayer) 
+ui_paintmap(UI *ui, void *game) 
 {
   Game *gameState = (Game *)game;
   Maze *maze = &gameState->map;
@@ -531,7 +531,7 @@ ui_process(UI *ui, void *game, Player *myPlayer)
       fprintf(stderr, "%s: e.type=%d NOT Handled\n", __func__, e.type);
     }
     if (rc==2) { 
-      ui_paintmap(ui, game, myPlayer);
+      ui_paintmap(ui, game);
       SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
 
     }
@@ -593,11 +593,11 @@ ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer)
 
   ui_init_sdl(ui, h, w, 32);
 
-  dummyPlayer_init(ui);
+  dummyPlayer_init(ui, myPlayer);
   
   otherPlayer_init(ui);
   
-  ui_paintmap(ui, game, myPlayer);
+  ui_paintmap(ui, game);
   
   while (1) {
     if (ui_process(ui, game, myPlayer)<0) break;
@@ -620,11 +620,16 @@ ui_init(UI **ui)
 }
 
 static void 
-dummyPlayer_init(UI *ui) 
+dummyPlayer_init(UI *ui, Player *myPlayer) 
 {
   pthread_mutex_init(&(dummyPlayer.lock), NULL);
-  dummyPlayer.id = 0;
-  dummyPlayer.x = 0; dummyPlayer.y = 0; dummyPlayer.team = 0; dummyPlayer.state = 0;
+  int state = 0;
+  // set what state the player is
+  if (myPlayer->canMove == 0){
+    state = 1;
+  }
+  dummyPlayer.id = myPlayer->playerID;
+  dummyPlayer.x = myPlayer->cellposition.x; dummyPlayer.y = myPlayer->cellposition.y; dummyPlayer.team = myPlayer->team; dummyPlayer.state = state;
   ui_uip_init(ui, &dummyPlayer.uip, dummyPlayer.id, dummyPlayer.team); 
 }
 
