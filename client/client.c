@@ -147,6 +147,10 @@ doRPCCmd(Client *C, char c)
     if (PROTO_PRINT_DUMPS==1) printf("move: rc=%x\n", rc);
     rc = proto_client_move(C->ph, c);
     break;
+  case 'f':
+    if (PROTO_PRINT_DUMPS==1) printf("pickup: rc=%x\n", rc);
+    rc = proto_client_pickup(C->ph);
+    break;
   case 'g':
     if (PROTO_PRINT_DUMPS==1) printf("goodbye: rc=%x\n", rc);
     rc = proto_client_goodbye(C->ph);
@@ -298,7 +302,6 @@ docmd(Client *C, char *cmd)
       return 1;
   }
   strcpy(input,cmd);
-
   if (strcmp(cmd, "disconnect\n")==0) {
     doRPCCmd(C, 'g');
     rc=-1;
@@ -375,7 +378,14 @@ docmd(Client *C, char *cmd)
       doRPCCmd(C, 'm');  // query map   
   }
   // END OF MOVEMENT  
-
+  
+  //PICKUP
+  else if (strcmp(cmd, "f\n")==0){
+      Proto_Client *client = C->ph;
+      doRPCCmd(C, 'f');
+  }
+  
+  //END PICKUP
   else if (strcmp(cmd, "O\n")==0)     
     proto_debug_on();  
   else if (strcmp(cmd, "o\n")==0) 
@@ -483,7 +493,7 @@ int
 main(int argc, char **argv)
 {
   Client c;  
-
+  
   if (!FASTINPUTMODE)
       fprintf(stderr, "Type 'connect <host:port>' to connect to a game.\n");
 
@@ -515,7 +525,7 @@ main(int argc, char **argv)
     doRPCCmd(&c, 'q'); //query for the map
   
       //window will be consistently 20x20
-    ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game.map);
+   ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game.map);
     
   }else {
       shell(&c);

@@ -291,9 +291,8 @@ proto_server_req_dispatcher(void * arg)
       fprintf(stderr, "Client %d sent rpc with event: ", s.fd);
       printMessageType(s.rhdr.type);
 
-
       if (mt > PROTO_MT_REQ_BASE_RESERVED_FIRST && mt < PROTO_MT_EVENT_BASE_RESERVED_LAST) {
-
+       
        // We are getting the handler corresponding to our message type from our protocol_client 
        if (PROTO_PRINT_DUMPS==1)  fprintf(stderr, "Server received rpc request, going inside server handler!\n");
        if (PROTO_PRINT_DUMPS==1) printHeader(&s.rhdr);
@@ -417,6 +416,8 @@ proto_server_init(void)
       proto_server_set_req_handler(i, proto_server_mt_rpc_hello_handler);
     else if (i==PROTO_MT_REQ_BASE_MOVE)
       proto_server_set_req_handler(i, proto_server_mt_rpc_move_handler);
+    else if (i==PROTO_MT_REQ_BASE_PICKUP)
+      proto_server_set_req_handler(i, proto_server_mt_rpc_pickup_handler);
     else if (i==PROTO_MT_EVENT_REQ_UPDATE) 
       proto_server_set_req_handler(i, proto_server_mt_rpc_update_handler);    
     else if (i==PROTO_MT_REQ_BASE_MAPQUERY) 
@@ -802,6 +803,108 @@ proto_server_mt_rpc_lobby_update_handler(Proto_Session *s)
   return 1;
 }
 
+static int
+proto_server_mt_rpc_pickup_handler(Proto_Session *s)
+{
+  //Reply Header
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(h));
+  h.type = PROTO_MT_REP_BASE_PICKUP;
+
+  pthread_mutex_lock(&Proto_Server.GameLock);
+  
+  Player *player = getPlayer(&Proto_Server.game, s->fd);
+
+  if (player->inventory.type == NONE)//Makes sure nothing is in inventory, else a drop occurs
+  {
+      fprintf(stderr, "Pickup Attempt\n");
+      int i = 0;
+      while (i<NUMOFOBJECTS)
+      {
+         if (player->cellposition.x == Proto_Server.game.map.objects[i].cellposition.x && player->cellposition.y == Proto_Server.game.map.objects[i].cellposition.y)
+	 {
+	   if (Proto_Server.game.map.objects[i].type == FLAG_1)
+           {
+		if (player->team == TEAM_1)
+		{
+			CellType ct = Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x].type;
+			if (ct == FLOOR_1 || ct == HOME_1 || ct == JAIL_1)
+			{
+				h.returnCode = RPC_PICKUP_FLAGONSIDE;
+				fprintf(stderr, "Pickup Fail: Player attempted to pick up own falg on their own side");
+				goto done;
+			}
+		}
+		fprintf(stderr, "Pickup Success Item: FLAG_1\n");
+	   }
+ 	   else if (Proto_Server.game.map.objects[i].type == FLAG_2)
+           {
+		if (player->team == TEAM_2)
+                {
+                        CellType ct = Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x].type;
+			if (ct == FLOOR_2 || ct == HOME_2 || ct == JAIL_2)
+                        {
+                                h.returnCode = RPC_PICKUP_FLAGONSIDE;
+                                fprintf(stderr, "Pickup Fail: Player attempted to pick up own falg on their own side");
+                                goto done;
+                        }
+		}
+		fprintf(stderr, "Pickup Success Item: FLAG_2\n");
+           }
+           else if (Proto_Server.game.map.objects[i].type == JACKHAMMER1)
+           {
+                fprintf(stderr, "Pickup Success Item: JACKHAMMER1\n");
+           }
+           else if (Proto_Server.game.map.objects[i].type == JACKHAMMER2)
+           {
+                fprintf(stderr, "Pickup Success Item: JACKHAMMER2\n");
+           }
+
+	   player->inventory.type = Proto_Server.game.map.objects[i].type;
+	   h.returnCode = RPC_PICKUP_SUCCESS;
+
+	   goto done;
+	 }
+	 i++;
+      }
+      fprintf(stderr, "Pickup Failed: Nothing to Pickup\n");
+      h.returnCode = RPC_PICKUP_NOTHING;
+  }
+  else 
+  {
+      if (player->inventory.type == JACKHAMMER1)
+      { 
+         fprintf(stderr, "Dropped JACKHAMMER1\n");
+      }
+      else if(player->inventory.type == JACKHAMMER2)
+      {
+         fprintf(stderr, "Dropped JACKHAMMER2\n");
+      } 
+      else if(player->inventory.type == FLAG_1)
+      {
+         fprintf(stderr, "Dropped FLAG_1\n");
+      }
+      else if(player->inventory.type == FLAG_2)
+      {
+         fprintf(stderr, "Dropped FLAG_2\n");
+      }
+
+      player->inventory.type = NONE;
+      h.returnCode = RPC_DROP;
+  }
+
+  done:
+  pthread_mutex_unlock(&Proto_Server.GameLock); // Unlock after update
+
+
+  proto_session_hdr_marshall(s, &h);
+  proto_session_send_msg(s, 1);
+
+  proto_server_post_event(PROTO_MT_EVENT_GAME_UPDATE);
+
+  return 1;
+}
+
 static int 
 proto_server_mt_rpc_move_handler(Proto_Session *s) {
 
@@ -857,6 +960,77 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
     player->cellposition.x = collisionCell->position.x;
     player->cellposition.y = collisionCell->position.y;
     h.returnCode = SUCCESS;
+  
+  //I ADDED THIS --ERIC
+  //Important note: when I decided to find out what index in objects[] the object is, I looked to find what each was hardcoded to.
+  if (player->inventory.type != NONE)
+  {
+     if (player->inventory.type == FLAG_1)
+     {
+	Proto_Server.game.map.objects[0].cellposition.x = player->cellposition.x;
+	Proto_Server.game.map.objects[0].cellposition.y = player->cellposition.y;
+     	if (player->team == TEAM_1)
+	{
+		CellType ct = Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x].type;
+		if (ct == FLOOR_1)
+		{
+			int assignedFlag1 = 0;
+
+			while (assignedFlag1==0 ) {
+      			Cell *cell = Proto_Server.game.map.floorCells_1[getRandNum(0, Proto_Server.game.map.numFloor1)];	
+			if (cell->occupied==0) {
+			int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+
+        		if (cellcontainsObj==NONE) {
+          			Proto_Server.game.map.objects[0].cellposition.x = cell->position.x;
+				Proto_Server.game.map.objects[0].cellposition.y = cell->position.y;
+				assignedFlag1 = 1;
+        		}
+      			}
+  			}
+			player->inventory.type = NONE;
+		}	
+	}
+     }
+     else if (player->inventory.type == FLAG_2)
+     {
+	Proto_Server.game.map.objects[1].cellposition.x = player->cellposition.x;
+        Proto_Server.game.map.objects[1].cellposition.y = player->cellposition.y;
+     
+	if (player->team == TEAM_2)
+        {
+                CellType ct = Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x].type;
+                if (ct == FLOOR_1)
+                {
+                        int assignedFlag1 = 0;
+
+                        while (assignedFlag1==0 ) {
+                        Cell *cell = Proto_Server.game.map.floorCells_2[getRandNum(0, Proto_Server.game.map.numFloor2)];
+                        if (cell->occupied==0) {
+                        int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+
+                        if (cellcontainsObj==NONE) {
+                                Proto_Server.game.map.objects[1].cellposition.x = cell->position.x;
+                                Proto_Server.game.map.objects[1].cellposition.y = cell->position.y;
+                                assignedFlag1 = 1;
+                        }
+                        }
+                        }
+                        player->inventory.type = NONE;
+                }
+        }
+     }
+     else if (player->inventory.type == JACKHAMMER1)
+     {
+	Proto_Server.game.map.objects[2].cellposition.x = player->cellposition.x;
+        Proto_Server.game.map.objects[2].cellposition.y = player->cellposition.y;
+     }
+     else if (player->inventory.type == JACKHAMMER2)
+     {
+	Proto_Server.game.map.objects[3].cellposition.x = player->cellposition.x;
+        Proto_Server.game.map.objects[3].cellposition.y = player->cellposition.y;
+     }
+  }
   }
 
 
