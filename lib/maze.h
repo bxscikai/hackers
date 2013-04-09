@@ -6,7 +6,7 @@
 #define MAX_NUM_PLAYERS 10
 #define MAX_LINE_LEN 500
 #define NUMOFOBJECTS 4
-#define DISPLAYUI 1
+#define DISPLAYUI 0
 
 // Defines data structures used for the game
 
@@ -40,8 +40,14 @@ typedef enum {
 	RPC_HELLO_ALREADYJOINED,
 	RPC_STARTGAME_NOT_HOST,
 	RPC_STARTGAME_UNEVEN_PLAYERS,
+	// Return code for moving player
 	RPC_MOVE_MOVING_INTO_WALL,
 	RPC_MOVE_MOVING_INTO_PLAYER,
+	// Return code for pickup
+	RPC_PICKUP_SUCCESS,
+	RPC_DROP,
+	RPC_PICKUP_NOTHING,
+	RPC_PICKUP_FLAGONSIDE,
 
 } ReturnCode;
 

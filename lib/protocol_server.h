@@ -46,6 +46,7 @@ static void reinitialize_State();
 static int proto_server_mt_rpc_goodbye_handler(Proto_Session *s);
 static int proto_server_mt_rpc_hello_handler(Proto_Session *s);
 static int proto_server_mt_rpc_move_handler(Proto_Session *s);
+static int proto_server_mt_rpc_pickup_handler(Proto_Session *s);
 static int proto_server_mt_rpc_update_handler(Proto_Session *s);
 static int proto_server_mt_rpc_querymap_handler(Proto_Session *s);
 static int proto_server_mt_rpc_lobby_update_handler(Proto_Session *s);

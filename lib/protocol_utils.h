@@ -43,6 +43,8 @@ static inline void printMessageType(Proto_Msg_Types type) {
     fprintf(stderr, "PROTO_MT_REQ_BASE_HELLO\n");
   else if (type==PROTO_MT_REQ_BASE_MOVE)
     fprintf(stderr, "PROTO_MT_REQ_BASE_MOVE\n");
+  else if (type==PROTO_MT_REQ_BASE_PICKUP)
+    fprintf(stderr, "PROTO_MT_REQ_BASE_PICKUP\n");
   else if (type==PROTO_MT_REQ_BASE_GOODBYE)
     fprintf(stderr, "PROTO_MT_REQ_BASE_GOODBYE\n");
   else if (type==PROTO_MT_REQ_BASE_RESERVED_LAST)
@@ -59,6 +61,8 @@ static inline void printMessageType(Proto_Msg_Types type) {
     fprintf(stderr, "PROTO_MT_REP_BASE_HELLO\n");
   else if (type==PROTO_MT_REP_BASE_MOVE)
     fprintf(stderr, "PROTO_MT_REP_BASE_MOVE\n");
+  else if (type==PROTO_MT_REP_BASE_PICKUP)
+    fprintf(stderr, "PROTO_MT_REP_BASE_PICKUP\n");
   else if (type==PROTO_MT_REP_BASE_GOODBYE)
     fprintf(stderr, "PROTO_MT_REP_BASE_GOODBYE\n");
   else if (type==PROTO_MT_REP_BASE_RESERVED_LAST)

@@ -189,6 +189,8 @@ proto_client_init(Proto_Client_Handle *ch)
         proto_client_set_event_handler(c, mt, proto_server_mt_event_update_handler);
       else if (mt==PROTO_MT_REP_BASE_MOVE)
         proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_move_handler);
+      else if (mt==PROTO_MT_REP_BASE_PICKUP)
+	proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_pickup_handler); 
       else if (mt==PROTO_MT_REP_BASE_MAPQUERY)
         proto_client_set_event_handler(c, mt, proto_server_mt_rpc_rep_querymap_handler);      
       else if (mt==PROTO_MT_EVENT_LOBBY_UPDATE)
@@ -341,6 +343,20 @@ proto_client_move(Proto_Client_Handle ch, char data)
   }
 
   return do_generic_dummy_rpc(ch,PROTO_MT_REQ_BASE_MOVE);  
+}
+
+extern int
+proto_client_pickup(Proto_Client_Handle ch)
+{
+  Proto_Client *client = ch;
+  
+
+    if (client->game.status != IN_PROGRESS) {
+      fprintf(stderr, "The game hasn't started yet!\n");
+      return 1;
+  }
+  //ERIC
+  return do_generic_dummy_rpc(ch,PROTO_MT_REQ_BASE_PICKUP);
 }
 
 extern int 
@@ -560,15 +576,32 @@ proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
 {
   Proto_Msg_Hdr h;
   bzero(&h, sizeof(Proto_Msg_Hdr));
-
+  
   // RESPOND TO PLAYER MOVE
   if (s->rhdr.returnCode==SUCCESS)
-    fprintf(stderr, "Move successful!\n");
+    fprintf(stderr, "Move success!\n");
   else if (s->rhdr.returnCode==RPC_MOVE_MOVING_INTO_WALL)
     fprintf(stderr, "Move failed, cannot move into wall\n");
   else if (s->rhdr.returnCode==RPC_MOVE_MOVING_INTO_PLAYER)
     fprintf(stderr, "Move failed, cannot move into another player\n");  
 
+  return 1;
+}
+
+static int
+proto_server_mt_rpc_rep_pickup_handler(Proto_Session *s)
+{
+  Proto_Msg_Hdr h;
+  bzero(&h, sizeof(Proto_Msg_Hdr));
+
+  if (s->rhdr.returnCode==RPC_PICKUP_SUCCESS)
+    fprintf(stderr, "Pickup success!\n");
+  else if (s->rhdr.returnCode==RPC_DROP)
+    fprintf(stderr, "Item Dropped!\n");
+  else if (s->rhdr.returnCode==RPC_PICKUP_NOTHING)
+    fprintf(stderr, "Pickup Fail: No item to pickup\n");
+  else if (s->rhdr.returnCode==RPC_PICKUP_FLAGONSIDE)
+    fprintf(stderr, "Pickup Fail: Cannot pick up your own flag when on your own side\n");
   return 1;
 }
 

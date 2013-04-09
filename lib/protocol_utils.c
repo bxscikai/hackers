@@ -48,6 +48,9 @@ proto_dump_mt(Proto_Msg_Types type)
   case PROTO_MT_REQ_BASE_MOVE: 
     fprintf(stderr, "PROTO_MT_REQ_BASE_MOVE");
     break;
+  case PROTO_MT_REQ_BASE_PICKUP:
+    fprintf(stderr, "PROTO_MT_REQ_BASE_PICKUP");
+    break;
   case PROTO_MT_REQ_BASE_MAPQUERY: 
     fprintf(stderr, "PROTO_MT_REQ_BASE_MAPQUERY");
     break;
@@ -68,6 +71,9 @@ proto_dump_mt(Proto_Msg_Types type)
     break;
   case PROTO_MT_REP_BASE_MOVE:
     fprintf(stderr, "PROTO_MT_REP_BASE_MOVE");
+    break;
+  case PROTO_MT_REP_BASE_PICKUP:
+    fprintf(stderr, "PROTO_MT_REP_BASE_PICKUP");
     break;
   case PROTO_MT_REP_BASE_START_GAME:
     fprintf(stderr, "PROTO_MT_REP_BASE_START_GAME");
