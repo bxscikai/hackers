@@ -535,29 +535,37 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       fprintf(stderr, "%s: move left\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = LEFT;
+      Player *me = getPlayer(&client->game, client->playerID);
+
       doRPCCmd(C, 'm');
-      return ui_dummy_left(ui);
+      return ui_dummy_left(ui, me);
     }
     if (sym == SDLK_RIGHT && mod == KMOD_NONE) {
       fprintf(stderr, "%s: move right\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = RIGHT;
+      Player *me = getPlayer(&client->game, client->playerID);
+
       doRPCCmd(C, 'm');
-      return ui_dummy_right(ui);
+      return ui_dummy_right(ui, me);
     }
     if (sym == SDLK_UP && mod == KMOD_NONE)  {  
       fprintf(stderr, "%s: move up\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+
       doRPCCmd(C, 'm');
-      return ui_dummy_up(ui);
+      return ui_dummy_up(ui, me);
     }
     if (sym == SDLK_DOWN && mod == KMOD_NONE)  {
       fprintf(stderr, "%s: move down\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = DOWN;
+      Player *me = getPlayer(&client->game, client->playerID);
+
       doRPCCmd(C, 'm');
-      return ui_dummy_down(ui);
+      return ui_dummy_down(ui, me);
     }
     if (sym == SDLK_r && mod == KMOD_NONE)  {  
       fprintf(stderr, "%s: dummy pickup red flag\n", __func__);

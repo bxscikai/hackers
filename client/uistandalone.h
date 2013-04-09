@@ -69,10 +69,10 @@ void ui_init(UI **ui);
 
 
 // DUMMY TEST CALLS
-int ui_dummy_left(UI *ui);
-int ui_dummy_right(UI *ui); 
-int ui_dummy_down(UI *ui);
-int ui_dummy_up(UI *ui);
+int ui_dummy_left(UI *ui, Player *myPlayer);
+int ui_dummy_right(UI *ui, Player *myPlayer); 
+int ui_dummy_down(UI *ui, Player *myPlayer);
+int ui_dummy_up(UI *ui, Player *myPlayer);
 int ui_dummy_normal(UI *ui);
 int ui_dummy_pickup_red(UI *ui);
 int ui_dummy_pickup_green(UI *ui);

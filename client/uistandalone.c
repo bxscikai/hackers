@@ -646,6 +646,7 @@ otherPlayer_init(UI *ui)
 static void 
 dummyPlayer_paint(UI *ui, SDL_Rect *t)
 {
+  fprintf(stderr, "Dummy Coordinates: %d, %d\n", dummyPlayer.x, dummyPlayer.y);
   pthread_mutex_lock(&dummyPlayer.lock);
     if(dummyPlayer.x <= 10 && dummyPlayer.y <= 10){
       t->y = dummyPlayer.y * t->h; t->x = dummyPlayer.x * t->w;
@@ -685,37 +686,37 @@ paint_player(UI *ui, SDL_Rect *t, int start_x, int start_y)
 }
 
 int
-ui_dummy_left(UI *ui)
+ui_dummy_left(UI *ui, Player *myPlayer)
 {
   pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.x--;
+    dummyPlayer.x = myPlayer->cellposition.x;
   pthread_mutex_unlock(&dummyPlayer.lock);
   return 2;
 }
 
 int
-ui_dummy_right(UI *ui)
+ui_dummy_right(UI *ui, Player *myPlayer)
 {
   pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.x++;
+    dummyPlayer.x = myPlayer->cellposition.x;
   pthread_mutex_unlock(&dummyPlayer.lock);
   return 2;
 }
 
 int
-ui_dummy_down(UI *ui)
+ui_dummy_down(UI *ui, Player *myPlayer)
 {
   pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.y++;
+    dummyPlayer.y = myPlayer->cellposition.y;
   pthread_mutex_unlock(&dummyPlayer.lock);
   return 2;
 }
 
 int
-ui_dummy_up(UI *ui)
+ui_dummy_up(UI *ui, Player *myPlayer)
 {
   pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.y--;
+    dummyPlayer.y = myPlayer->cellposition.y;
   pthread_mutex_unlock(&dummyPlayer.lock);
   return 2;
 }
