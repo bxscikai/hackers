@@ -199,6 +199,8 @@ proto_client_init(Proto_Client_Handle *ch)
         proto_client_set_event_handler(c, mt, proto_server_mt_rep_start_game);      
       else if (mt==PROTO_MT_EVENT_GAME_UPDATE)
         proto_client_set_event_handler(c, mt, proto_server_mt_game_update_handler);              
+      else if (mt==PROTO_MT_EVENT_MAP_UPDATE)
+        proto_client_set_event_handler(c, mt, proto_server_mt_map_update_handler);              
       else
         proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
   }
@@ -428,6 +430,22 @@ proto_server_mt_rpc_rep_hello_handler(Proto_Session *s)
   sendACK(s, PROTO_MT_EVENT_LOBBY_UPDATE);
 
   return 1;
+}
+
+static int 
+proto_server_mt_map_update_handler(Proto_Session *s) {
+
+  // Update map
+  Proto_Client *c = s->client;
+  Cell newCell = s->rhdr.updateCell;
+  c->game.map.mapBody[newCell.position.y][newCell.position.x] = newCell;
+
+  ////// TIFFANY ///////////
+  ///// UPDATE MAP HERE ////
+  //////////////////////////
+
+  // Let the server know it received the update
+  sendACK(s, PROTO_MT_EVENT_MAP_UPDATE);
 }
 
 static int 

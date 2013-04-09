@@ -83,7 +83,7 @@ static int proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s);
 static int proto_server_mt_rpc_lobby_update_handler(Proto_Session *s);
 static int proto_server_mt_rep_start_game(Proto_Session *s);
 static int proto_server_mt_game_update_handler(Proto_Session *s);
-
+static int proto_server_mt_map_update_handler(Proto_Session *s);
 
 // Parse map from string representation
 static void parseMapFromString(char *mapString, Maze *map);

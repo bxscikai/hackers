@@ -54,6 +54,7 @@ typedef enum  {
   PROTO_MT_EVENT_REQ_UPDATE,
   PROTO_MT_EVENT_LOBBY_UPDATE,
   PROTO_MT_EVENT_GAME_UPDATE,
+  PROTO_MT_EVENT_MAP_UPDATE,
   PROTO_MT_EVENT_BASE_RESERVED_LAST
 
 } Proto_Msg_Types;
@@ -82,6 +83,7 @@ typedef struct {
   Game               game;
   int                blen;
   ReturnCode         returnCode;
+  Cell               updateCell;
 } __attribute__((__packed__)) Proto_Msg_Hdr;
 
 

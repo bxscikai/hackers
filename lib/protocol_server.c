@@ -51,7 +51,8 @@ struct {
   pthread_t          RPCListenTid;
   Proto_MT_Handler   session_lost_handler;
   Proto_MT_Handler   base_req_handlers[PROTO_MT_EVENT_BASE_RESERVED_LAST - 
-               PROTO_MT_REQ_BASE_RESERVED_FIRST];
+                     PROTO_MT_REQ_BASE_RESERVED_FIRST];
+  Cell               updateCell;  
 
   // Game logic
   pthread_mutex_t    GameLock;
@@ -442,6 +443,10 @@ proto_server_init(void)
   // Initial states
   Proto_Server.game.status = NOT_STARTED;
 
+  // Init mapPosition update
+  Proto_Server.updateCell.position.x = -1;
+  Proto_Server.updateCell.position.y = -1;
+
   for (i=0; i<PROTO_SERVER_MAX_EVENT_SUBSCRIBERS; i++) {
     Proto_Server.EventSubscribers[i]=-1;
   }
@@ -502,6 +507,12 @@ extern void setPostMessage(Proto_Session *event, Proto_Msg_Types mt) {
   }
   else if (mt==PROTO_MT_EVENT_GAME_UPDATE) {
     h.game = Proto_Server.game;
+  }
+  else if (mt==PROTO_MT_EVENT_MAP_UPDATE) {
+    h.updateCell = Proto_Server.updateCell;
+    // Reset mapPosition update
+    Proto_Server.updateCell.position.x = -1;
+    Proto_Server.updateCell.position.y = -1;
   }
 
   proto_session_hdr_marshall(event, &h);
@@ -642,86 +653,11 @@ proto_server_mt_rpc_start_game(Proto_Session *s)
       }
   }
 
-  // Assigning location of flags
-  int assignedFlag1 = 0;
-  int assignedFlag2 = 0;
-  int i;
-
-  // Assign flag 1
-  while (assignedFlag1==0 ) {
-      Cell *cell = Proto_Server.game.map.floorCells_1[getRandNum(0, Proto_Server.game.map.numFloor1)];
-      // Check to make sure no one is in this cell
-      if (cell->occupied==0) {
-        // Make sure this item is not overlapping another item
-        int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
-
-        if (cellcontainsObj==NONE) {
-          Object newObj;
-          newObj.cellposition = cell->position;
-          newObj.type = FLAG_1;              
-          assignedFlag1 = 1;
-          Proto_Server.game.map.objects[0] = newObj;
-        }
-      }
-  }
-
-  // Assign flag 2
-  while (assignedFlag2==0 ) {
-      Cell *cell = Proto_Server.game.map.floorCells_2[getRandNum(0, Proto_Server.game.map.numFloor2)];
-      // Check to make sure no one is in this cell
-      if (cell->occupied==0) {        
-        // Make sure this item is not overlapping another item
-        int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
-
-        if (cellcontainsObj==NONE) {
-          Object newObj;
-          newObj.cellposition = cell->position;
-          newObj.type = FLAG_2;              
-          assignedFlag2 = 1;
-          Proto_Server.game.map.objects[1] = newObj;
-        }
-      }
-  }
-
-  // Assign jackhammers
-  int assignedjackhammer1 = 0;
-  int assignedjackhammer2 = 0;
-
-  // Assign hammer 1
-  while (assignedjackhammer1==0 ) {
-    Cell *cell = Proto_Server.game.map.homeCells_1[getRandNum(0, Proto_Server.game.map.numHome1)];
-    // Check to make sure no one is in this cell
-    if (cell->occupied==0) {
-      // Make sure this item is not overlapping another item
-      int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
-
-      if (cellcontainsObj==NONE) {
-        Object newObj;
-        newObj.cellposition = cell->position;
-        newObj.type = JACKHAMMER1;              
-        assignedjackhammer1 = 1;
-        Proto_Server.game.map.objects[2] = newObj;
-      }
-    }
-  }
-
-  // Assign hammer 2
-  while (assignedjackhammer2==0 ) {
-    Cell *cell = Proto_Server.game.map.homeCells_2[getRandNum(0, Proto_Server.game.map.numHome2)];
-    // Check to make sure no one is in this cell
-    if (cell->occupied==0) {
-      // Make sure this item is not overlapping another item
-      int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
-
-      if (cellcontainsObj==NONE) {
-        Object newObj;
-        newObj.cellposition = cell->position;
-        newObj.type = JACKHAMMER2;              
-        assignedjackhammer2 = 1;
-        Proto_Server.game.map.objects[3] = newObj;
-      }
-    }
-  }
+  // Spawn objects
+  spawnObject(JACKHAMMER1);
+  spawnObject(JACKHAMMER2);
+  spawnObject(FLAG_1);
+  spawnObject(FLAG_2);
 
   Proto_Server.game.status = IN_PROGRESS;
 
@@ -946,9 +882,33 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
     h.returnCode = RPC_MOVE_MOVING_INTO_PLAYER;    
     fprintf(stderr, "MOVE INTO PLAYER\n");
   }
-  else if (collisionCell->type==WALL_FIXED || collisionCell->type==WALL_UNFIXED) {
+  else if (collisionCell->type==WALL_FIXED || (collisionCell->type==WALL_UNFIXED && (player->inventory.type!=JACKHAMMER1 && player->inventory.type!=JACKHAMMER2))) {
     fprintf(stderr, "MOVE INTO WALL\n");
     h.returnCode = RPC_MOVE_MOVING_INTO_WALL;
+  }
+  // The user is moving into a unfixed wall with a jackhammer, break it down
+  else if (collisionCell->type==WALL_UNFIXED && (player->inventory.type==JACKHAMMER1 || player->inventory.type==JACKHAMMER2)) {
+
+    fprintf(stderr, "BREAKING DOWN WALL AT (%d,%d)\n", collisionCell->position.x, collisionCell->position.y);
+    // Spawn jackhammer back to a random location in base    
+    spawnObject(player->inventory.type);
+    player->inventory.type = NONE;
+
+    // Decide which floor cell to turn the wall cell to depending on the adjacent cells
+    if (Proto_Server.game.map.mapBody[collisionCell->position.y-1][collisionCell->position.x].type==FLOOR_1 ||
+        Proto_Server.game.map.mapBody[collisionCell->position.y+1][collisionCell->position.x].type==FLOOR_1 ||
+        Proto_Server.game.map.mapBody[collisionCell->position.y][collisionCell->position.x-1].type==FLOOR_1 ||
+        Proto_Server.game.map.mapBody[collisionCell->position.y][collisionCell->position.x+1].type==FLOOR_1) {
+        collisionCell->type = FLOOR_1;
+    }
+    else {
+      collisionCell->type = FLOOR_2;
+    }
+    Proto_Server.updateCell = *collisionCell;
+    h.returnCode = SUCCESS;
+    // Broadcast map change to everyone
+    proto_server_post_event(PROTO_MT_EVENT_MAP_UPDATE);    
+
   }
   else {
     // Move out of current cell
@@ -974,20 +934,7 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
       		CellType ct = Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x].type;
       		if (ct == FLOOR_1)
       		{
-      			int assignedFlag1 = 0;
-
-            // Find a random location on the player's side
-      			while (assignedFlag1==0 ) {
-            			Cell *cell = Proto_Server.game.map.floorCells_1[getRandNum(0, Proto_Server.game.map.numFloor1)];	
-        			if (cell->occupied==0) {
-        			int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
-            		if (cellcontainsObj==NONE) {
-              			Proto_Server.game.map.objects[0].cellposition.x = cell->position.x;
-      			        Proto_Server.game.map.objects[0].cellposition.y = cell->position.y;
-      			        assignedFlag1 = 1;
-            		}
-              }
-        		}
+            spawnObject(FLAG_1);
       			player->inventory.type = NONE;
       		}	
       	}
@@ -1002,22 +949,9 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
 	if (player->team == TEAM_2)
       {
       CellType ct = Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x].type;
-        if (ct == FLOOR_1)
+        if (ct == FLOOR_2)
         {
-          int assignedFlag1 = 0;
-
-          while (assignedFlag1==0 ) {
-          Cell *cell = Proto_Server.game.map.floorCells_2[getRandNum(0, Proto_Server.game.map.numFloor2)];
-            if (cell->occupied==0) {
-            int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
-
-              if (cellcontainsObj==NONE) {
-                      Proto_Server.game.map.objects[1].cellposition.x = cell->position.x;
-                      Proto_Server.game.map.objects[1].cellposition.y = cell->position.y;
-                      assignedFlag1 = 1;
-              }
-            }
-          }
+          spawnObject(FLAG_2);
           player->inventory.type = NONE;
         }
       }
@@ -1039,6 +973,104 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   proto_server_post_event(PROTO_MT_EVENT_GAME_UPDATE);
 
   return 1;
+}
+
+// Spawn object random position predefined for object
+static void 
+spawnObject(ObjectType obj) {
+
+
+    // Assign jackhammers
+  if (obj==JACKHAMMER1) {
+
+    int assignedjackhammer1 = 0;
+
+    // Assign hammer 1
+    while (assignedjackhammer1==0 ) {
+      Cell *cell = Proto_Server.game.map.homeCells_1[getRandNum(0, Proto_Server.game.map.numHome1)];
+      // Check to make sure no one is in this cell
+      if (cell->occupied==0) {
+        // Make sure this item is not overlapping another item
+        int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+
+        if (cellcontainsObj==NONE) {
+          Object newObj;
+          newObj.cellposition = cell->position;
+          newObj.type = JACKHAMMER1;              
+          assignedjackhammer1 = 1;
+          Proto_Server.game.map.objects[2] = newObj;
+        }
+      }
+    }
+  }
+  else if (obj==JACKHAMMER2) {
+  
+    int assignedjackhammer2 = 0;
+    // Assign hammer 2
+    while (assignedjackhammer2==0 ) {
+      Cell *cell = Proto_Server.game.map.homeCells_2[getRandNum(0, Proto_Server.game.map.numHome2)];
+      // Check to make sure no one is in this cell
+      if (cell->occupied==0) {
+        // Make sure this item is not overlapping another item
+        int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+
+        if (cellcontainsObj==NONE) {
+          Object newObj;
+          newObj.cellposition = cell->position;
+          newObj.type = JACKHAMMER2;              
+          assignedjackhammer2 = 1;
+          Proto_Server.game.map.objects[3] = newObj;
+        }
+      }
+    }
+  }
+  else if (obj==FLAG_1) {
+
+    int assignedFlag1 = 0;
+    int i;
+    // Assign flag 1
+    while (assignedFlag1==0 ) {
+        Cell *cell = Proto_Server.game.map.floorCells_1[getRandNum(0, Proto_Server.game.map.numFloor1)];
+        // Check to make sure no one is in this cell
+        if (cell->occupied==0) {
+          // Make sure this item is not overlapping another item
+          int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+
+          if (cellcontainsObj==NONE) {
+            Object newObj;
+            newObj.cellposition = cell->position;
+            newObj.type = FLAG_1;              
+            assignedFlag1 = 1;
+            Proto_Server.game.map.objects[0] = newObj;
+          }
+        }
+    }
+
+  }
+
+  else if (obj==FLAG_2) {
+
+    int assignedFlag2 = 0;
+    int i;
+    // Assign flag 2
+    while (assignedFlag2==0 ) {
+        Cell *cell = Proto_Server.game.map.floorCells_2[getRandNum(0, Proto_Server.game.map.numFloor2)];
+        // Check to make sure no one is in this cell
+        if (cell->occupied==0) {        
+          // Make sure this item is not overlapping another item
+          int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+
+          if (cellcontainsObj==NONE) {
+            Object newObj;
+            newObj.cellposition = cell->position;
+            newObj.type = FLAG_2;              
+            assignedFlag2 = 1;
+            Proto_Server.game.map.objects[1] = newObj;
+          }
+        }
+    }   
+  }
+
 }
 
 

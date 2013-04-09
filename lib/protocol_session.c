@@ -88,6 +88,24 @@ proto_session_hdr_unmarshall_blen(Proto_Session *s)
 }
 
 
+extern int
+proto_session_hdr_unmarshall_updatecell(Proto_Session *s)
+{
+  s->rhdr.updateCell.position.x = ntohl(s->rhdr.updateCell.position.x);
+  s->rhdr.updateCell.position.y = ntohl(s->rhdr.updateCell.position.y);
+  s->rhdr.updateCell.type = ntohl(s->rhdr.updateCell.type);
+  s->rhdr.updateCell.occupied = ntohl(s->rhdr.updateCell.occupied);
+}
+
+extern void
+proto_session_hdr_marshall_updatecell(Proto_Session *s)
+{
+  s->shdr.updateCell.position.x = ntohl(s->shdr.updateCell.position.x);
+  s->shdr.updateCell.position.y = ntohl(s->shdr.updateCell.position.y);
+  s->shdr.updateCell.type = ntohl(s->shdr.updateCell.type);
+  s->shdr.updateCell.occupied = ntohl(s->shdr.updateCell.occupied);
+}
+
 extern void
 proto_session_hdr_marshall_returnCode(Proto_Session *s, ReturnCode rc)
 {
@@ -260,6 +278,7 @@ proto_session_hdr_unmarshall(Proto_Session *s, Proto_Msg_Hdr *h)
   proto_session_hdr_unmarshall_sver(s, &h->sver);
   proto_session_hdr_unmarshall_game(s);
   proto_session_hdr_unmarshall_returncode(s);
+  proto_session_hdr_unmarshall_updatecell(s);
   // proto_session_hdr_unmarshall_blen(s);
 }
    
@@ -276,6 +295,7 @@ proto_session_hdr_marshall(Proto_Session *s, Proto_Msg_Hdr *h)
   proto_session_hdr_marshall_sver(s, h->sver);
   proto_session_hdr_marshall_returnCode(s, h->returnCode);
   proto_session_hdr_marshall_game(s, &h->game);
+  proto_session_hdr_marshall_updatecell(s);
   // we ignore the body length as we will explicity set it
   // on the send path to the amount of body data that was
   // marshalled.
