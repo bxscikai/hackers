@@ -486,9 +486,12 @@ proto_server_mt_game_update_handler(Proto_Session *s)
     c->game.map.objects[i] = s->rhdr.game.map.objects[i];
   c->game.status = s->rhdr.game.status;
 
+  Player *player = getPlayer(&c->game, c->playerID);
+
   // Right now simply prints out all new player locations
   printUpdate(&c->game);
 
+  Update_UI(player, &c->game);
   //UI CODE
   // Player *player = getPlayer(&c->game, c->playerID);
   // ui_paintmap(ui, &c->game, player);

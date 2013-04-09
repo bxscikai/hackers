@@ -531,11 +531,7 @@ ui_process(UI *ui, void *game, Player *myPlayer, Client *C)
     default:
       fprintf(stderr, "%s: e.type=%d NOT Handled\n", __func__, e.type);
     }
-    if (rc==2) { 
-      ui_paintmap(ui, game);
-      SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
-
-    }
+    
     if (rc<0) break;
   }
   return rc;
@@ -583,6 +579,13 @@ ui_quit(UI *ui)
   event.type      = SDL_USEREVENT;
   event.user.code = UI_SDLEVENT_QUIT;
   SDL_PushEvent(&event);
+}
+
+extern void
+ui_repaint(UI *ui, void *game)
+{
+  ui_paintmap(ui, game);
+  SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
 }
 
 extern void
@@ -646,7 +649,7 @@ otherPlayer_init(UI *ui)
 static void 
 dummyPlayer_paint(UI *ui, SDL_Rect *t)
 {
-  fprintf(stderr, "Dummy Coordinates: %d, %d\n", dummyPlayer.x, dummyPlayer.y);
+  fprintf(stderr, "Painted Coordinates: %d, %d\n", dummyPlayer.x, dummyPlayer.y);
   pthread_mutex_lock(&dummyPlayer.lock);
     if(dummyPlayer.x <= 10 && dummyPlayer.y <= 10){
       t->y = dummyPlayer.y * t->h; t->x = dummyPlayer.x * t->w;
@@ -690,6 +693,7 @@ ui_dummy_left(UI *ui, Player *myPlayer)
 {
   pthread_mutex_lock(&dummyPlayer.lock);
     dummyPlayer.x = myPlayer->cellposition.x;
+    dummyPlayer.y = myPlayer->cellposition.y;
   pthread_mutex_unlock(&dummyPlayer.lock);
   return 2;
 }
@@ -699,6 +703,7 @@ ui_dummy_right(UI *ui, Player *myPlayer)
 {
   pthread_mutex_lock(&dummyPlayer.lock);
     dummyPlayer.x = myPlayer->cellposition.x;
+    dummyPlayer.y = myPlayer->cellposition.y;
   pthread_mutex_unlock(&dummyPlayer.lock);
   return 2;
 }
@@ -707,6 +712,7 @@ int
 ui_dummy_down(UI *ui, Player *myPlayer)
 {
   pthread_mutex_lock(&dummyPlayer.lock);
+    dummyPlayer.x = myPlayer->cellposition.x;
     dummyPlayer.y = myPlayer->cellposition.y;
   pthread_mutex_unlock(&dummyPlayer.lock);
   return 2;
@@ -716,6 +722,7 @@ int
 ui_dummy_up(UI *ui, Player *myPlayer)
 {
   pthread_mutex_lock(&dummyPlayer.lock);
+    dummyPlayer.x = myPlayer->cellposition.x;
     dummyPlayer.y = myPlayer->cellposition.y;
   pthread_mutex_unlock(&dummyPlayer.lock);
   return 2;

@@ -13,6 +13,6 @@ typedef struct ClientState  {
 } Client;
 
 
-void start_UI(Proto_Client *c, Player *myPlayer);
+void Update_UI(Player *myPlayer, void *game);
 
 #endif

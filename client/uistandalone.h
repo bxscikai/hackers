@@ -64,6 +64,7 @@ sval ui_move(UI *ui, sval xdir, sval ydir);
 sval ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C);
 void ui_update(UI *ui);
 void ui_quit(UI *ui);
+void ui_repaint(UI *ui, void *game);
 void ui_main_loop(UI *ui, uval h, uval w, void *map, Player *myPlayer, Client *C);
 void ui_init(UI **ui);
 

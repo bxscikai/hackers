@@ -45,9 +45,11 @@ struct Globals {
   PortType port;
 } globals;
 
-extern void start_UI(Proto_Client *c, Player *myPlayer)
+extern void Update_UI(Player *myPlayer, void *game)
 {
-  //ui_main_loop(ui, (32 * c->game.map.dimension.x * 0.1), (32 * c->game.map.dimension.y * 0.1), &c->game, myPlayer);
+  fprintf(stderr, "Position: %d, %d\n", myPlayer->cellposition.x, myPlayer->cellposition.y);
+  ui_dummy_left(ui, myPlayer);
+  ui_repaint(ui, game);
 }
 
 static int
@@ -538,7 +540,7 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       Player *me = getPlayer(&client->game, client->playerID);
 
       doRPCCmd(C, 'm');
-      return ui_dummy_left(ui, me);
+      return 2;
     }
     if (sym == SDLK_RIGHT && mod == KMOD_NONE) {
       fprintf(stderr, "%s: move right\n", __func__);
@@ -547,7 +549,7 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       Player *me = getPlayer(&client->game, client->playerID);
 
       doRPCCmd(C, 'm');
-      return ui_dummy_right(ui, me);
+      return 2;
     }
     if (sym == SDLK_UP && mod == KMOD_NONE)  {  
       fprintf(stderr, "%s: move up\n", __func__);
@@ -556,7 +558,7 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       Player *me = getPlayer(&client->game, client->playerID);
 
       doRPCCmd(C, 'm');
-      return ui_dummy_up(ui, me);
+      return 2;
     }
     if (sym == SDLK_DOWN && mod == KMOD_NONE)  {
       fprintf(stderr, "%s: move down\n", __func__);
@@ -565,7 +567,7 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       Player *me = getPlayer(&client->game, client->playerID);
 
       doRPCCmd(C, 'm');
-      return ui_dummy_down(ui, me);
+      return 2;
     }
     if (sym == SDLK_r && mod == KMOD_NONE)  {  
       fprintf(stderr, "%s: dummy pickup red flag\n", __func__);
