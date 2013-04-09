@@ -510,7 +510,7 @@ ui_userevent(UI *ui, SDL_UserEvent *e)
 }
 
 static sval
-ui_process(UI *ui, void *game, Player *myPlayer, Client *C)
+ui_process(UI *ui, Client *C)
 {
   SDL_Event e;
   sval rc = 1;
@@ -604,7 +604,7 @@ ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer, Client *C)
   ui_paintmap(ui, game);
   
   while (1) {
-    if (ui_process(ui, game, myPlayer, C)<0) break;
+    if (ui_process(ui, C)<0) break;
   }
 
   ui_shutdown_sdl();
