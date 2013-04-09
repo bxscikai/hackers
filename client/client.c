@@ -28,7 +28,8 @@
 #include <pthread.h>
 
 #include "../lib/types.h"
-#include "../lib/protocol_client.h"
+#include "client.h"
+//#include "../lib/protocol_client.h"
 #include "../lib/protocol_utils.h"
 #include "tty.h"
 #include "uistandalone.h"
@@ -43,13 +44,6 @@ struct Globals {
   char host[STRLEN];
   PortType port;
 } globals;
-
-
-typedef struct ClientState  {
-  int data;
-  Proto_Client_Handle ph;
-} Client;
-
 
 extern void start_UI(Proto_Client *c, Player *myPlayer)
 {
@@ -524,14 +518,14 @@ main(int argc, char **argv)
       Proto_Client *client = (Proto_Client *) c.ph;
       Player *me = getPlayer(&client->game, client->playerID);
       doRPCCmd(&c, 'q'); //query for the map
-      ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me);
+      ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me, &c);
     }
   return 0;
 }
 
 
 extern sval
-ui_keypress(UI *ui, SDL_KeyboardEvent *e)
+ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
 {
   SDLKey sym = e->keysym.sym;
   SDLMod mod = e->keysym.mod;
@@ -539,30 +533,30 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e)
   if (e->type == SDL_KEYDOWN) {
     if (sym == SDLK_LEFT && mod == KMOD_NONE) {
       fprintf(stderr, "%s: move left\n", __func__);
-      // Proto_Client *client = C->ph;
-      // client->rpc_session.shdr.returnCode = LEFT;
-      // doRPCCmd(C, 'm');
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = LEFT;
+      doRPCCmd(C, 'm');
       return ui_dummy_left(ui);
     }
     if (sym == SDLK_RIGHT && mod == KMOD_NONE) {
       fprintf(stderr, "%s: move right\n", __func__);
-      // Proto_Client *client = C->ph;
-      // client->rpc_session.shdr.returnCode = RIGHT;
-      // doRPCCmd(C, 'm');
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = RIGHT;
+      doRPCCmd(C, 'm');
       return ui_dummy_right(ui);
     }
     if (sym == SDLK_UP && mod == KMOD_NONE)  {  
       fprintf(stderr, "%s: move up\n", __func__);
-      // Proto_Client *client = C->ph;
-      // client->rpc_session.shdr.returnCode = UP;
-      // doRPCCmd(C, 'm');
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      doRPCCmd(C, 'm');
       return ui_dummy_up(ui);
     }
     if (sym == SDLK_DOWN && mod == KMOD_NONE)  {
       fprintf(stderr, "%s: move down\n", __func__);
-      // Proto_Client *client = C->ph;
-      // client->rpc_session.shdr.returnCode = DOWN;
-      // doRPCCmd(C, 'm');
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = DOWN;
+      doRPCCmd(C, 'm');
       return ui_dummy_down(ui);
     }
     if (sym == SDLK_r && mod == KMOD_NONE)  {  

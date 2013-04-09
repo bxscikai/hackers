@@ -25,7 +25,8 @@
 #include <pthread.h>
 #include <assert.h>
 #include "../lib/types.h"
-#include "../lib/maze.h"
+#include "client.h"
+//#include "../lib/maze.h"
 #include "uistandalone.h"
 
 /* A lot of this code comes from http://www.libsdl.org/cgi/docwiki.cgi */
@@ -509,7 +510,7 @@ ui_userevent(UI *ui, SDL_UserEvent *e)
 }
 
 static sval
-ui_process(UI *ui, void *game, Player *myPlayer)
+ui_process(UI *ui, void *game, Player *myPlayer, Client *C)
 {
   SDL_Event e;
   sval rc = 1;
@@ -520,7 +521,7 @@ ui_process(UI *ui, void *game, Player *myPlayer)
       return -1;
     case SDL_KEYDOWN:
     case SDL_KEYUP:
-      rc = ui_keypress(ui, &(e.key));
+      rc = ui_keypress(ui, &(e.key), C);
       break;
     case SDL_ACTIVEEVENT:
       break;
@@ -585,7 +586,7 @@ ui_quit(UI *ui)
 }
 
 extern void
-ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer)
+ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer, Client *C)
 {
   sval rc;
   
@@ -600,7 +601,7 @@ ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer)
   ui_paintmap(ui, game);
   
   while (1) {
-    if (ui_process(ui, game, myPlayer)<0) break;
+    if (ui_process(ui, game, myPlayer, C)<0) break;
   }
 
   ui_shutdown_sdl();
