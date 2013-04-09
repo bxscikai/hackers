@@ -510,9 +510,6 @@ extern void setPostMessage(Proto_Session *event, Proto_Msg_Types mt) {
   }
   else if (mt==PROTO_MT_EVENT_MAP_UPDATE) {
     h.updateCell = Proto_Server.updateCell;
-    // Reset mapPosition update
-    Proto_Server.updateCell.position.x = -1;
-    Proto_Server.updateCell.position.y = -1;
   }
 
   proto_session_hdr_marshall(event, &h);
@@ -700,9 +697,10 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
 
   Player newplayer;
   newplayer.isHost=0;
-  newplayer.inventory.type = NONE;
   newplayer.canMove=1;
   newplayer.playerID = s->fd;
+  // TEMP GIVEN PLAYER JACKHAMMER
+  newplayer.inventory.type = JACKHAMMER1;
 
   if (numOfPlayersTeam1==0 && numOfPlayersTeam2==0) {
     newplayer.team = TEAM_1;
@@ -837,6 +835,9 @@ proto_server_mt_rpc_pickup_handler(Proto_Session *s)
   proto_session_send_msg(s, 1);
 
   proto_server_post_event(PROTO_MT_EVENT_GAME_UPDATE);
+      // Reset mapPosition update
+    Proto_Server.updateCell.position.x = -1;
+    Proto_Server.updateCell.position.y = -1;
 
   return 1;
 }
@@ -905,6 +906,9 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
       collisionCell->type = FLOOR_2;
     }
     Proto_Server.updateCell = *collisionCell;
+    fprintf(stderr, "Cell breaking down: \n");
+    printCell(&Proto_Server.updateCell);
+
     h.returnCode = SUCCESS;
     // Broadcast map change to everyone
     proto_server_post_event(PROTO_MT_EVENT_MAP_UPDATE);    

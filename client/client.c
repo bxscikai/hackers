@@ -47,7 +47,7 @@ struct Globals {
 
 extern void Update_UI(Player *myPlayer, void *game)
 {
-  fprintf(stderr, "Position: %d, %d\n", myPlayer->cellposition.x, myPlayer->cellposition.y);
+  // fprintf(stderr, "Position: %d, %d\n", myPlayer->cellposition.x, myPlayer->cellposition.y);
   ui_dummy_left(ui, myPlayer);
   ui_repaint(ui, game);
 }
@@ -512,6 +512,7 @@ main(int argc, char **argv)
     startConnection(&c, globals.host, globals.port, update_event_handler);
   }    
 
+  doRPCCmd(&c, 'q'); //query for the map
   shell(&c);
 
     if (DISPLAYUI==1) {

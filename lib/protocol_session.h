@@ -61,7 +61,7 @@ extern void  proto_session_hdr_marshall_mapBody(Proto_Session *s, char *map);
 extern void proto_session_hdr_unmarshall_mapBody(Proto_Session *s, char *mapString);
 
 extern int proto_session_hdr_unmarshall_updatecell(Proto_Session *s);
-extern void proto_session_hdr_marshall_updatecell(Proto_Session *s);
+extern void proto_session_hdr_marshall_updatecell(Proto_Session *s, Cell updateCell);
 
 extern int  proto_session_body_marshall_ll(Proto_Session *s, long long v);
 extern int  proto_session_body_unmarshall_ll(Proto_Session *s, int offset, 

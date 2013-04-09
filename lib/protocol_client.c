@@ -438,7 +438,18 @@ proto_server_mt_map_update_handler(Proto_Session *s) {
   // Update map
   Proto_Client *c = s->client;
   Cell newCell = s->rhdr.updateCell;
-  c->game.map.mapBody[newCell.position.y][newCell.position.x] = newCell;
+  fprintf(stderr, "New update cell: \n");
+  printCell(&newCell);
+
+  if (newCell.position.x>0 && newCell.position.y>0) {
+    fprintf(stderr, "Before updating cell\n");
+    printMap(&c->game.map);
+    // c->game.map.mapBody[newCell.position.y][newCell.position.x] = newCell;
+    fprintf(stderr, "After updating cell\n");
+  }
+  else 
+    fprintf(stderr, "Invalid map update\n");
+  
 
   ////// TIFFANY ///////////
   ///// UPDATE MAP HERE ////
@@ -525,7 +536,8 @@ proto_server_mt_game_update_handler(Proto_Session *s)
   // Right now simply prints out all new player locations
   printUpdate(&c->game);
 
-  Update_UI(player, &c->game);
+  if (DISPLAYUI==1)
+    Update_UI(player, &c->game);
   //UI CODE
   // Player *player = getPlayer(&c->game, c->playerID);
   // ui_paintmap(ui, &c->game, player);
@@ -630,7 +642,8 @@ proto_server_mt_rpc_rep_querymap_handler(Proto_Session *s)
   char string[(s->rhdr.game.map.dimension.x+1)*s->rhdr.game.map.dimension.y];
   proto_session_hdr_unmarshall_mapBody(s, string);
   parseMapFromString(string, &s->rhdr.game.map);
-  printMap(&s->rhdr.game.map);
+  // printMap(&s->rhdr.game.map);
+  fprintf(stderr, "Got map from server\n");
   // fprintf(stderr, "The map: %s\n", string);
 
   return 1; // rc just needs to be >1

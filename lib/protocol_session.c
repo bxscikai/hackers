@@ -98,12 +98,12 @@ proto_session_hdr_unmarshall_updatecell(Proto_Session *s)
 }
 
 extern void
-proto_session_hdr_marshall_updatecell(Proto_Session *s)
+proto_session_hdr_marshall_updatecell(Proto_Session *s, Cell updateCell)
 {
-  s->shdr.updateCell.position.x = ntohl(s->shdr.updateCell.position.x);
-  s->shdr.updateCell.position.y = ntohl(s->shdr.updateCell.position.y);
-  s->shdr.updateCell.type = ntohl(s->shdr.updateCell.type);
-  s->shdr.updateCell.occupied = ntohl(s->shdr.updateCell.occupied);
+  s->shdr.updateCell.position.x = ntohl(updateCell.position.x);
+  s->shdr.updateCell.position.y = ntohl(updateCell.position.y);
+  s->shdr.updateCell.type = ntohl(updateCell.type);
+  s->shdr.updateCell.occupied = ntohl(updateCell.occupied);
 }
 
 extern void
@@ -295,7 +295,7 @@ proto_session_hdr_marshall(Proto_Session *s, Proto_Msg_Hdr *h)
   proto_session_hdr_marshall_sver(s, h->sver);
   proto_session_hdr_marshall_returnCode(s, h->returnCode);
   proto_session_hdr_marshall_game(s, &h->game);
-  proto_session_hdr_marshall_updatecell(s);
+  proto_session_hdr_marshall_updatecell(s, h->updateCell);
   // we ignore the body length as we will explicity set it
   // on the send path to the amount of body data that was
   // marshalled.
