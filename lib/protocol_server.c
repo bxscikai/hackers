@@ -967,69 +967,65 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   {
      if (player->inventory.type == FLAG_1)
      {
-	Proto_Server.game.map.objects[0].cellposition.x = player->cellposition.x;
-	Proto_Server.game.map.objects[0].cellposition.y = player->cellposition.y;
-     	if (player->team == TEAM_1)
-	{
-		CellType ct = Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x].type;
-		if (ct == FLOOR_1)
-		{
-			int assignedFlag1 = 0;
+	     Proto_Server.game.map.objects[0].cellposition = player->cellposition;
+     	  if (player->team == TEAM_1)
+      	{
+          // If the player has stepped back onto its own side, we will randomly teleport this item on their side
+      		CellType ct = Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x].type;
+      		if (ct == FLOOR_1)
+      		{
+      			int assignedFlag1 = 0;
 
-			while (assignedFlag1==0 ) {
-      			Cell *cell = Proto_Server.game.map.floorCells_1[getRandNum(0, Proto_Server.game.map.numFloor1)];	
-			if (cell->occupied==0) {
-			int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
-
-        		if (cellcontainsObj==NONE) {
-          			Proto_Server.game.map.objects[0].cellposition.x = cell->position.x;
-				Proto_Server.game.map.objects[0].cellposition.y = cell->position.y;
-				assignedFlag1 = 1;
+            // Find a random location on the player's side
+      			while (assignedFlag1==0 ) {
+            			Cell *cell = Proto_Server.game.map.floorCells_1[getRandNum(0, Proto_Server.game.map.numFloor1)];	
+        			if (cell->occupied==0) {
+        			int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+            		if (cellcontainsObj==NONE) {
+              			Proto_Server.game.map.objects[0].cellposition.x = cell->position.x;
+      			        Proto_Server.game.map.objects[0].cellposition.y = cell->position.y;
+      			        assignedFlag1 = 1;
+            		}
+              }
         		}
-      			}
-  			}
-			player->inventory.type = NONE;
-		}	
-	}
+      			player->inventory.type = NONE;
+      		}	
+      	}
      }
+
+     // If the player has flag 2
      else if (player->inventory.type == FLAG_2)
      {
-	Proto_Server.game.map.objects[1].cellposition.x = player->cellposition.x;
-        Proto_Server.game.map.objects[1].cellposition.y = player->cellposition.y;
-     
+	     Proto_Server.game.map.objects[1].cellposition = player->cellposition;
+  
+  // Teleport team 2's flag back into a random spot in its home   
 	if (player->team == TEAM_2)
+      {
+      CellType ct = Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x].type;
+        if (ct == FLOOR_1)
         {
-                CellType ct = Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x].type;
-                if (ct == FLOOR_1)
-                {
-                        int assignedFlag1 = 0;
+          int assignedFlag1 = 0;
 
-                        while (assignedFlag1==0 ) {
-                        Cell *cell = Proto_Server.game.map.floorCells_2[getRandNum(0, Proto_Server.game.map.numFloor2)];
-                        if (cell->occupied==0) {
-                        int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
+          while (assignedFlag1==0 ) {
+          Cell *cell = Proto_Server.game.map.floorCells_2[getRandNum(0, Proto_Server.game.map.numFloor2)];
+            if (cell->occupied==0) {
+            int cellcontainsObj = cellContainsObject(&Proto_Server.game, cell);
 
-                        if (cellcontainsObj==NONE) {
-                                Proto_Server.game.map.objects[1].cellposition.x = cell->position.x;
-                                Proto_Server.game.map.objects[1].cellposition.y = cell->position.y;
-                                assignedFlag1 = 1;
-                        }
-                        }
-                        }
-                        player->inventory.type = NONE;
-                }
+              if (cellcontainsObj==NONE) {
+                      Proto_Server.game.map.objects[1].cellposition.x = cell->position.x;
+                      Proto_Server.game.map.objects[1].cellposition.y = cell->position.y;
+                      assignedFlag1 = 1;
+              }
+            }
+          }
+          player->inventory.type = NONE;
         }
+      }
      }
-     else if (player->inventory.type == JACKHAMMER1)
-     {
-	Proto_Server.game.map.objects[2].cellposition.x = player->cellposition.x;
-        Proto_Server.game.map.objects[2].cellposition.y = player->cellposition.y;
-     }
+     else if (player->inventory.type == JACKHAMMER1)     
+	     Proto_Server.game.map.objects[2].cellposition = player->cellposition;     
      else if (player->inventory.type == JACKHAMMER2)
-     {
-	Proto_Server.game.map.objects[3].cellposition.x = player->cellposition.x;
-        Proto_Server.game.map.objects[3].cellposition.y = player->cellposition.y;
-     }
+	     Proto_Server.game.map.objects[3].cellposition = player->cellposition;
   }
   }
 
