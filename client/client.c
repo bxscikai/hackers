@@ -605,6 +605,11 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       fprintf(stderr, "%s: dummy inc player id \n", __func__);
       return ui_dummy_inc_id(ui);
     }
+    if (sym == SDLK_i && mod == KMOD_NONE)  {   
+      fprintf(stderr, "%s: pickup \n", __func__);
+      doRPCCmd(C, 'f');
+      return 2;
+    }
     if (sym == SDLK_q) return -1;
     if (sym == SDLK_z && mod == KMOD_NONE) return ui_zoom(ui, 1);
     if (sym == SDLK_z && mod & KMOD_SHIFT ) return ui_zoom(ui,-1);

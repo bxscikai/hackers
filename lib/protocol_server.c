@@ -887,6 +887,8 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
     fprintf(stderr, "MOVE INTO WALL\n");
     h.returnCode = RPC_MOVE_MOVING_INTO_WALL;
   }
+
+  //////// JACKHAMMER USAGE /////////////
   // The user is moving into a unfixed wall with a jackhammer, break it down
   else if (collisionCell->type==WALL_UNFIXED && (player->inventory.type==JACKHAMMER1 || player->inventory.type==JACKHAMMER2)) {
 
@@ -909,11 +911,19 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
     fprintf(stderr, "Cell breaking down: \n");
     printCell(&Proto_Server.updateCell);
 
+    // Move the player into the cell that was originally the wall
+    Cell *prevPos = &Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x];
+    prevPos->occupied = 0;
+    collisionCell->occupied = 1;    
+    player->cellposition = collisionCell->position;
+
     h.returnCode = SUCCESS;
     // Broadcast map change to everyone
     proto_server_post_event(PROTO_MT_EVENT_MAP_UPDATE);    
 
   }
+
+  ///////////// END OF JACKHAMMER USAGE //////////
   else {
     // Move out of current cell
     fprintf(stderr, "MOVE SUCCESSFUL\n");
@@ -921,8 +931,7 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
     prevPos->occupied = 0;
     collisionCell->occupied = 1;
     
-    player->cellposition.x = collisionCell->position.x;
-    player->cellposition.y = collisionCell->position.y;
+    player->cellposition = collisionCell->position;
     h.returnCode = SUCCESS;
   
   //I ADDED THIS --ERIC
@@ -967,6 +976,12 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   }
   }
 
+  // Check if game over or not, if so, broadcast notification to all players
+  GameStatus gameOver = checkOverGame(&Proto_Server.game);
+  if (gameOver==TEAM_1_WON || gameOver==TEAM_2_WON) {
+    Proto_Server.game.status = gameOver;
+      proto_server_post_event(PROTO_MT_EVENT_GAME_OVER_UPDATE);
+  }
 
   pthread_mutex_unlock(&Proto_Server.GameLock); // Unlock after update
 
@@ -977,6 +992,40 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   proto_server_post_event(PROTO_MT_EVENT_GAME_UPDATE);
 
   return 1;
+}
+
+// Returns the team that won
+extern GameStatus checkOverGame(Game *game) {
+
+  // Get position of both flags
+  Object *flag1 = &Proto_Server.game.map.objects[0];
+  Object *flag2 = &Proto_Server.game.map.objects[1];
+  Cell *flag1Cell = &Proto_Server.game.map.mapBody[flag1->cellposition.y][flag1->cellposition.x];
+  Cell *flag2Cell = &Proto_Server.game.map.mapBody[flag2->cellposition.y][flag2->cellposition.y];
+  int i;
+
+  // If both flags on one team's side, possible winning condition
+  if ( (flag1Cell->type==FLOOR_1 || flag1Cell->type==HOME_1) && (flag2Cell->type==FLOOR_1 || flag2Cell->type==HOME_1)) {
+
+      // Make sure no player is still holding the flag
+      for (i=0; i<MAX_NUM_PLAYERS; i++) {
+        Player *player = &Proto_Server.game.Team1_Players[i];
+        if (player->inventory.type==FLAG_1 || player->inventory.type==FLAG_2)
+          return IN_PROGRESS;
+      }
+      return TEAM_1_WON;
+  }
+  else if ( (flag1Cell->type==FLOOR_2 || flag1Cell->type==HOME_2) && (flag2Cell->type==FLOOR_2 || flag2Cell->type==HOME_2)) {
+      // Make sure no player is still holding the flag
+      for (i=0; i<MAX_NUM_PLAYERS; i++) {
+        Player *player = &Proto_Server.game.Team2_Players[i];
+        if (player->inventory.type==FLAG_1 || player->inventory.type==FLAG_2)
+          return IN_PROGRESS;
+      }
+      return TEAM_2_WON;
+  }
+
+  return IN_PROGRESS;
 }
 
 // Spawn object random position predefined for object

@@ -201,6 +201,8 @@ proto_client_init(Proto_Client_Handle *ch)
         proto_client_set_event_handler(c, mt, proto_server_mt_game_update_handler);              
       else if (mt==PROTO_MT_EVENT_MAP_UPDATE)
         proto_client_set_event_handler(c, mt, proto_server_mt_map_update_handler);              
+      else if (mt==PROTO_MT_EVENT_GAME_OVER_UPDATE)
+        proto_client_set_event_handler(c, mt, proto_server_mt_game_over_update_handler);              
       else
         proto_client_set_event_handler(c, mt, proto_client_event_null_handler);
   }
@@ -438,14 +440,11 @@ proto_server_mt_map_update_handler(Proto_Session *s) {
   // Update map
   Proto_Client *c = s->client;
   Cell newCell = s->rhdr.updateCell;
-  fprintf(stderr, "New update cell: \n");
-  printCell(&newCell);
+  fprintf(stderr, "Map update, jackhammer used! \n");
+  // printCell(&newCell);
 
   if (newCell.position.x>0 && newCell.position.y>0) {
-    fprintf(stderr, "Before updating cell\n");
-    printMap(&c->game.map);
-    // c->game.map.mapBody[newCell.position.y][newCell.position.x] = newCell;
-    fprintf(stderr, "After updating cell\n");
+    c->game.map.mapBody[newCell.position.y][newCell.position.x] = newCell;
   }
   else 
     fprintf(stderr, "Invalid map update\n");
@@ -458,6 +457,21 @@ proto_server_mt_map_update_handler(Proto_Session *s) {
   // Let the server know it received the update
   sendACK(s, PROTO_MT_EVENT_MAP_UPDATE);
 }
+
+static int 
+proto_server_mt_game_over_update_handler(Proto_Session *s) {
+
+  if (s->rhdr.game.status==TEAM_1_WON)
+    fprintf(stderr, "Team 1 won!\n");
+  else if (s->rhdr.game.status==TEAM_2_WON) 
+    fprintf(stderr, "Team 2 won!\n");
+
+  //////////////////////////////////////////////////
+  //////////// HANDLE GAME WON CASE HERE ///////////
+  //////////////////////////////////////////////////
+
+}
+
 
 static int 
 proto_server_mt_rpc_lobby_update_handler(Proto_Session *s)

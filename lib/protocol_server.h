@@ -59,5 +59,6 @@ extern void convertToString(void *map, char *str);
 static int getNumberOfPlayersForTeam(int team);
 static void insertPlayerForTeam(int team, Player *player);
 static void spawnObject(ObjectType obj);
+extern GameStatus checkOverGame(Game *game);
 
 #endif
