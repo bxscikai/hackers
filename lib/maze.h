@@ -99,7 +99,8 @@ typedef struct {
 
 	ObjectType type;
 	Position cellposition;
-
+	void *uiObject;
+	
 } Object;
 
 
@@ -133,6 +134,7 @@ typedef struct
 	int canMove;
 	int playerID;
 	int isHost;
+	void *uiPlayer;
 
 } Player;
 

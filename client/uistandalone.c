@@ -632,9 +632,12 @@ dummyPlayer_init(UI *ui, Player *myPlayer)
   if (myPlayer->canMove == 0){
     state = 1;
   }
+
+  UI_Player *uiPlayer = myPlayer->uiPlayer;
+
   dummyPlayer.id = myPlayer->playerID;
   dummyPlayer.x = myPlayer->cellposition.x; dummyPlayer.y = myPlayer->cellposition.y; dummyPlayer.team = myPlayer->team; dummyPlayer.state = state;
-  ui_uip_init(ui, &dummyPlayer.uip, dummyPlayer.id, dummyPlayer.team); 
+  ui_uip_init(ui, uiPlayer, dummyPlayer.id, dummyPlayer.team); 
 }
 
 static void
@@ -671,9 +674,14 @@ dummyPlayer_paint(UI *ui, SDL_Rect *t)
     }else{
       t->y = 320; t->x = 320; //center of window
     }
-    dummyPlayer.uip->clip.x = dummyPlayer.uip->base_clip_x +
+
+    /////
+    UI_Player *uiplayer = dummyPlayer.uip;
+    //////
+
+    uiplayer->clip.x = uiplayer->base_clip_x +
       pxSpriteOffSet(dummyPlayer.team, dummyPlayer.state);
-    SDL_BlitSurface(dummyPlayer.uip->img, &(dummyPlayer.uip->clip), ui->screen, t);
+    SDL_BlitSurface(uiplayer->img, &(uiplayer->clip), ui->screen, t);
   pthread_mutex_unlock(&dummyPlayer.lock);
 }
 
