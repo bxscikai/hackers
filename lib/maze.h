@@ -26,6 +26,13 @@ typedef enum  {
 } CellType;
 
 typedef enum {
+	NORMAL,
+	RED_FLAG,
+	GREEN_FLAG,
+	JAIL
+} State;
+
+typedef enum {
 
 	UP,
 	DOWN,
@@ -131,9 +138,11 @@ typedef struct
 	Position cellposition;
 	TeamType team;
 	Object inventory;
+	pthread_mutex_t lock;
 	int canMove;
 	int playerID;
 	int isHost;
+	State current_state;
 	void *uiPlayer;
 
 } Player;

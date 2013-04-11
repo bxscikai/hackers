@@ -26,17 +26,16 @@
 #include <assert.h>
 #include "../lib/types.h"
 #include "client.h"
-//#include "../lib/maze.h"
 #include "uistandalone.h"
 
 /* A lot of this code comes from http://www.libsdl.org/cgi/docwiki.cgi */
 
 /* Forward declaration of some dummy player code */
-static void dummyPlayer_init(UI *ui, Player *myPlayer);
-static void dummyPlayer_paint(UI *ui, SDL_Rect *t);
+static void myPlayer_init(UI *ui, Player *myPlayer);
+static void myPlayer_paint(UI *ui, SDL_Rect *t, Player *myPlayer);
 
-static void otherPlayer_init(UI *ui);
-static void paint_player(UI *ui, SDL_Rect *t, int start_x, int start_y);
+//static void otherPlayer_init(UI *ui);
+//static void paint_player(UI *ui, SDL_Rect *t, int start_x, int start_y);
 
 
 #define SPRITE_H 32
@@ -62,17 +61,17 @@ struct UI_Player_Struct {
 typedef struct UI_Player_Struct UI_Player;
 
 // Kludgy dummy player for testing purposes
-typedef struct {
-  pthread_mutex_t lock;
-  UI_Player *uip;
-  int id;
-  int x, y;
-  int team;
-  int state;
-} Dumb_Player;
+// typedef struct {
+//   pthread_mutex_t lock;
+//   UI_Player *uip;
+//   int id;
+//   int x, y;
+//   int team;
+//   int state;
+// } Dumb_Player;
 
-Dumb_Player dummyPlayer; //this client's player
-Dumb_Player otherPlayer;
+// Dumb_Player dummyPlayer; //this client's player
+// Dumb_Player otherPlayer;
 
 static inline SDL_Surface *
 ui_player_img(UI *ui, int team)
@@ -332,11 +331,13 @@ draw_cell(UI *ui, SPRITE_INDEX si, SDL_Rect *t, SDL_Surface *s)
 }
 
 static sval
-ui_paintmap(UI *ui, void *game) 
+ui_paintmap(UI *ui, void *game, Player *myPlayer) 
 {
   Game *gameState = (Game *)game;
   Maze *maze = &gameState->map;
   SDL_Rect t;
+  int player_x = myPlayer->cellposition.x;
+  int player_y = myPlayer->cellposition.y;
   int i = 0;
   int j = 0;
   t.y = 0; t.x = 0; t.h = ui->tile_h; t.w = ui->tile_w;
@@ -346,54 +347,54 @@ ui_paintmap(UI *ui, void *game)
   int start_y;
   int end_y;
 
-  //fprintf(stderr, "My postion: %d, %d\n", myPlayer->cellposition.x, myPlayer->cellposition.y);
+  fprintf(stderr, "Painting map...\n");
 
   //Keep window consistently 20x20
-  if (dummyPlayer.x < 10 && dummyPlayer.y < 10){
+  if (player_x < 10 && player_y < 10){
     start_x = 0;
     end_x = 19;
     start_y = 0;
     end_y = 19;
-  }else if (dummyPlayer.x > 190 && dummyPlayer.y > 190){
+  }else if (player_x > 190 && player_y > 190){
     start_y = 180;
     end_y = 199;
     start_x = 180;
     end_x = 199;
-  }else if (dummyPlayer.x < 10 && dummyPlayer.y > 190){
+  }else if (player_x < 10 && player_y > 190){
     start_y = 180;
     end_y = 199;
     start_x = 0;
     end_x = 19;
-  }else if (dummyPlayer.x > 190 && dummyPlayer.y < 10){
+  }else if (player_x > 190 && player_y < 10){
     start_y = 0;
     end_y = 19;
     start_x = 180;
     end_x = 199;
-  }else if (dummyPlayer.x < 10){
+  }else if (player_x < 10){
     start_x = 0;
     end_x = 19;
-    start_y = dummyPlayer.y - 10;
-    end_y = dummyPlayer.y + 9;
-  }else if (dummyPlayer.y < 10){
-    start_x = dummyPlayer.x - 10;
-    end_x = dummyPlayer.x + 9;
+    start_y = player_y - 10;
+    end_y = player_y + 9;
+  }else if (player_y < 10){
+    start_x = player_x - 10;
+    end_x = player_x + 9;
     start_y = 0;
     end_y= 19;
-  }else if (dummyPlayer.x > 190){
+  }else if (player_x > 190){
     start_x = 180;
     end_x = 199;
-    start_y = dummyPlayer.y - 10;
-    end_y = dummyPlayer.y + 9;
-  }else if (dummyPlayer.y >190){
+    start_y = player_y - 10;
+    end_y = player_y + 9;
+  }else if (player_y >190){
     start_y = 180;
     end_y = 199;
-    start_x = dummyPlayer.x - 10;
-    end_x = dummyPlayer.x + 9;
+    start_x = player_x - 10;
+    end_x = player_x + 9;
   }else{
-    start_y = dummyPlayer.y - 10;
-    end_y = dummyPlayer.y + 9;
-    start_x = dummyPlayer.x - 10;
-    end_x = dummyPlayer.x + 9;
+    start_y = player_y - 10;
+    end_y = player_y + 9;
+    start_x = player_x - 10;
+    end_x = player_x + 9;
   }
 
   for (i= start_y, t.y=0; i<= end_y; i++) {
@@ -424,13 +425,14 @@ ui_paintmap(UI *ui, void *game)
     t.y+=t.h;
   }
 
-  dummyPlayer_paint(ui, &t);
+  fprintf(stderr, "Painting my player...\n");
+  myPlayer_paint(ui, &t, myPlayer);
 
 
   // only paint players in the 20x20 range
-  if (otherPlayer.x >= start_x && otherPlayer.x <= end_x && otherPlayer.y >= start_y && otherPlayer.y <= end_y){
-    paint_player(ui, &t, start_x, start_y);
-  }
+  // if (otherPlayer.x >= start_x && otherPlayer.x <= end_x && otherPlayer.y >= start_y && otherPlayer.y <= end_y){
+  //   paint_player(ui, &t, start_x, start_y);
+  // }
 
   SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
 
@@ -582,9 +584,9 @@ ui_quit(UI *ui)
 }
 
 extern void
-ui_repaint(UI *ui, void *game)
+ui_repaint(UI *ui, void *game, Player *myPlayer)
 {
-  ui_paintmap(ui, game);
+  ui_paintmap(ui, game, myPlayer);
   SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
 }
 
@@ -597,11 +599,11 @@ ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer, Client *C)
 
   ui_init_sdl(ui, h, w, 32);
 
-  dummyPlayer_init(ui, myPlayer);
+  myPlayer_init(ui, myPlayer);
   
-  otherPlayer_init(ui);
+  //otherPlayer_init(ui);
   
-  ui_paintmap(ui, game);
+  ui_paintmap(ui, game, myPlayer);
   
   while (1) {
     if (ui_process(ui, C)<0) break;
@@ -624,174 +626,144 @@ ui_init(UI **ui)
 }
 
 static void 
-dummyPlayer_init(UI *ui, Player *myPlayer) 
+myPlayer_init(UI *ui, Player *myPlayer) 
 {
-  pthread_mutex_init(&(dummyPlayer.lock), NULL);
   int state = 0;
   // set what state the player is
   if (myPlayer->canMove == 0){
     state = 1;
   }
 
-  UI_Player *uiPlayer = myPlayer->uiPlayer;
+  myPlayer->current_state = state;
+  pthread_mutex_init(&(myPlayer->lock), NULL);
 
-  dummyPlayer.id = myPlayer->playerID;
-  dummyPlayer.x = myPlayer->cellposition.x; dummyPlayer.y = myPlayer->cellposition.y; dummyPlayer.team = myPlayer->team; dummyPlayer.state = state;
-  ui_uip_init(ui, uiPlayer, dummyPlayer.id, dummyPlayer.team); 
+  UI_Player *uiplayer;
+  uiplayer = (UI_Player *)malloc(sizeof(UI_Player));
+
+  //dummyPlayer.id = myPlayer->playerID;
+  //dummyPlayer.x = myPlayer->cellposition.x; dummyPlayer.y = myPlayer->cellposition.y; dummyPlayer.team = myPlayer->team; dummyPlayer.state = state;
+  ui_uip_init(ui, &uiplayer, myPlayer->playerID, myPlayer->team);
+
+  myPlayer->uiPlayer = uiplayer;
+
+  free(uiplayer);
 }
 
-static void
-otherPlayer_init(UI *ui)
-{
-  pthread_mutex_init(&(otherPlayer.lock), NULL);
-  otherPlayer.id = 1;
-  otherPlayer.x = 20; otherPlayer.y = 9; otherPlayer.team = 1; otherPlayer.state = 0;
-  ui_uip_init(ui, &otherPlayer.uip, otherPlayer.id, otherPlayer.team); 
-}
+// static void
+// otherPlayer_init(UI *ui)
+// {
+//   pthread_mutex_init(&(otherPlayer.lock), NULL);
+//   otherPlayer.id = 1;
+//   otherPlayer.x = 20; otherPlayer.y = 9; otherPlayer.team = 1; otherPlayer.state = 0;
+//   ui_uip_init(ui, &otherPlayer.uip, otherPlayer.id, otherPlayer.team); 
+// }
 
 static void 
-dummyPlayer_paint(UI *ui, SDL_Rect *t)
+myPlayer_paint(UI *ui, SDL_Rect *t, Player *myPlayer)
 {
-  fprintf(stderr, "Painted Coordinates: %d, %d\n", dummyPlayer.x, dummyPlayer.y);
-  pthread_mutex_lock(&dummyPlayer.lock);
-    if(dummyPlayer.x <= 10 && dummyPlayer.y <= 10){
-      t->y = dummyPlayer.y * t->h; t->x = dummyPlayer.x * t->w;
-    }else if(dummyPlayer.x >= 190 && dummyPlayer.y <= 10){
-      t->y = dummyPlayer.y * t->h; t->x = (20 - (200 - dummyPlayer.x)) * t->w;
-    }else if(dummyPlayer.x <= 10 && dummyPlayer.y >= 190){
-      t->y = (20 - (200 - dummyPlayer.y)) * t->h; t->x = dummyPlayer.x * t->w;
-    }else if(dummyPlayer.x >= 190 && dummyPlayer.y >= 190){
-      t->y = (20 - (200 - dummyPlayer.y)) * t->h; t->x = (20 - (200 - dummyPlayer.x)) * t->w;
+  pthread_mutex_lock(&myPlayer->lock);
 
-    }else if(dummyPlayer.y <= 10){
-      t->y = dummyPlayer.y * t->h; t->x = 10 * t->w;
-    }else if(dummyPlayer.x <= 10){
-      t->y = 10 * t->h; t->x = dummyPlayer.x * t->w;
-    }else if(dummyPlayer.y >= 190){
-      t->y = (20 - (200 - dummyPlayer.y)) * t->h; t->x = 10 * t->w;
-    }else if(dummyPlayer.x >= 190){
-      t->y = 10 * t->h; t->x = (20 - (200 - dummyPlayer.x)) * t->w;
-    }else{
-      t->y = 320; t->x = 320; //center of window
-    }
+  int player_x = myPlayer->cellposition.x;
+  int player_y = myPlayer->cellposition.y;
 
-    /////
-    UI_Player *uiplayer = dummyPlayer.uip;
-    //////
+  if(player_x <= 10 && player_y <= 10){
+    t->y = player_y * t->h; t->x = player_x * t->w;
+  }else if(player_x >= 190 && player_y <= 10){
+    t->y = player_y * t->h; t->x = (20 - (200 - player_x)) * t->w;
+  }else if(player_x <= 10 && player_y >= 190){
+    t->y = (20 - (200 - player_y)) * t->h; t->x = player_x * t->w;
+  }else if(player_x >= 190 && player_y >= 190){
+    t->y = (20 - (200 - player_y)) * t->h; t->x = (20 - (200 - player_x)) * t->w;
 
-    uiplayer->clip.x = uiplayer->base_clip_x +
-      pxSpriteOffSet(dummyPlayer.team, dummyPlayer.state);
-    SDL_BlitSurface(uiplayer->img, &(uiplayer->clip), ui->screen, t);
-  pthread_mutex_unlock(&dummyPlayer.lock);
+  }else if(player_y <= 10){
+    t->y = player_y * t->h; t->x = 10 * t->w;
+  }else if(player_x <= 10){
+    t->y = 10 * t->h; t->x = player_x * t->w;
+  }else if(player_y >= 190){
+    t->y = (20 - (200 - player_y)) * t->h; t->x = 10 * t->w;
+  }else if(player_x >= 190){
+    t->y = 10 * t->h; t->x = (20 - (200 - player_x)) * t->w;
+  }else{
+    t->y = 320; t->x = 320; //center of window
+  }
+
+  /////
+  UI_Player *uiplayer = myPlayer->uiPlayer;
+  //////
+  uiplayer->clip.x = uiplayer->base_clip_x +
+    pxSpriteOffSet(myPlayer->team, myPlayer->current_state);
+  SDL_BlitSurface(uiplayer->img, &(uiplayer->clip), ui->screen, t);
+
+  pthread_mutex_unlock(&myPlayer->lock);
 }
 
-static void
-paint_player(UI *ui, SDL_Rect *t, int start_x, int start_y)
-{
-  pthread_mutex_lock(&otherPlayer.lock);
-    t->y = (otherPlayer.y - start_y) * t->h; t->x = (otherPlayer.x - start_x) * t->w;
-    otherPlayer.uip->clip.x = otherPlayer.uip->base_clip_x +
-      pxSpriteOffSet(otherPlayer.team, otherPlayer.state);
-    SDL_BlitSurface(otherPlayer.uip->img, &(otherPlayer.uip->clip), ui->screen, t);
-  pthread_mutex_unlock(&otherPlayer.lock);
-}
+// static void
+// paint_player(UI *ui, SDL_Rect *t, int start_x, int start_y)
+// {
+//   pthread_mutex_lock(&otherPlayer.lock);
+//     t->y = (otherPlayer.y - start_y) * t->h; t->x = (otherPlayer.x - start_x) * t->w;
+//     otherPlayer.uip->clip.x = otherPlayer.uip->base_clip_x +
+//       pxSpriteOffSet(otherPlayer.team, otherPlayer.state);
+//     SDL_BlitSurface(otherPlayer.uip->img, &(otherPlayer.uip->clip), ui->screen, t);
+//   pthread_mutex_unlock(&otherPlayer.lock);
+// }
 
-int
-ui_dummy_left(UI *ui, Player *myPlayer)
-{
-  pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.x = myPlayer->cellposition.x;
-    dummyPlayer.y = myPlayer->cellposition.y;
-  pthread_mutex_unlock(&dummyPlayer.lock);
-  return 2;
-}
+// int
+// ui_dummy_normal(UI *ui)
+// {
+//   pthread_mutex_lock(&dummyPlayer.lock);
+//     dummyPlayer.state = 0;
+//   pthread_mutex_unlock(&dummyPlayer.lock);
+//   return 2;
+// }
 
-int
-ui_dummy_right(UI *ui, Player *myPlayer)
-{
-  pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.x = myPlayer->cellposition.x;
-    dummyPlayer.y = myPlayer->cellposition.y;
-  pthread_mutex_unlock(&dummyPlayer.lock);
-  return 2;
-}
+// int
+// ui_dummy_pickup_red(UI *ui)
+// {
+//   pthread_mutex_lock(&dummyPlayer.lock);
+//     dummyPlayer.state = 1;
+//   pthread_mutex_unlock(&dummyPlayer.lock);
+//   return 2;
+// }
 
-int
-ui_dummy_down(UI *ui, Player *myPlayer)
-{
-  pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.x = myPlayer->cellposition.x;
-    dummyPlayer.y = myPlayer->cellposition.y;
-  pthread_mutex_unlock(&dummyPlayer.lock);
-  return 2;
-}
-
-int
-ui_dummy_up(UI *ui, Player *myPlayer)
-{
-  pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.x = myPlayer->cellposition.x;
-    dummyPlayer.y = myPlayer->cellposition.y;
-  pthread_mutex_unlock(&dummyPlayer.lock);
-  return 2;
-}
-
-int
-ui_dummy_normal(UI *ui)
-{
-  pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.state = 0;
-  pthread_mutex_unlock(&dummyPlayer.lock);
-  return 2;
-}
-
-int
-ui_dummy_pickup_red(UI *ui)
-{
-  pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.state = 1;
-  pthread_mutex_unlock(&dummyPlayer.lock);
-  return 2;
-}
-
-int
-ui_dummy_pickup_green(UI *ui)
-{
-  pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.state = 2;
-  pthread_mutex_unlock(&dummyPlayer.lock);
-  return 2;
-}
+// int
+// ui_dummy_pickup_green(UI *ui)
+// {
+//   pthread_mutex_lock(&dummyPlayer.lock);
+//     dummyPlayer.state = 2;
+//   pthread_mutex_unlock(&dummyPlayer.lock);
+//   return 2;
+// }
 
 
-int
-ui_dummy_jail(UI *ui)
-{
-  pthread_mutex_lock(&dummyPlayer.lock);
-    dummyPlayer.state = 3;
-  pthread_mutex_unlock(&dummyPlayer.lock);
-  return 2;
-}
+// int
+// ui_dummy_jail(UI *ui)
+// {
+//   pthread_mutex_lock(&dummyPlayer.lock);
+//     dummyPlayer.state = 3;
+//   pthread_mutex_unlock(&dummyPlayer.lock);
+//   return 2;
+// }
 
-int
-ui_dummy_toggle_team(UI *ui)
-{
-  pthread_mutex_lock(&dummyPlayer.lock);
-    if (dummyPlayer.uip) free(dummyPlayer.uip);
-    dummyPlayer.team = (dummyPlayer.team) ? 0 : 1;
-    ui_uip_init(ui, &dummyPlayer.uip, dummyPlayer.id, dummyPlayer.team);
-  pthread_mutex_unlock(&dummyPlayer.lock);
-  return 2;
-}
+// int
+// ui_dummy_toggle_team(UI *ui)
+// {
+//   pthread_mutex_lock(&dummyPlayer.lock);
+//     if (dummyPlayer.uip) free(dummyPlayer.uip);
+//     dummyPlayer.team = (dummyPlayer.team) ? 0 : 1;
+//     ui_uip_init(ui, &dummyPlayer.uip, dummyPlayer.id, dummyPlayer.team);
+//   pthread_mutex_unlock(&dummyPlayer.lock);
+//   return 2;
+// }
 
-int
-ui_dummy_inc_id(UI *ui)
-{
-  pthread_mutex_lock(&dummyPlayer.lock);
-    if (dummyPlayer.uip) free(dummyPlayer.uip);
-    dummyPlayer.id++;
-    if (dummyPlayer.id>=100) dummyPlayer.id = 0;
-    ui_uip_init(ui, &dummyPlayer.uip, dummyPlayer.id, dummyPlayer.team);
-  pthread_mutex_unlock(&dummyPlayer.lock);
-  return 2;
-}
+// int
+// ui_dummy_inc_id(UI *ui)
+// {
+//   pthread_mutex_lock(&dummyPlayer.lock);
+//     if (dummyPlayer.uip) free(dummyPlayer.uip);
+//     dummyPlayer.id++;
+//     if (dummyPlayer.id>=100) dummyPlayer.id = 0;
+//     ui_uip_init(ui, &dummyPlayer.uip, dummyPlayer.id, dummyPlayer.team);
+//   pthread_mutex_unlock(&dummyPlayer.lock);
+//   return 2;
+// }

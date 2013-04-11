@@ -64,16 +64,12 @@ sval ui_move(UI *ui, sval xdir, sval ydir);
 sval ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C);
 void ui_update(UI *ui);
 void ui_quit(UI *ui);
-void ui_repaint(UI *ui, void *game);
+void ui_repaint(UI *ui, void *game, Player *myPlayer);
 void ui_main_loop(UI *ui, uval h, uval w, void *map, Player *myPlayer, Client *C);
 void ui_init(UI **ui);
 
 
 // DUMMY TEST CALLS
-int ui_dummy_left(UI *ui, Player *myPlayer);
-int ui_dummy_right(UI *ui, Player *myPlayer); 
-int ui_dummy_down(UI *ui, Player *myPlayer);
-int ui_dummy_up(UI *ui, Player *myPlayer);
 int ui_dummy_normal(UI *ui);
 int ui_dummy_pickup_red(UI *ui);
 int ui_dummy_pickup_green(UI *ui);

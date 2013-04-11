@@ -552,10 +552,6 @@ proto_server_mt_game_update_handler(Proto_Session *s)
 
   if (DISPLAYUI==1)
     Update_UI(player, &c->game);
-  //UI CODE
-  // Player *player = getPlayer(&c->game, c->playerID);
-  // ui_paintmap(ui, &c->game, player);
-  // SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
 
   // TIFFANY, THIS IS WHERE U UPDATE GAME UI FOR USER ///////////
   // YOU CAN ACCESS THE GAME STRUCT IN c->game
