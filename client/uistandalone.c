@@ -34,8 +34,8 @@
 static void myPlayer_init(UI *ui, Player *myPlayer);
 static void myPlayer_paint(UI *ui, SDL_Rect *t, Player *myPlayer);
 
-//static void otherPlayer_init(UI *ui);
-//static void paint_player(UI *ui, SDL_Rect *t, int start_x, int start_y);
+static void otherPlayers_init(UI *ui, void *game);
+static void paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_y, void *game, Player *myPlayer);
 
 
 #define SPRITE_H 32
@@ -60,18 +60,10 @@ struct UI_Player_Struct {
 };
 typedef struct UI_Player_Struct UI_Player;
 
-// Kludgy dummy player for testing purposes
-// typedef struct {
-//   pthread_mutex_t lock;
-//   UI_Player *uip;
-//   int id;
-//   int x, y;
-//   int team;
-//   int state;
-// } Dumb_Player;
-
-// Dumb_Player dummyPlayer; //this client's player
-// Dumb_Player otherPlayer;
+//temporary solution
+UI_Player *uiplayer;
+UI_Player* ui_team1Players[MAX_NUM_PLAYERS];
+UI_Player* ui_team2Players[MAX_NUM_PLAYERS];
 
 static inline SDL_Surface *
 ui_player_img(UI *ui, int team)
@@ -427,12 +419,7 @@ ui_paintmap(UI *ui, void *game, Player *myPlayer)
 
   fprintf(stderr, "Painting my player...\n");
   myPlayer_paint(ui, &t, myPlayer);
-
-
-  // only paint players in the 20x20 range
-  // if (otherPlayer.x >= start_x && otherPlayer.x <= end_x && otherPlayer.y >= start_y && otherPlayer.y <= end_y){
-  //   paint_player(ui, &t, start_x, start_y);
-  // }
+  paint_players(ui, &t, start_x, start_y, end_x, end_y, game, myPlayer);
 
   SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
 
@@ -601,7 +588,7 @@ ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer, Client *C)
 
   myPlayer_init(ui, myPlayer);
   
-  //otherPlayer_init(ui);
+  otherPlayers_init(ui, game);
   
   ui_paintmap(ui, game, myPlayer);
   
@@ -631,32 +618,58 @@ myPlayer_init(UI *ui, Player *myPlayer)
   int state = 0;
   // set what state the player is
   if (myPlayer->canMove == 0){
-    state = 1;
+    state = NORMAL;
   }
 
   myPlayer->current_state = state;
   pthread_mutex_init(&(myPlayer->lock), NULL);
 
-  UI_Player *uiplayer;
-  uiplayer = (UI_Player *)malloc(sizeof(UI_Player));
+  // UI_Player *uiplayer;
+  // uiplayer = (UI_Player *)malloc(sizeof(UI_Player));
 
-  //dummyPlayer.id = myPlayer->playerID;
-  //dummyPlayer.x = myPlayer->cellposition.x; dummyPlayer.y = myPlayer->cellposition.y; dummyPlayer.team = myPlayer->team; dummyPlayer.state = state;
   ui_uip_init(ui, &uiplayer, myPlayer->playerID, myPlayer->team);
 
-  myPlayer->uiPlayer = uiplayer;
+  // myPlayer->uiPlayer = uiplayer;
 
-  free(uiplayer);
+  // free(uiplayer);
 }
 
-// static void
-// otherPlayer_init(UI *ui)
-// {
-//   pthread_mutex_init(&(otherPlayer.lock), NULL);
-//   otherPlayer.id = 1;
-//   otherPlayer.x = 20; otherPlayer.y = 9; otherPlayer.team = 1; otherPlayer.state = 0;
-//   ui_uip_init(ui, &otherPlayer.uip, otherPlayer.id, otherPlayer.team); 
-// }
+static void
+otherPlayers_init(UI *ui, void *game)
+{
+   Game *gameState = (Game *)game;
+  
+  int i;
+  for (i = 0; i< MAX_NUM_PLAYERS ; i++){
+    Player this_player = gameState->Team1_Players[i];
+
+    if(this_player.playerID != 0){
+      int state = 0;
+      // set what state the player is
+      if (this_player.canMove == 0){
+        state = NORMAL;
+      }
+
+      pthread_mutex_init(&(this_player.lock), NULL);
+      ui_uip_init(ui, &ui_team1Players[i], this_player.playerID, this_player.team);
+    }
+  }
+
+  for (i = 0; i< MAX_NUM_PLAYERS ; i++){
+    Player this_player = gameState->Team2_Players[i];
+
+    if(this_player.playerID != 0){
+      int state = 0;
+      // set what state the player is
+      if (this_player.canMove == 0){
+        state = NORMAL;
+      }
+
+      pthread_mutex_init(&(this_player.lock), NULL);
+      ui_uip_init(ui, &ui_team2Players[i], this_player.playerID, this_player.team);
+    }
+  }
+}
 
 static void 
 myPlayer_paint(UI *ui, SDL_Rect *t, Player *myPlayer)
@@ -688,7 +701,7 @@ myPlayer_paint(UI *ui, SDL_Rect *t, Player *myPlayer)
   }
 
   /////
-  UI_Player *uiplayer = myPlayer->uiPlayer;
+  //UI_Player *uiplayer = myPlayer->uiPlayer;
   //////
   uiplayer->clip.x = uiplayer->base_clip_x +
     pxSpriteOffSet(myPlayer->team, myPlayer->current_state);
@@ -697,16 +710,45 @@ myPlayer_paint(UI *ui, SDL_Rect *t, Player *myPlayer)
   pthread_mutex_unlock(&myPlayer->lock);
 }
 
-// static void
-// paint_player(UI *ui, SDL_Rect *t, int start_x, int start_y)
-// {
-//   pthread_mutex_lock(&otherPlayer.lock);
-//     t->y = (otherPlayer.y - start_y) * t->h; t->x = (otherPlayer.x - start_x) * t->w;
-//     otherPlayer.uip->clip.x = otherPlayer.uip->base_clip_x +
-//       pxSpriteOffSet(otherPlayer.team, otherPlayer.state);
-//     SDL_BlitSurface(otherPlayer.uip->img, &(otherPlayer.uip->clip), ui->screen, t);
-//   pthread_mutex_unlock(&otherPlayer.lock);
-// }
+static void
+paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_y, void *game, Player *myPlayer)
+{
+  Game *gameState = (Game *)game;
+  int i;
+  for (i = 0; i< MAX_NUM_PLAYERS ; i++){
+    Player this_player = gameState->Team1_Players[i];
+
+    // only paint valid players in the 20x20 range
+    if(this_player.playerID != 0 && this_player.playerID != myPlayer->playerID){
+      if(this_player.cellposition.x >= start_x && this_player.cellposition.x <= end_x && this_player.cellposition.y >= start_y && this_player.cellposition.y <= end_y){
+        pthread_mutex_lock(&this_player.lock);
+        t->y = (this_player.cellposition.y - start_y) * t->h; t->x = (this_player.cellposition.x - start_x) * t->w;
+        ui_team1Players[i]->clip.x = ui_team1Players[i]->base_clip_x +
+          pxSpriteOffSet(this_player.team, this_player.current_state);
+        SDL_BlitSurface(ui_team1Players[i]->img, &(ui_team1Players[i]->clip), ui->screen, t);
+        pthread_mutex_unlock(&this_player.lock);
+      }
+    }
+
+  }
+
+  for (i = 0; i< MAX_NUM_PLAYERS ; i++){
+    Player this_player = gameState->Team2_Players[i];
+
+    // only paint valid players in the 20x20 range
+    if(this_player.playerID != 0 && this_player.playerID != myPlayer->playerID){
+      if(this_player.cellposition.x >= start_x && this_player.cellposition.x <= end_x && this_player.cellposition.y >= start_y && this_player.cellposition.y <= end_y){
+        pthread_mutex_lock(&this_player.lock);
+        t->y = (this_player.cellposition.y - start_y) * t->h; t->x = (this_player.cellposition.x - start_x) * t->w;
+        ui_team2Players[i]->clip.x = ui_team2Players[i]->base_clip_x +
+          pxSpriteOffSet(this_player.team, this_player.current_state);
+        SDL_BlitSurface(ui_team2Players[i]->img, &(ui_team2Players[i]->clip), ui->screen, t);
+        pthread_mutex_unlock(&this_player.lock);
+      }
+    }
+  }
+  
+}
 
 // int
 // ui_dummy_normal(UI *ui)
