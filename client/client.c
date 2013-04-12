@@ -603,7 +603,7 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
     //   fprintf(stderr, "%s: dummy inc player id \n", __func__);
     //   return ui_dummy_inc_id(ui);
     // }
-    if (sym == SDLK_i && mod == KMOD_NONE)  {   
+    if (sym == SDLK_f && mod == KMOD_NONE)  {   
       fprintf(stderr, "%s: pickup \n", __func__);
       doRPCCmd(C, 'f');
       return 2;

@@ -7,6 +7,8 @@
 #define MAX_LINE_LEN 500
 #define NUMOFOBJECTS 4
 #define DISPLAYUI 1
+// Help debug game by turning off collision detection
+#define CANMOVE_THROUGH_WALL 0  
 
 // Defines data structures used for the game
 

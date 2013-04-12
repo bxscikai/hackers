@@ -700,7 +700,8 @@ proto_server_mt_rpc_hello_handler(Proto_Session *s)
   newplayer.canMove=1;
   newplayer.playerID = s->fd;
   // TEMP GIVEN PLAYER JACKHAMMER
-  newplayer.inventory.type = JACKHAMMER1;
+  // newplayer.inventory.type = JACKHAMMER1;
+  newplayer.inventory.type = NONE;
 
   if (numOfPlayersTeam1==0 && numOfPlayersTeam2==0) {
     newplayer.team = TEAM_1;
@@ -883,7 +884,11 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
     h.returnCode = RPC_MOVE_MOVING_INTO_PLAYER;    
     fprintf(stderr, "MOVE INTO PLAYER\n");
   }
+#if CANMOVE_THROUGH_WALL
+  else if (0) {
+#else
   else if (collisionCell->type==WALL_FIXED || (collisionCell->type==WALL_UNFIXED && (player->inventory.type!=JACKHAMMER1 && player->inventory.type!=JACKHAMMER2))) {
+#endif    
     fprintf(stderr, "MOVE INTO WALL\n");
     h.returnCode = RPC_MOVE_MOVING_INTO_WALL;
   }
