@@ -47,8 +47,6 @@ struct Globals {
 
 extern void Update_UI(Player *myPlayer, void *game)
 {
-  // fprintf(stderr, "Position: %d, %d\n", myPlayer->cellposition.x, myPlayer->cellposition.y);
-  // TO DO: Need to update the state of the player here (set current_state)
   ui_repaint(ui, game, myPlayer);
 }
 
