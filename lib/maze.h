@@ -108,7 +108,6 @@ typedef struct {
 
 	ObjectType type;
 	Position cellposition;
-	void *uiObject;
 	
 } Object;
 
@@ -145,7 +144,6 @@ typedef struct
 	int playerID;
 	int isHost;
 	State current_state;
-	void *uiPlayer;
 
 } Player;
 

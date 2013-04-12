@@ -62,7 +62,6 @@ struct UI_Player_Struct {
 };
 typedef struct UI_Player_Struct UI_Player;
 
-//temporary solution
 UI_Player *uiplayer;
 UI_Player* ui_team1Players[MAX_NUM_PLAYERS];
 UI_Player* ui_team2Players[MAX_NUM_PLAYERS];
@@ -395,8 +394,6 @@ ui_paintmap(UI *ui, void *game, Player *myPlayer)
     for (j= start_x, t.x=0; j<= end_x; j++) {
       int cell_type = maze->mapBody[i][j].type;
 
-      //fprintf(stderr, "%d\t%d\t%d\t%d\t%d\n", t.x, t.y, i, j, cell_type);
-
       if(cell_type == FLOOR_1 || cell_type == FLOOR_2){
         draw_cell(ui, FLOOR_S, &t, ui->screen); 
       }else if (cell_type == WALL_FIXED){
@@ -576,7 +573,6 @@ ui_quit(UI *ui)
 extern void
 ui_repaint(UI *ui, void *game, Player *myPlayer)
 {
-  //TODO: check state of player, update UI accordingly
   ui_paintmap(ui, game, myPlayer);
   SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
 }
@@ -639,15 +635,7 @@ myPlayer_init(UI *ui, Player *myPlayer)
 
   myPlayer->current_state = state;
   pthread_mutex_init(&(myPlayer->lock), NULL);
-
-  // UI_Player *uiplayer;
-  // uiplayer = (UI_Player *)malloc(sizeof(UI_Player));
-
   ui_uip_init(ui, &uiplayer, myPlayer->playerID, myPlayer->team);
-
-  // myPlayer->uiPlayer = uiplayer;
-
-  // free(uiplayer);
 }
 
 static void
