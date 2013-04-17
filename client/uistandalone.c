@@ -49,6 +49,8 @@ static void paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end
 #define UI_TEAMA_BMP "teama.bmp"
 #define UI_TEAMB_BMP "teamb.bmp"
 #define UI_LOGO_BMP "logo.bmp"
+#define UI_WIN "youwin.bmp"
+#define UI_LOSE "youlose.bmp"
 #define UI_REDFLAG_BMP "redflag.bmp"
 #define UI_GREENFLAG_BMP "greenflag.bmp"
 #define UI_JACKHAMMER_BMP "shovel.bmp"
@@ -216,6 +218,99 @@ sval splash(UI *ui)
   return 1;
 }
 
+static 
+sval splash_win(UI *ui)
+{
+  SDL_Rect r;
+  SDL_Surface *temp;
+
+
+  temp = SDL_LoadBMP(UI_WIN);
+  
+  if (temp != NULL) {
+    ui->sprites[LOGO_S].img = SDL_DisplayFormat(temp);
+    SDL_FreeSurface(temp);
+    r.h = ui->sprites[LOGO_S].img->h;
+    r.w = ui->sprites[LOGO_S].img->w;
+    r.x = ui->screen->w/2 - r.w/2;
+    r.y = ui->screen->h/2 - r.h/2;
+    //    printf("r.h=%d r.w=%d r.x=%d r.y=%d\n", r.h, r.w, r.x, r.y);
+    SDL_BlitSurface(ui->sprites[LOGO_S].img, NULL, ui->screen, &r);
+  } else {
+    /* Map the color yellow to this display (R=0xff, G=0xFF, B=0x00)
+       Note:  If the display is palettized, you must set the palette first.
+    */
+    r.h = 40;
+    r.w = 80;
+    r.x = ui->screen->w/2 - r.w/2;
+    r.y = ui->screen->h/2 - r.h/2;
+ 
+    /* Lock the screen for direct access to the pixels */
+    if ( SDL_MUSTLOCK(ui->screen) ) {
+      if ( SDL_LockSurface(ui->screen) < 0 ) {
+  fprintf(stderr, "Can't lock screen: %s\n", SDL_GetError());
+  return -1;
+      }
+    }
+    SDL_FillRect(ui->screen, &r, ui->yellow_c);
+
+    if ( SDL_MUSTLOCK(ui->screen) ) {
+      SDL_UnlockSurface(ui->screen);
+    }
+  }
+  /* Update just the part of the display that we've changed */
+  SDL_UpdateRect(ui->screen, r.x, r.y, r.w, r.h);
+
+  SDL_Delay(1000);
+  return 1;
+}
+
+static 
+sval splash_lose(UI *ui)
+{
+  SDL_Rect r;
+  SDL_Surface *temp;
+
+
+  temp = SDL_LoadBMP(UI_LOSE);
+  
+  if (temp != NULL) {
+    ui->sprites[LOGO_S].img = SDL_DisplayFormat(temp);
+    SDL_FreeSurface(temp);
+    r.h = ui->sprites[LOGO_S].img->h;
+    r.w = ui->sprites[LOGO_S].img->w;
+    r.x = ui->screen->w/2 - r.w/2;
+    r.y = ui->screen->h/2 - r.h/2;
+    //    printf("r.h=%d r.w=%d r.x=%d r.y=%d\n", r.h, r.w, r.x, r.y);
+    SDL_BlitSurface(ui->sprites[LOGO_S].img, NULL, ui->screen, &r);
+  } else {
+    /* Map the color yellow to this display (R=0xff, G=0xFF, B=0x00)
+       Note:  If the display is palettized, you must set the palette first.
+    */
+    r.h = 40;
+    r.w = 80;
+    r.x = ui->screen->w/2 - r.w/2;
+    r.y = ui->screen->h/2 - r.h/2;
+ 
+    /* Lock the screen for direct access to the pixels */
+    if ( SDL_MUSTLOCK(ui->screen) ) {
+      if ( SDL_LockSurface(ui->screen) < 0 ) {
+  fprintf(stderr, "Can't lock screen: %s\n", SDL_GetError());
+  return -1;
+      }
+    }
+    SDL_FillRect(ui->screen, &r, ui->yellow_c);
+
+    if ( SDL_MUSTLOCK(ui->screen) ) {
+      SDL_UnlockSurface(ui->screen);
+    }
+  }
+  /* Update just the part of the display that we've changed */
+  SDL_UpdateRect(ui->screen, r.x, r.y, r.w, r.h);
+
+  SDL_Delay(1000);
+  return 1;
+}
 
 static sval
 load_sprites(UI *ui) 
@@ -575,6 +670,22 @@ ui_repaint(UI *ui, void *game, Player *myPlayer)
 {
   ui_paintmap(ui, game, myPlayer);
   SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
+  Game *gameState = (Game *)game;
+  if (gameState->status == TEAM_1_WON){
+    if (myPlayer->team == TEAM_1){
+      splash_win(ui);
+    }else{
+      splash_lose(ui);
+    }
+  }
+
+  if (gameState->status == TEAM_2_WON){
+    if (myPlayer->team == TEAM_2){
+      splash_win(ui);
+    }else{
+      splash_lose(ui);
+    }
+  }
 }
 
 extern void
