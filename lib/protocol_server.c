@@ -511,6 +511,9 @@ extern void setPostMessage(Proto_Session *event, Proto_Msg_Types mt) {
   else if (mt==PROTO_MT_EVENT_MAP_UPDATE) {
     h.updateCell = Proto_Server.updateCell;
   }
+  else if (mt==PROTO_MT_EVENT_GAME_OVER_UPDATE) {
+    h.game = Proto_Server.game;
+  }
 
   proto_session_hdr_marshall(event, &h);
 }
@@ -983,6 +986,7 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
 
   // Check if game over or not, if so, broadcast notification to all players
   GameStatus gameOver = checkOverGame(&Proto_Server.game);
+
   if (gameOver==TEAM_1_WON || gameOver==TEAM_2_WON) {
     Proto_Server.game.status = gameOver;
       proto_server_post_event(PROTO_MT_EVENT_GAME_OVER_UPDATE);
@@ -1006,7 +1010,7 @@ extern GameStatus checkOverGame(Game *game) {
   Object *flag1 = &Proto_Server.game.map.objects[0];
   Object *flag2 = &Proto_Server.game.map.objects[1];
   Cell *flag1Cell = &Proto_Server.game.map.mapBody[flag1->cellposition.y][flag1->cellposition.x];
-  Cell *flag2Cell = &Proto_Server.game.map.mapBody[flag2->cellposition.y][flag2->cellposition.y];
+  Cell *flag2Cell = &Proto_Server.game.map.mapBody[flag2->cellposition.y][flag2->cellposition.x];
   int i;
 
   // If both flags on one team's side, possible winning condition
@@ -1018,9 +1022,11 @@ extern GameStatus checkOverGame(Game *game) {
         if (player->inventory.type==FLAG_1 || player->inventory.type==FLAG_2)
           return IN_PROGRESS;
       }
+
       return TEAM_1_WON;
   }
   else if ( (flag1Cell->type==FLOOR_2 || flag1Cell->type==HOME_2) && (flag2Cell->type==FLOOR_2 || flag2Cell->type==HOME_2)) {
+
       // Make sure no player is still holding the flag
       for (i=0; i<MAX_NUM_PLAYERS; i++) {
         Player *player = &Proto_Server.game.Team2_Players[i];
@@ -1113,6 +1119,8 @@ spawnObject(ObjectType obj) {
     // Assign flag 2
     while (assignedFlag2==0 ) {
         Cell *cell = Proto_Server.game.map.floorCells_2[getRandNum(0, Proto_Server.game.map.numFloor2)];
+          // Cell *cell = Proto_Server.game.map.homeCells_1[getRandNum(0, Proto_Server.game.map.numHome1)];
+ 
         // Check to make sure no one is in this cell
         if (cell->occupied==0) {        
           // Make sure this item is not overlapping another item

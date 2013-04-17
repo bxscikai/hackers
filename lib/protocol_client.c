@@ -461,10 +461,14 @@ proto_server_mt_map_update_handler(Proto_Session *s) {
 static int 
 proto_server_mt_game_over_update_handler(Proto_Session *s) {
 
+fprintf(stderr, "!!!!!!!!!GAME OVER!!!!!!!!\n");
+
   if (s->rhdr.game.status==TEAM_1_WON)
     fprintf(stderr, "Team 1 won!\n");
   else if (s->rhdr.game.status==TEAM_2_WON) 
     fprintf(stderr, "Team 2 won!\n");
+
+fprintf(stderr, "!!!!!!!!!GAME OVER!!!!!!!!\n");
 
   //////////////////////////////////////////////////
   //////////// HANDLE GAME WON CASE HERE ///////////
@@ -604,7 +608,7 @@ proto_server_mt_rep_start_game(Proto_Session *s)
     }else{ 
       fprintf(stderr, "Player ID: %d  location is (%d,%d)\n", player->playerID, player->cellposition.x, player->cellposition.y);
       fprintf(stderr, "The Game has started, hit enter to begin.\n");
-      fprintf(stderr, "May the odds be ever in your favor.\n");
+      fprintf(stderr, "May the force be with you.\n");
     }
   }
 
