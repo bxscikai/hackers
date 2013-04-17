@@ -862,6 +862,8 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   Cell *collisionCell;
   Player *player = getPlayer(&Proto_Server.game, s->fd);
 
+  if(player->canMove == 1)
+  {
 
   if (dir==UP) {
     fprintf(stderr, "Client %d moves UP\n", s->fd);
@@ -941,8 +943,290 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
     
     player->cellposition = collisionCell->position;
     h.returnCode = SUCCESS;
-  
-  //I ADDED THIS --ERIC
+
+  //Free Jail Logic
+  Cell *curPos = &Proto_Server.game.map.mapBody[player->cellposition.y][player->cellposition.x]; 
+  CellType pType = curPos->type;
+
+  if (player->team == TEAM_1)
+  {
+	if (pType == JAIL_2)
+	{
+		int i = 0;
+		while (i < MAX_NUM_PLAYERS)
+		{
+			if (Proto_Server.game.Team1_Players[i].canMove == 0)
+			{
+				Proto_Server.game.Team1_Players[i].canMove = 1;
+				Proto_Server.game.map.mapBody[Proto_Server.game.Team1_Players[i].cellposition.y][Proto_Server.game.Team1_Players[i].cellposition.x].occupied = 0;
+				while (1) 
+				{
+      					Cell *randCell = Proto_Server.game.map.homeCells_1[getRandNum(0, Proto_Server.game.map.numHome1)];
+      				        if (randCell->occupied==0) 
+					{
+						Proto_Server.game.Team1_Players[i].cellposition = randCell->position;
+						Proto_Server.game.map.mapBody[Proto_Server.game.Team1_Players[i].cellposition.y][Proto_Server.game.Team1_Players[i].cellposition.x].occupied = 1;
+						break;
+					}
+				}
+			}
+			i++;
+		}
+	}	
+  }
+  else
+  {
+        if (pType == JAIL_1)
+        {
+                int i = 0;
+                while (i < MAX_NUM_PLAYERS)
+                {
+                        if (Proto_Server.game.Team2_Players[i].canMove == 0)
+                        {
+                                Proto_Server.game.Team2_Players[i].canMove = 1;
+                                Proto_Server.game.map.mapBody[Proto_Server.game.Team2_Players[i].cellposition.y][Proto_Server.game.Team2_Players[i].cellposition.x].occupied = 0;
+                                while (1)
+                                {
+                                        Cell *randCell = Proto_Server.game.map.homeCells_2[getRandNum(0, Proto_Server.game.map.numHome2)];
+                                        if (randCell->occupied==0)
+                                        {
+                                                Proto_Server.game.Team2_Players[i].cellposition = randCell->position;
+                                                Proto_Server.game.map.mapBody[Proto_Server.game.Team2_Players[i].cellposition.y][Proto_Server.game.Team2_Players[i].cellposition.x].occupied = 1;
+                                                break;
+                                        }
+                                }
+                        }
+                        i++;
+                }
+        }
+  }
+
+  //Tagging Logic
+  if (player->team == TEAM_1)
+  {
+        if (pType == FLOOR_1 || pType == HOME_1 || pType == JAIL_1)
+  	{
+		int i = 0;
+		while (i < MAX_NUM_PLAYERS)
+		{
+			//Up
+			if (Proto_Server.game.Team2_Players[i].cellposition.x == player->cellposition.x && Proto_Server.game.Team2_Players[i].cellposition.y == (player->cellposition.y - 1))
+			{
+				Proto_Server.game.Team2_Players[i].canMove = 0;
+				int xStart = 90;
+				int yStart = 90;
+				while (1)
+				{
+					Cell *cPos = &Proto_Server.game.map.mapBody[yStart][xStart];
+					if (cPos->occupied == 0)
+					{
+						Proto_Server.game.map.mapBody[Proto_Server.game.Team2_Players[i].cellposition.y][Proto_Server.game.Team2_Players[i].cellposition.x].occupied = 0;
+						Proto_Server.game.Team2_Players[i].cellposition = cPos->position;
+						Proto_Server.game.map.mapBody[yStart][xStart].occupied = 1;
+						break;
+					}
+					if (xStart == 97 && yStart == 108){break;} 
+					if (xStart == 97)
+					{
+						xStart = 90;
+						yStart ++;
+					}
+					xStart++;
+				}
+			}
+			//Right
+			if (Proto_Server.game.Team2_Players[i].cellposition.x == (player->cellposition.x + 1) && Proto_Server.game.Team2_Players[i].cellposition.y == player->cellposition.y)
+                        {
+                        	Proto_Server.game.Team2_Players[i].canMove = 0;
+                                int xStart = 90;
+                                int yStart = 90;
+                                while (1)
+                                {
+                                        Cell *cPos = &Proto_Server.game.map.mapBody[yStart][xStart];
+                                        if (cPos->occupied == 0)
+                                        {
+						Proto_Server.game.map.mapBody[Proto_Server.game.Team2_Players[i].cellposition.y][Proto_Server.game.Team2_Players[i].cellposition.x].occupied = 0;
+                                                Proto_Server.game.Team2_Players[i].cellposition = cPos->position;
+                                                Proto_Server.game.map.mapBody[yStart][xStart].occupied = 1;
+                                                break;
+                                        }
+                                        if (xStart == 97 && yStart == 108){break;}
+                                        if (xStart == 97)
+                                        {
+                                                xStart = 90;
+                                                yStart ++;
+                                        }
+					xStart++;
+                                }
+			}
+			//Down
+			if (Proto_Server.game.Team2_Players[i].cellposition.x == player->cellposition.x && Proto_Server.game.Team2_Players[i].cellposition.y == (player->cellposition.y + 1))
+                        {
+                        	Proto_Server.game.Team2_Players[i].canMove = 0;
+                                int xStart = 90;
+                                int yStart = 90;
+                                while (1)
+                                {
+                                        Cell *cPos = &Proto_Server.game.map.mapBody[yStart][xStart];
+                                        if (cPos->occupied == 0)
+                                        {
+						Proto_Server.game.map.mapBody[Proto_Server.game.Team2_Players[i].cellposition.y][Proto_Server.game.Team2_Players[i].cellposition.x].occupied = 0;
+                                                Proto_Server.game.Team2_Players[i].cellposition = cPos->position;
+                                                Proto_Server.game.map.mapBody[yStart][xStart].occupied = 1;
+                                                break;
+                                        }
+                                        if (xStart == 97 && yStart == 108){break;}
+                                        if (xStart == 97)
+                                        {
+                                                xStart = 90;
+                                                yStart ++;
+                                        }
+					xStart++;
+                                }
+			}
+			//Left
+			if (Proto_Server.game.Team2_Players[i].cellposition.x == (player->cellposition.x-1) && Proto_Server.game.Team2_Players[i].cellposition.y == player->cellposition.y)
+                        {
+                        	Proto_Server.game.Team2_Players[i].canMove = 0;
+                                int xStart = 90;
+                                int yStart = 90;
+                                while (1)
+                                {
+                                        Cell *cPos = &Proto_Server.game.map.mapBody[yStart][xStart];
+                                        if (cPos->occupied == 0)
+                                        {
+                                                Proto_Server.game.map.mapBody[Proto_Server.game.Team2_Players[i].cellposition.y][Proto_Server.game.Team2_Players[i].cellposition.x].occupied = 0;
+						Proto_Server.game.Team2_Players[i].cellposition = cPos->position;
+                                                Proto_Server.game.map.mapBody[yStart][xStart].occupied = 1;
+                                                break;
+                                        }
+                                        if (xStart == 97 && yStart == 108){break;}
+                                        if (xStart == 97)
+                                        {
+                                                xStart = 90;
+                                                yStart ++;
+                                        }
+					xStart++;
+                                }
+
+			}	
+			i++;
+		}
+	}
+  }
+  else
+  {
+        if (pType == FLOOR_2 || pType == HOME_2 || pType == JAIL_2)
+        {
+                int i = 0;
+                while (i < MAX_NUM_PLAYERS)
+                {
+			//Up
+                        if (Proto_Server.game.Team1_Players[i].cellposition.x == player->cellposition.x && Proto_Server.game.Team1_Players[i].cellposition.y == (player->cellposition.y - 1))
+                        {
+                                Proto_Server.game.Team1_Players[i].canMove = 0;
+                                int xStart = 102;
+                                int yStart = 90;
+                                while (1)
+                                {
+                                        Cell *cPos = &Proto_Server.game.map.mapBody[yStart][xStart];
+                                        if (cPos->occupied == 0)
+                                        {
+                                                Proto_Server.game.map.mapBody[Proto_Server.game.Team1_Players[i].cellposition.y][Proto_Server.game.Team1_Players[i].cellposition.x].occupied = 0;
+                                                Proto_Server.game.Team1_Players[i].cellposition = cPos->position;
+                                                Proto_Server.game.map.mapBody[yStart][xStart].occupied = 1;
+                                                break;
+                                        }
+                                        if (xStart == 109 && yStart == 108){break;}
+                                        if (xStart == 97)
+                                        {
+                                                xStart = 102;
+                                                yStart ++;
+                                        }
+                                        xStart++;
+                                }
+                        }
+			//Right
+			if (Proto_Server.game.Team1_Players[i].cellposition.x == (player->cellposition.x + 1) && Proto_Server.game.Team1_Players[i].cellposition.y == player->cellposition.y)
+                        {
+                                Proto_Server.game.Team1_Players[i].canMove = 0;
+                                int xStart = 102;
+                                int yStart = 90;
+                                while (1)
+                                {
+                                        Cell *cPos = &Proto_Server.game.map.mapBody[yStart][xStart];
+                                        if (cPos->occupied == 0)
+                                        {
+                                                Proto_Server.game.map.mapBody[Proto_Server.game.Team1_Players[i].cellposition.y][Proto_Server.game.Team1_Players[i].cellposition.x].occupied = 0;
+                                                Proto_Server.game.Team1_Players[i].cellposition = cPos->position;
+                                                Proto_Server.game.map.mapBody[yStart][xStart].occupied = 1;
+                                                break;
+                                        }
+                                        if (xStart == 109 && yStart == 108){break;}
+                                        if (xStart == 97)
+                                        {
+                                                xStart = 102;
+                                                yStart ++;
+                                        }
+                                        xStart++;
+                                }
+                        }
+			//Down
+			if (Proto_Server.game.Team1_Players[i].cellposition.x == player->cellposition.x && Proto_Server.game.Team1_Players[i].cellposition.y == (player->cellposition.y + 1))
+                        {
+                                Proto_Server.game.Team1_Players[i].canMove = 0;
+                                int xStart = 102;
+                                int yStart = 90;
+                                while (1)
+                                {
+                                        Cell *cPos = &Proto_Server.game.map.mapBody[yStart][xStart];
+                                        if (cPos->occupied == 0)
+                                        {
+                                                Proto_Server.game.map.mapBody[Proto_Server.game.Team1_Players[i].cellposition.y][Proto_Server.game.Team1_Players[i].cellposition.x].occupied = 0;
+                                                Proto_Server.game.Team1_Players[i].cellposition = cPos->position;
+                                                Proto_Server.game.map.mapBody[yStart][xStart].occupied = 1;
+                                                break;
+                                        }
+                                        if (xStart == 109 && yStart == 108){break;}
+                                        if (xStart == 97)
+                                        {
+                                                xStart = 102;
+                                                yStart ++;
+                                        }
+                                        xStart++;
+                                }
+                        }
+			//Left
+			if (Proto_Server.game.Team1_Players[i].cellposition.x == (player->cellposition.x-1) && Proto_Server.game.Team1_Players[i].cellposition.y == player->cellposition.y)
+                        {
+                                Proto_Server.game.Team1_Players[i].canMove = 0;
+                                int xStart = 102;
+                                int yStart = 90;
+                                while (1)
+                                {
+                                        Cell *cPos = &Proto_Server.game.map.mapBody[yStart][xStart];
+                                        if (cPos->occupied == 0)
+                                        {
+                                                Proto_Server.game.map.mapBody[Proto_Server.game.Team1_Players[i].cellposition.y][Proto_Server.game.Team1_Players[i].cellposition.x].occupied = 0;
+                                                Proto_Server.game.Team1_Players[i].cellposition = cPos->position;
+                                                Proto_Server.game.map.mapBody[yStart][xStart].occupied = 1;
+                                                break;
+                                        }
+                                        if (xStart == 109 && yStart == 108){break;}
+                                        if (xStart == 97)
+                                        {
+                                                xStart = 102;
+                                                yStart ++;
+                                        }
+                                        xStart++;
+                                }
+                        }
+		i++;
+		}
+	}
+  }
+
+  //Object movement
   //Important note: when I decided to find out what index in objects[] the object is, I looked to find what each was hardcoded to.
   if (player->inventory.type != NONE)
   {
@@ -990,6 +1274,11 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   if (gameOver==TEAM_1_WON || gameOver==TEAM_2_WON) {
     Proto_Server.game.status = gameOver;
       proto_server_post_event(PROTO_MT_EVENT_GAME_OVER_UPDATE);
+  }
+  }
+  else
+  {
+	h.returnCode = RPC_IN_JAIL;
   }
 
   pthread_mutex_unlock(&Proto_Server.GameLock); // Unlock after update

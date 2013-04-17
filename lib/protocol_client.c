@@ -628,7 +628,8 @@ proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
     fprintf(stderr, "Move failed, cannot move into wall\n");
   else if (s->rhdr.returnCode==RPC_MOVE_MOVING_INTO_PLAYER)
     fprintf(stderr, "Move failed, cannot move into another player\n");  
-
+  else if (s->rhdr.returnCode==RPC_IN_JAIL)
+    fprintf(stderr, "Move failed, cannot move while in jail\n");
   return 1;
 }
 
