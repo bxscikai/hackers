@@ -6,7 +6,7 @@
 #define MAX_NUM_PLAYERS 10
 #define MAX_LINE_LEN 500
 #define NUMOFOBJECTS 4
-#define DISPLAYUI 1
+#define DISPLAYUI 0
 // Help debug game by turning off collision detection
 #define CANMOVE_THROUGH_WALL 1  
 
@@ -52,6 +52,7 @@ typedef enum {
 	// Return code for moving player
 	RPC_MOVE_MOVING_INTO_WALL,
 	RPC_MOVE_MOVING_INTO_PLAYER,
+	RPC_IN_JAIL,
 	// Return code for pickup
 	RPC_PICKUP_SUCCESS,
 	RPC_DROP,
