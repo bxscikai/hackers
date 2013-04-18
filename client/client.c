@@ -38,7 +38,7 @@ UI *ui;
 
 #define STRLEN    81
 #define INPUTSIZE 50 
-#define FASTINPUTMODE 1
+#define FASTINPUTMODE 0
 
 struct Globals {
   char host[STRLEN];
@@ -289,6 +289,9 @@ docmd(Client *C, char *cmd)
   char input[50];
   strcpy(input, cmd);
   int connectAttempt = check_if_connect(input);
+
+  fprintf(stderr, "Connect: %d\n", connectAttempt);
+
   if (connectAttempt==1) {
   // Ok startup our connection to the server
       if (startConnection(C, globals.host, globals.port, update_event_handler)<0) {
@@ -297,7 +300,10 @@ docmd(Client *C, char *cmd)
       }
       else  {
         fprintf(stderr, "Successfully connected to <%s:%d>\n", globals.host, globals.port);      
-        return proto_client_hello(C->ph);
+        proto_client_hello(C->ph);
+        doRPCCmd(C, 'q'); //query for the map
+
+        return 1;
       }
       return 1;
   }
@@ -421,7 +427,6 @@ shell(void *arg)
   int rc;
   int menu=1;
   //the following is done in order to change the prompt for the user to X or O
-
   
   while (1) {
     // Clear input each time
@@ -430,6 +435,7 @@ shell(void *arg)
     prompt(menu, input);
 
     if (strlen(input)>0) {
+
       rc=docmd(C, input);
       menu = 1;
     }
@@ -475,9 +481,11 @@ initGlobals(int argc, char **argv)
 {
   bzero(&globals, sizeof(globals));
 
-  if (argc==1) {
-    usage(argv[0]);
-    exit(-1);
+  if (FASTINPUTMODE==1) {
+    if (argc==1) {
+      usage(argv[0]);
+      exit(-1);
+    }
   }
 
   if (argc==2) {
@@ -505,12 +513,13 @@ main(int argc, char **argv)
     return -1;
   }    
 
+  initGlobals(argc, argv);
+
   if (FASTINPUTMODE) {
-    initGlobals(argc, argv);
     startConnection(&c, globals.host, globals.port, update_event_handler);
+    doRPCCmd(&c, 'q'); //query for the map
   }    
 
-  doRPCCmd(&c, 'q'); //query for the map
   shell(&c);
 
     if (DISPLAYUI==1) {
