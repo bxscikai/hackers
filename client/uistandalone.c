@@ -43,7 +43,8 @@ static void paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end
 #define SPRITE_H 32
 #define SPRITE_W 32
 
-#define UI_FLOOR_BMP "floor.bmp"
+#define UI_FLOOR_BMP "floorGREEN.bmp"
+#define UI_FLOOR2_BMP "floorRED.bmp"
 #define UI_REDWALL_BMP "redwall.bmp"
 #define UI_GREENWALL_BMP "greenwall.bmp"
 #define UI_TEAMA_BMP "teama.bmp"
@@ -342,6 +343,7 @@ load_sprites(UI *ui)
 
   SDL_SetColorKey(ui->sprites[TEAMB_S].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
 		  colorkey);
+
   temp = SDL_LoadBMP(UI_FLOOR_BMP);
   if (temp == NULL) {
     fprintf(stderr, "ERROR: loading floor.bmp %s\n", SDL_GetError()); 
@@ -351,6 +353,16 @@ load_sprites(UI *ui)
   SDL_FreeSurface(temp);
   SDL_SetColorKey(ui->sprites[FLOOR_S].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
 		  colorkey);
+
+  temp = SDL_LoadBMP(UI_FLOOR2_BMP);
+  if (temp == NULL) {
+    fprintf(stderr, "ERROR: loading floor2.bmp %s\n", SDL_GetError()); 
+    return -1;
+  }
+  ui->sprites[FLOOR2_S].img = SDL_DisplayFormat(temp);
+  SDL_FreeSurface(temp);
+  SDL_SetColorKey(ui->sprites[FLOOR2_S].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
+      colorkey);
 
   temp = SDL_LoadBMP(UI_REDWALL_BMP);
   if (temp == NULL) { 
@@ -489,20 +501,14 @@ ui_paintmap(UI *ui, void *game, Player *myPlayer)
     for (j= start_x, t.x=0; j<= end_x; j++) {
       int cell_type = maze->mapBody[i][j].type;
 
-      if(cell_type == FLOOR_1 || cell_type == FLOOR_2){
+      if(cell_type == FLOOR_1 || cell_type == HOME_1 || cell_type == JAIL_1){
         draw_cell(ui, FLOOR_S, &t, ui->screen); 
+      }else if (cell_type == FLOOR_2 || cell_type == HOME_2 || cell_type == JAIL_2){
+        draw_cell(ui, FLOOR2_S, &t, ui->screen);
       }else if (cell_type == WALL_FIXED){
         draw_cell(ui, GREENWALL_S, &t, ui->screen);
       }else if (cell_type == WALL_UNFIXED){
         draw_cell(ui, REDWALL_S, &t, ui->screen);
-      }else if (cell_type == HOME_1 || cell_type == HOME_2){
-        draw_cell(ui, FLOOR_S, &t, ui->screen);
-      } else if (cell_type == JAIL_1 || cell_type == JAIL_2){
-        draw_cell(ui, FLOOR_S, &t, ui->screen);
-      } else if (cell_type == FLAG_1){
-        draw_cell(ui, REDFLAG_S, &t, ui->screen);
-      } else if (cell_type == FLAG_2){
-        draw_cell(ui, GREENFLAG_S, &t, ui->screen);
       } else{
         draw_cell(ui, FLOOR_S, &t, ui->screen);
       }
