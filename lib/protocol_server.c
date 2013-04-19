@@ -368,6 +368,40 @@ static int
 proto_session_lost_default_handler(Proto_Session *s)
 {
   if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Session lost...:\n");
+
+  // Session lost with client, remove player associated with this client
+  Player *disconnectedPlayer = getPlayer(&Proto_Server.game, s->fd);
+  disconnectedPlayer->inventory.type=NONE;
+
+  // Remove the player from the struct
+  int i;
+  for (i=0; i<MAX_NUM_PLAYERS; i++) {
+    Player *player1 = &Proto_Server.game.Team1_Players[i];
+    Player *player2 = &Proto_Server.game.Team2_Players[i];
+    if (player1->playerID==disconnectedPlayer->playerID) {
+      Proto_Server.game.map.mapBody[disconnectedPlayer->cellposition.y][disconnectedPlayer->cellposition.x].occupied = 0;
+      bzero(disconnectedPlayer, sizeof(Player));
+      break;
+    }
+    if (player2->playerID==disconnectedPlayer->playerID) {
+      Proto_Server.game.map.mapBody[disconnectedPlayer->cellposition.y][disconnectedPlayer->cellposition.x].occupied = 0;
+      bzero(disconnectedPlayer, sizeof(Player));
+      break;
+    }
+  }
+
+  // Remove the subscriber
+  for (i=0; i< PROTO_SERVER_MAX_EVENT_SUBSCRIBERS; i++) {
+    if (Proto_Server.EventSubscribers[i]==s->fd) {
+      Proto_Server.EventSubscribers[i] = -1;
+      Proto_Server.EventNumSubscribers--;
+    }
+  }
+
+  // Broadcast this to the remaining players
+  proto_server_post_event(PROTO_MT_EVENT_GAME_UPDATE);
+
+
   proto_session_dump(s);
   return -1;
 }

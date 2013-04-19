@@ -14,5 +14,5 @@ typedef struct ClientState  {
 
 
 void Update_UI(Player *myPlayer, void *game);
-
+void launchUI(Client *client);
 #endif
