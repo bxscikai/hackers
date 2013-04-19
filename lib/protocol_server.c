@@ -829,6 +829,15 @@ proto_server_mt_rpc_pickup_handler(Proto_Session *s)
 
       player->inventory.type = NONE;
       h.returnCode = RPC_DROP;
+
+    // Check if game over or not, if so, broadcast notification to all players
+    GameStatus gameOver = checkOverGame(&Proto_Server.game);
+
+    if (gameOver==TEAM_1_WON || gameOver==TEAM_2_WON) {
+      Proto_Server.game.status = gameOver;
+        proto_server_post_event(PROTO_MT_EVENT_GAME_OVER_UPDATE);
+    }
+
   }
 
   done:
