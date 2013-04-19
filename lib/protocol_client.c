@@ -686,6 +686,7 @@ static void parseMapFromString(char *mapString, Maze *map) {
 
   // fprintf(stderr, "Dim %dx%d\n", map->dimension.x, map->dimension.y);
   // Parse map and store it
+
   for (row=0; row<map->dimension.x;row++) {
     for (column=0; column<map->dimension.y; column++) {
 
@@ -694,6 +695,16 @@ static void parseMapFromString(char *mapString, Maze *map) {
       Cell cell;
       cell.type = cellTypeFromChar(c);
       cell.occupied = 0;
+
+      // Differentiate between floor1 and floor2
+      if (cell.type==FLOOR_1) {
+
+          if (column<=map->dimension.x * 0.5)
+            cell.type = FLOOR_1;
+          else if (column>map->dimension.x*0.5) 
+            cell.type = FLOOR_2;
+          
+      }
       map->mapBody[row][column] = cell;
       count++;
     }
