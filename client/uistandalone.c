@@ -38,7 +38,7 @@ static void paint_objects(UI *ui, SDL_Rect *t, int start_x, int start_y, int end
 
 static void otherPlayers_init(UI *ui, void *game);
 static void paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_y, void *game, Player *myPlayer);
-
+static void myPlayer_pan_paint(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_y, Player *myPlayer);
 
 #define SPRITE_H 32
 #define SPRITE_W 32
@@ -68,6 +68,9 @@ typedef struct UI_Player_Struct UI_Player;
 UI_Player *uiplayer;
 UI_Player* ui_team1Players[MAX_NUM_PLAYERS];
 UI_Player* ui_team2Players[MAX_NUM_PLAYERS];
+
+static int pan_coords_x;
+static int pan_coords_y;
 
 static inline SDL_Surface *
 ui_player_img(UI *ui, int team)
@@ -431,13 +434,27 @@ draw_cell(UI *ui, SPRITE_INDEX si, SDL_Rect *t, SDL_Surface *s)
 }
 
 static sval
-ui_paintmap(UI *ui, void *game, Player *myPlayer) 
+ui_paintmap(UI *ui, void *game, Player *myPlayer, PAINT_TYPE type) 
 {
   Game *gameState = (Game *)game;
   Maze *maze = &gameState->map;
   SDL_Rect t;
-  int player_x = myPlayer->cellposition.x;
-  int player_y = myPlayer->cellposition.y;
+  int player_x;
+  int player_y;
+
+  if(type == PAN){
+    player_x = pan_coords_x;
+    player_y = pan_coords_y;
+  }else{
+    player_x = myPlayer->cellposition.x;
+    player_y = myPlayer->cellposition.y;
+
+    // update pan logic
+    pan_coords_x = player_x;
+    pan_coords_y = player_y;
+    ///////////////////
+  }
+
   int i = 0;
   int j = 0;
   t.y = 0; t.x = 0; t.h = ui->tile_h; t.w = ui->tile_w;
@@ -517,8 +534,13 @@ ui_paintmap(UI *ui, void *game, Player *myPlayer)
     t.y+=t.h;
   }
 
-  fprintf(stderr, "Painting my player...\n");
-  myPlayer_paint(ui, &t, myPlayer);
+  fprintf(stderr, "Painting players...\n");
+
+  if (type == PAN){
+    myPlayer_pan_paint(ui, &t, start_x, start_y, end_x, end_y, myPlayer);
+  }else{
+    myPlayer_paint(ui, &t, myPlayer);
+  }
   paint_players(ui, &t, start_x, start_y, end_x, end_y, game, myPlayer);
   paint_objects(ui, &t, start_x, start_y, end_x, end_y, game);
 
@@ -635,9 +657,16 @@ ui_zoom(UI *ui, sval fac)
 }
 
 extern sval
-ui_pan(UI *ui, sval xdir, sval ydir)
+ui_pan(UI *ui, int xdir, int ydir, void *game, Player *myPlayer)
 {
   fprintf(stderr, "%s:\n", __func__);
+  
+  pan_coords_x += xdir;
+  pan_coords_y += ydir;
+
+  fprintf(stderr, "PAN COORDS = %d, %d\n", pan_coords_x, pan_coords_y);
+
+  ui_paintmap(ui, game, myPlayer, PAN);  
   return 2;
 }
 
@@ -674,7 +703,7 @@ ui_quit(UI *ui)
 extern void
 ui_repaint(UI *ui, void *game, Player *myPlayer)
 {
-  ui_paintmap(ui, game, myPlayer);
+  ui_paintmap(ui, game, myPlayer, NOT_PAN);
   SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
   Game *gameState = (Game *)game;
   if (gameState->status == TEAM_1_WON){
@@ -704,10 +733,10 @@ ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer, Client *C)
   ui_init_sdl(ui, h, w, 32);
 
   myPlayer_init(ui, myPlayer);
-  
+ 
   otherPlayers_init(ui, game);
   
-  ui_paintmap(ui, game, myPlayer);
+  ui_paintmap(ui, game, myPlayer, NOT_PAN);
   
   while (1) {
     if (ui_process(ui, C)<0) break;
@@ -866,14 +895,43 @@ myPlayer_paint(UI *ui, SDL_Rect *t, Player *myPlayer)
     t->y = 320; t->x = 320; //center of window
   }
 
-  /////
-  //UI_Player *uiplayer = myPlayer->uiPlayer;
-  //////
   uiplayer->clip.x = uiplayer->base_clip_x +
     pxSpriteOffSet(myPlayer->team, myPlayer->current_state);
   SDL_BlitSurface(uiplayer->img, &(uiplayer->clip), ui->screen, t);
 
   pthread_mutex_unlock(&myPlayer->lock);
+}
+
+static void
+myPlayer_pan_paint(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_y, Player *myPlayer){
+  if(myPlayer->cellposition.x >= start_x && myPlayer->cellposition.x <= end_x && myPlayer->cellposition.y >= start_y && myPlayer->cellposition.y <= end_y){
+    // update what state the player is in
+    int state = 0;
+    if (myPlayer->canMove == 1){
+      state = NORMAL;
+    }
+
+    if (myPlayer->canMove == 0){
+      state = JAIL;
+    }
+
+    if (myPlayer->inventory.type == FLAG_1){
+      state = RED_FLAG;
+    }
+
+    if (myPlayer->inventory.type == FLAG_2){
+      state = GREEN_FLAG;
+    }
+
+    myPlayer->current_state = state;
+    ////////
+    pthread_mutex_lock(&myPlayer->lock);
+    t->y = (myPlayer->cellposition.y - start_y) * t->h; t->x = (myPlayer->cellposition.x - start_x) * t->w;
+    uiplayer->clip.x = uiplayer->base_clip_x +
+      pxSpriteOffSet(myPlayer->team, myPlayer->current_state);
+    SDL_BlitSurface(uiplayer->img, &(uiplayer->clip), ui->screen, t);
+    pthread_mutex_unlock(&myPlayer->lock);
+  }
 }
 
 static void
@@ -883,31 +941,29 @@ paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_
   int i;
   for (i = 0; i< MAX_NUM_PLAYERS ; i++){
     Player this_player = gameState->Team1_Players[i];
-
-    // update what state the player is in
-    int state = 0;
-    if (this_player.canMove == 1){
-      state = NORMAL;
-    }
-
-    if (this_player.canMove == 0){
-      state = JAIL;
-    }
-
-    if (this_player.inventory.type == FLAG_1){
-      state = RED_FLAG;
-    }
-
-    if (this_player.inventory.type == FLAG_2){
-      state = GREEN_FLAG;
-    }
-
-    this_player.current_state = state;
-    ////////
-
     // only paint valid players in the 20x20 range
     if(this_player.playerID != 0 && this_player.playerID != myPlayer->playerID){
       if(this_player.cellposition.x >= start_x && this_player.cellposition.x <= end_x && this_player.cellposition.y >= start_y && this_player.cellposition.y <= end_y){
+        // update what state the player is in
+        int state = 0;
+        if (this_player.canMove == 1){
+          state = NORMAL;
+        }
+
+        if (this_player.canMove == 0){
+          state = JAIL;
+        }
+
+        if (this_player.inventory.type == FLAG_1){
+          state = RED_FLAG;
+        }
+
+        if (this_player.inventory.type == FLAG_2){
+          state = GREEN_FLAG;
+        }
+
+        this_player.current_state = state;
+        ////////
         pthread_mutex_lock(&this_player.lock);
         t->y = (this_player.cellposition.y - start_y) * t->h; t->x = (this_player.cellposition.x - start_x) * t->w;
         ui_team1Players[i]->clip.x = ui_team1Players[i]->base_clip_x +
@@ -921,31 +977,29 @@ paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_
 
   for (i = 0; i< MAX_NUM_PLAYERS ; i++){
     Player this_player = gameState->Team2_Players[i];
-
-    // update what state the player is in
-    int state = 0;
-    if (this_player.canMove == 1){
-      state = NORMAL;
-    }
-
-    if (this_player.canMove == 0){
-      state = JAIL;
-    }
-
-    if (this_player.inventory.type == FLAG_1){
-      state = RED_FLAG;
-    }
-
-    if (this_player.inventory.type == FLAG_2){
-      state = GREEN_FLAG;
-    }
-
-    this_player.current_state = state;
-    ////////
-
     // only paint valid players in the 20x20 range
     if(this_player.playerID != 0 && this_player.playerID != myPlayer->playerID){
       if(this_player.cellposition.x >= start_x && this_player.cellposition.x <= end_x && this_player.cellposition.y >= start_y && this_player.cellposition.y <= end_y){
+        // update what state the player is in
+        int state = 0;
+        if (this_player.canMove == 1){
+          state = NORMAL;
+        }
+
+        if (this_player.canMove == 0){
+          state = JAIL;
+        }
+
+        if (this_player.inventory.type == FLAG_1){
+          state = RED_FLAG;
+        }
+
+        if (this_player.inventory.type == FLAG_2){
+          state = GREEN_FLAG;
+        }
+
+        this_player.current_state = state;
+        ////////
         pthread_mutex_lock(&this_player.lock);
         t->y = (this_player.cellposition.y - start_y) * t->h; t->x = (this_player.cellposition.x - start_x) * t->w;
         ui_team2Players[i]->clip.x = ui_team2Players[i]->base_clip_x +

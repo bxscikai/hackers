@@ -28,6 +28,8 @@ typedef enum {
   TEAMA_S=0, TEAMB_S, FLOOR2_S, FLOOR_S, REDWALL_S, GREENWALL_S, LOGO_S, JACKHAMMER_S, REDFLAG_S, GREENFLAG_S, NUM_S 
 } SPRITE_INDEX;
 
+typedef enum {PAN, NOT_PAN} PAINT_TYPE;
+
 struct UI_Struct {
   SDL_Surface *screen;
   int32_t depth;
@@ -59,7 +61,7 @@ typedef struct UI_Struct UI;
 
 
 sval ui_zoom(UI *ui, sval fac);
-sval ui_pan(UI *ui, sval xdir, sval ydir);
+sval ui_pan(UI *ui, int xdir, int ydir, void *game, Player *myPlayer);
 sval ui_move(UI *ui, sval xdir, sval ydir);
 sval ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C);
 void ui_update(UI *ui);

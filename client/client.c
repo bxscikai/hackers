@@ -663,10 +663,34 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
     if (sym == SDLK_q) return -1;
     if (sym == SDLK_z && mod == KMOD_NONE) return ui_zoom(ui, 1);
     if (sym == SDLK_z && mod & KMOD_SHIFT ) return ui_zoom(ui,-1);
-    if (sym == SDLK_LEFT && mod & KMOD_SHIFT) return ui_pan(ui,-1,0);
-    if (sym == SDLK_RIGHT && mod & KMOD_SHIFT) return ui_pan(ui,1,0);
-    if (sym == SDLK_UP && mod & KMOD_SHIFT) return ui_pan(ui, 0,-1);
-    if (sym == SDLK_DOWN && mod & KMOD_SHIFT) return ui_pan(ui, 0,1);
+    if (sym == SDLK_LEFT && mod & KMOD_SHIFT){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+
+      return ui_pan(ui,-1,0, &client->game, me);
+    }
+    if (sym == SDLK_RIGHT && mod & KMOD_SHIFT){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+
+      return ui_pan(ui,1,0, &client->game, me);
+    }
+    if (sym == SDLK_UP && mod & KMOD_SHIFT){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+
+      return ui_pan(ui, 0,-1, &client->game, me);
+    }
+    if (sym == SDLK_DOWN && mod & KMOD_SHIFT){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+
+      return ui_pan(ui, 0,1, &client->game, me);
+    }
     else {
       fprintf(stderr, "%s: key pressed: %d\n", __func__, sym); 
     }
