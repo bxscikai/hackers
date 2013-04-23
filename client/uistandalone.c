@@ -660,9 +660,16 @@ extern sval
 ui_pan(UI *ui, int xdir, int ydir, void *game, Player *myPlayer)
 {
   fprintf(stderr, "%s:\n", __func__);
+
+  int new_coord_x = pan_coords_x + xdir;
+  int new_coord_y = pan_coords_y + ydir;
   
-  pan_coords_x += xdir;
-  pan_coords_y += ydir;
+  if(new_coord_x < 10 || new_coord_x > 190 || new_coord_y < 10 || new_coord_y > 190){
+    //don't update
+  }else{
+    pan_coords_x = new_coord_x;
+    pan_coords_y = new_coord_y;
+  }
 
   fprintf(stderr, "PAN COORDS = %d, %d\n", pan_coords_x, pan_coords_y);
 

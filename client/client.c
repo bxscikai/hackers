@@ -599,7 +599,6 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       fprintf(stderr, "%s: move left\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = LEFT;
-      Player *me = getPlayer(&client->game, client->playerID);
 
       doRPCCmd(C, 'm');
       return 2;
@@ -608,7 +607,6 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       fprintf(stderr, "%s: move right\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = RIGHT;
-      Player *me = getPlayer(&client->game, client->playerID);
 
       doRPCCmd(C, 'm');
       return 2;
@@ -617,8 +615,7 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       fprintf(stderr, "%s: move up\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = UP;
-      Player *me = getPlayer(&client->game, client->playerID);
-
+    
       doRPCCmd(C, 'm');
       return 2;
     }
@@ -626,35 +623,10 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       fprintf(stderr, "%s: move down\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = DOWN;
-      Player *me = getPlayer(&client->game, client->playerID);
 
       doRPCCmd(C, 'm');
       return 2;
     }
-    // if (sym == SDLK_r && mod == KMOD_NONE)  {  
-    //   fprintf(stderr, "%s: dummy pickup red flag\n", __func__);
-    //   return ui_dummy_pickup_red(ui);
-    // }
-    // if (sym == SDLK_g && mod == KMOD_NONE)  {   
-    //   fprintf(stderr, "%s: dummy pickup green flag\n", __func__);
-    //   return ui_dummy_pickup_green(ui);
-    // }
-    // if (sym == SDLK_j && mod == KMOD_NONE)  {   
-    //   fprintf(stderr, "%s: dummy jail\n", __func__);
-    //   return ui_dummy_jail(ui);
-    // }
-    // if (sym == SDLK_n && mod == KMOD_NONE)  {   
-    //   fprintf(stderr, "%s: dummy normal state\n", __func__);
-    //   return ui_dummy_normal(ui);
-    // }
-    // if (sym == SDLK_t && mod == KMOD_NONE)  {   
-    //   fprintf(stderr, "%s: dummy toggle team\n", __func__);
-    //   return ui_dummy_toggle_team(ui);
-    // }
-    // if (sym == SDLK_i && mod == KMOD_NONE)  {   
-    //   fprintf(stderr, "%s: dummy inc player id \n", __func__);
-    //   return ui_dummy_inc_id(ui);
-    // }
     if (sym == SDLK_f && mod == KMOD_NONE)  {   
       fprintf(stderr, "%s: pickup \n", __func__);
       doRPCCmd(C, 'f');
