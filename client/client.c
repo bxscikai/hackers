@@ -550,7 +550,7 @@ main(int argc, char **argv)
 
     doRPCCmd(&c, 'q'); //query for the map
 
-    ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me, &c);
+    ui_main_loop(ui, (32 * WINDOW_SIZE), (32 * WINDOW_SIZE), &client->game, me, &c);
 
   }
 

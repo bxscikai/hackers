@@ -71,6 +71,7 @@ UI_Player* ui_team2Players[MAX_NUM_PLAYERS];
 
 static int pan_coords_x;
 static int pan_coords_y;
+static int dimension;
 
 static inline SDL_Surface *
 ui_player_img(UI *ui, int team)
@@ -464,54 +465,62 @@ ui_paintmap(UI *ui, void *game, Player *myPlayer, PAINT_TYPE type)
   int start_y;
   int end_y;
 
+  int min = WINDOW_SIZE/2;
+  int max = maze->dimension.x - (WINDOW_SIZE/2);
+  int min_window_start = 0;
+  int min_window_end = WINDOW_SIZE - 1;
+  int max_window_start = maze->dimension.x - WINDOW_SIZE;
+  int max_window_end = maze->dimension.x - 1;
+  int middle_to_end = (WINDOW_SIZE/2) - 1;
+
   fprintf(stderr, "Painting map...\n");
 
   //Keep window consistently 20x20
-  if (player_x < 10 && player_y < 10){
-    start_x = 0;
-    end_x = 19;
-    start_y = 0;
-    end_y = 19;
-  }else if (player_x > 190 && player_y > 190){
-    start_y = 180;
-    end_y = 199;
-    start_x = 180;
-    end_x = 199;
-  }else if (player_x < 10 && player_y > 190){
-    start_y = 180;
-    end_y = 199;
-    start_x = 0;
-    end_x = 19;
-  }else if (player_x > 190 && player_y < 10){
-    start_y = 0;
-    end_y = 19;
-    start_x = 180;
-    end_x = 199;
-  }else if (player_x < 10){
-    start_x = 0;
-    end_x = 19;
-    start_y = player_y - 10;
-    end_y = player_y + 9;
-  }else if (player_y < 10){
-    start_x = player_x - 10;
-    end_x = player_x + 9;
-    start_y = 0;
-    end_y= 19;
-  }else if (player_x > 190){
-    start_x = 180;
-    end_x = 199;
-    start_y = player_y - 10;
-    end_y = player_y + 9;
-  }else if (player_y >190){
-    start_y = 180;
-    end_y = 199;
-    start_x = player_x - 10;
-    end_x = player_x + 9;
+  if (player_x < min && player_y < min){
+    start_x = min_window_start;
+    end_x = min_window_end;
+    start_y = min_window_start;
+    end_y = min_window_end;
+  }else if (player_x > max && player_y > max){
+    start_y = max_window_start;
+    end_y = max_window_end;
+    start_x = max_window_start;
+    end_x = max_window_end;
+  }else if (player_x < min && player_y > max){
+    start_y = max_window_start;
+    end_y = max_window_end;
+    start_x = min_window_start;
+    end_x = min_window_end;
+  }else if (player_x > max && player_y < min){
+    start_y = min_window_start;
+    end_y = min_window_end;
+    start_x = max_window_start;
+    end_x = max_window_end;
+  }else if (player_x < min){
+    start_x = min_window_start;
+    end_x = min_window_end;
+    start_y = player_y - min;
+    end_y = player_y + middle_to_end;
+  }else if (player_y < min){
+    start_x = player_x - min;
+    end_x = player_x + middle_to_end;
+    start_y = min_window_start;
+    end_y= min_window_end;
+  }else if (player_x > max){
+    start_x = max_window_start;
+    end_x = max_window_end;
+    start_y = player_y - min;
+    end_y = player_y + middle_to_end;
+  }else if (player_y > max){
+    start_y = max_window_start;
+    end_y = max_window_end;
+    start_x = player_x - min;
+    end_x = player_x + middle_to_end;
   }else{
-    start_y = player_y - 10;
-    end_y = player_y + 9;
-    start_x = player_x - 10;
-    end_x = player_x + 9;
+    start_y = player_y - min;
+    end_y = player_y + middle_to_end;
+    start_x = player_x - min;
+    end_x = player_x + middle_to_end;
   }
 
   for (i= start_y, t.y=0; i<= end_y; i++) {
@@ -661,17 +670,18 @@ ui_pan(UI *ui, int xdir, int ydir, void *game, Player *myPlayer)
 {
   fprintf(stderr, "%s:\n", __func__);
 
+  int min = WINDOW_SIZE/2;
+  int max = dimension - (WINDOW_SIZE/2);
+
   int new_coord_x = pan_coords_x + xdir;
   int new_coord_y = pan_coords_y + ydir;
   
-  if(new_coord_x < 10 || new_coord_x > 190 || new_coord_y < 10 || new_coord_y > 190){
+  if(new_coord_x < min || new_coord_x > max || new_coord_y < min || new_coord_y > max){
     //don't update
   }else{
     pan_coords_x = new_coord_x;
     pan_coords_y = new_coord_y;
   }
-
-  fprintf(stderr, "PAN COORDS = %d, %d\n", pan_coords_x, pan_coords_y);
 
   ui_paintmap(ui, game, myPlayer, PAN);  
   return 2;
@@ -733,6 +743,11 @@ ui_repaint(UI *ui, void *game, Player *myPlayer)
 extern void
 ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer, Client *C)
 {
+  //record dimension of map locally
+  Game *gameState = (Game *)game;
+  Maze *maze = &gameState->map;
+  dimension = maze->dimension.x;
+
   sval rc;
   
   assert(ui);
@@ -881,25 +896,28 @@ myPlayer_paint(UI *ui, SDL_Rect *t, Player *myPlayer)
   int player_x = myPlayer->cellposition.x;
   int player_y = myPlayer->cellposition.y;
 
-  if(player_x <= 10 && player_y <= 10){
-    t->y = player_y * t->h; t->x = player_x * t->w;
-  }else if(player_x >= 190 && player_y <= 10){
-    t->y = player_y * t->h; t->x = (20 - (200 - player_x)) * t->w;
-  }else if(player_x <= 10 && player_y >= 190){
-    t->y = (20 - (200 - player_y)) * t->h; t->x = player_x * t->w;
-  }else if(player_x >= 190 && player_y >= 190){
-    t->y = (20 - (200 - player_y)) * t->h; t->x = (20 - (200 - player_x)) * t->w;
+  int min = WINDOW_SIZE/2;
+  int max = dimension - min;
 
-  }else if(player_y <= 10){
-    t->y = player_y * t->h; t->x = 10 * t->w;
-  }else if(player_x <= 10){
-    t->y = 10 * t->h; t->x = player_x * t->w;
-  }else if(player_y >= 190){
-    t->y = (20 - (200 - player_y)) * t->h; t->x = 10 * t->w;
-  }else if(player_x >= 190){
-    t->y = 10 * t->h; t->x = (20 - (200 - player_x)) * t->w;
+  if(player_x <= min && player_y <= min){
+    t->y = player_y * t->h; t->x = player_x * t->w;
+  }else if(player_x >= max && player_y <= min){
+    t->y = player_y * t->h; t->x = (WINDOW_SIZE - (dimension - player_x)) * t->w;
+  }else if(player_x <= min && player_y >= max){
+    t->y = (WINDOW_SIZE - (dimension - player_y)) * t->h; t->x = player_x * t->w;
+  }else if(player_x >= max && player_y >= max){
+    t->y = (WINDOW_SIZE - (dimension - player_y)) * t->h; t->x = (WINDOW_SIZE - (dimension - player_x)) * t->w;
+
+  }else if(player_y <= min){
+    t->y = player_y * t->h; t->x = min * t->w;
+  }else if(player_x <= min){
+    t->y = min * t->h; t->x = player_x * t->w;
+  }else if(player_y >= max){
+    t->y = (WINDOW_SIZE - (dimension - player_y)) * t->h; t->x = min * t->w;
+  }else if(player_x >= max){
+    t->y = min * t->h; t->x = (WINDOW_SIZE - (dimension - player_x)) * t->w;
   }else{
-    t->y = 320; t->x = 320; //center of window
+    t->y = 32 * min ; t->x = 32 * min; //center of window
   }
 
   uiplayer->clip.x = uiplayer->base_clip_x +
