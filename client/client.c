@@ -633,8 +633,20 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       return 2;
     }
     if (sym == SDLK_q) return -1;
-    if (sym == SDLK_z && mod == KMOD_NONE) return ui_zoom(ui, 1);
-    if (sym == SDLK_z && mod & KMOD_SHIFT ) return ui_zoom(ui,-1);
+    if (sym == SDLK_z && mod == KMOD_NONE){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+
+      return ui_zoom(ui, 1, &client->game, me);
+    }
+    if (sym == SDLK_z && mod & KMOD_SHIFT ){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+      
+      return ui_zoom(ui,-1, &client->game, me);
+    }
     if (sym == SDLK_LEFT && mod & KMOD_SHIFT){
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = UP;

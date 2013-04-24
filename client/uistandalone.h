@@ -60,7 +60,7 @@ struct UI_Struct {
 typedef struct UI_Struct UI;
 
 
-sval ui_zoom(UI *ui, sval fac);
+sval ui_zoom(UI *ui, sval fac, void *game, Player *myPlayer);
 sval ui_pan(UI *ui, int xdir, int ydir, void *game, Player *myPlayer);
 sval ui_move(UI *ui, sval xdir, sval ydir);
 sval ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C);
