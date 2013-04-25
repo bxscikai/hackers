@@ -40,6 +40,7 @@ static void paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end
 
 #define SPRITE_H 32
 #define SPRITE_W 32
+#define SMALL_SPRITE_SIZE 16
 
 #define UI_FLOOR_BMP "floorGREEN.bmp"
 #define UI_FLOOR2_BMP "floorRED.bmp"
@@ -47,19 +48,27 @@ static void paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end
 #define UI_GREENWALL_BMP "greenwall.bmp"
 #define UI_TEAMA_BMP "teama.bmp"
 #define UI_TEAMB_BMP "teamb.bmp"
+#define UI_TEAMA_S_BMP "teama_s.bmp"
+#define UI_TEAMB_S_BMP "teamb_s.bmp"
 #define UI_LOGO_BMP "logo.bmp"
 #define UI_WIN "youwin.bmp"
 #define UI_LOSE "youlose.bmp"
 #define UI_REDFLAG_BMP "redflag.bmp"
 #define UI_GREENFLAG_BMP "greenflag.bmp"
 #define UI_JACKHAMMER_BMP "shovel.bmp"
+#define UI_REDFLAG_S_BMP "redflag_s.bmp"
+#define UI_GREENFLAG_S_BMP "greenflag_s.bmp"
+#define UI_JACKHAMMER_S_BMP "shovel_s.bmp"
 
 typedef enum {UI_SDLEVENT_UPDATE, UI_SDLEVENT_QUIT} UI_SDL_Event;
 
 struct UI_Player_Struct {
   SDL_Surface *img;
+  SDL_Surface *small_img;
   uval base_clip_x;
   SDL_Rect clip;
+  uval small_base_clip_x;
+  SDL_Rect small_clip;
 };
 typedef struct UI_Player_Struct UI_Player;
 
@@ -79,6 +88,13 @@ ui_player_img(UI *ui, int team)
     : ui->sprites[TEAMB_S].img;
 }
 
+static inline SDL_Surface *
+ui_player_small_img(UI *ui, int team)
+{  
+  return (team == 0) ? ui->sprites[TEAMA_XS].img 
+    : ui->sprites[TEAMB_XS].img;
+}
+
 static inline sval 
 pxSpriteOffSet(int team, int state)
 {
@@ -87,6 +103,17 @@ pxSpriteOffSet(int team, int state)
   if (state == 2) 
     return (team==0) ? SPRITE_W*2 : SPRITE_W*1;
   if (state == 3) return SPRITE_W*3;
+  return 0;
+}
+
+static inline sval 
+small_pxSpriteOffSet(int team, int state)
+{
+  if (state == 1)
+    return (team==0) ? SMALL_SPRITE_SIZE*1 : SMALL_SPRITE_SIZE*2;
+  if (state == 2) 
+    return (team==0) ? SMALL_SPRITE_SIZE*2 : SMALL_SPRITE_SIZE*1;
+  if (state == 3) return SMALL_SPRITE_SIZE*3;
   return 0;
 }
 
@@ -99,6 +126,11 @@ ui_uip_init(UI *ui, UI_Player **p, int id, int team)
   if (!ui_p) return 0;
 
   ui_p->img = ui_player_img(ui, team);
+  ui_p->small_img = ui_player_small_img(ui, team);
+
+  ui_p->small_clip.w = SMALL_SPRITE_SIZE; ui_p->small_clip.h = SMALL_SPRITE_SIZE; ui_p->small_clip.y = 0;
+  ui_p->small_base_clip_x = id * SMALL_SPRITE_SIZE * 4;
+
   ui_p->clip.w = SPRITE_W; ui_p->clip.h = SPRITE_H; ui_p->clip.y = 0;
   ui_p->base_clip_x = id * SPRITE_W * 4;
 
@@ -343,9 +375,28 @@ load_sprites(UI *ui)
   }
   ui->sprites[TEAMB_S].img = SDL_DisplayFormat(temp);
   SDL_FreeSurface(temp);
-
   SDL_SetColorKey(ui->sprites[TEAMB_S].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
 		  colorkey);
+
+  temp = SDL_LoadBMP(UI_TEAMA_S_BMP);
+  if (temp == NULL) { 
+    fprintf(stderr, "ERROR: loading teama_s.bmp: %s", SDL_GetError()); 
+    return -1;
+  }
+  ui->sprites[TEAMA_XS].img = SDL_DisplayFormat(temp);
+  SDL_FreeSurface(temp);
+  SDL_SetColorKey(ui->sprites[TEAMA_XS].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
+      colorkey);
+
+  temp = SDL_LoadBMP(UI_TEAMB_S_BMP);
+  if (temp == NULL) { 
+    fprintf(stderr, "ERROR: loading teamb_s.bmp: %s\n", SDL_GetError()); 
+    return -1;
+  }
+  ui->sprites[TEAMB_XS].img = SDL_DisplayFormat(temp);
+  SDL_FreeSurface(temp);
+  SDL_SetColorKey(ui->sprites[TEAMB_XS].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
+      colorkey);
 
   temp = SDL_LoadBMP(UI_FLOOR_BMP);
   if (temp == NULL) {
@@ -397,15 +448,35 @@ load_sprites(UI *ui)
   SDL_SetColorKey(ui->sprites[REDFLAG_S].img, SDL_SRCCOLORKEY | SDL_RLEACCEL,
 		  colorkey);
 
+  temp = SDL_LoadBMP(UI_REDFLAG_S_BMP);
+  if (temp == NULL) {
+    fprintf(stderr, "ERROR: loading redflag_s.bmp: %s", SDL_GetError()); 
+    return -1;
+  }
+  ui->sprites[REDFLAG_XS].img = SDL_DisplayFormat(temp);
+  SDL_FreeSurface(temp);
+  SDL_SetColorKey(ui->sprites[REDFLAG_XS].img, SDL_SRCCOLORKEY | SDL_RLEACCEL,
+      colorkey);
+
   temp = SDL_LoadBMP(UI_GREENFLAG_BMP);
   if (temp == NULL) {
-    fprintf(stderr, "ERROR: loading redflag.bmp: %s", SDL_GetError()); 
+    fprintf(stderr, "ERROR: loading greenflag.bmp: %s", SDL_GetError()); 
     return -1;
   }
   ui->sprites[GREENFLAG_S].img = SDL_DisplayFormat(temp);
   SDL_FreeSurface(temp);
   SDL_SetColorKey(ui->sprites[GREENFLAG_S].img, SDL_SRCCOLORKEY | SDL_RLEACCEL,
 		  colorkey);
+
+  temp = SDL_LoadBMP(UI_GREENFLAG_S_BMP);
+  if (temp == NULL) {
+    fprintf(stderr, "ERROR: loading greenflag_s.bmp: %s", SDL_GetError()); 
+    return -1;
+  }
+  ui->sprites[GREENFLAG_XS].img = SDL_DisplayFormat(temp);
+  SDL_FreeSurface(temp);
+  SDL_SetColorKey(ui->sprites[GREENFLAG_XS].img, SDL_SRCCOLORKEY | SDL_RLEACCEL,
+      colorkey);
 
   temp = SDL_LoadBMP(UI_JACKHAMMER_BMP);
   if (temp == NULL) {
@@ -416,6 +487,16 @@ load_sprites(UI *ui)
   SDL_FreeSurface(temp);
   SDL_SetColorKey(ui->sprites[JACKHAMMER_S].img, SDL_SRCCOLORKEY | SDL_RLEACCEL,
 		  colorkey);
+
+  temp = SDL_LoadBMP(UI_JACKHAMMER_S_BMP);
+  if (temp == NULL) {
+    fprintf(stderr, "ERROR: loading %s: %s", UI_JACKHAMMER_S_BMP, SDL_GetError()); 
+    return -1;
+  }
+  ui->sprites[JACKHAMMER_XS].img = SDL_DisplayFormat(temp);
+  SDL_FreeSurface(temp);
+  SDL_SetColorKey(ui->sprites[JACKHAMMER_XS].img, SDL_SRCCOLORKEY | SDL_RLEACCEL,
+      colorkey);
   
   return 1;
 }
@@ -429,7 +510,7 @@ draw_cell(UI *ui, SPRITE_INDEX si, SDL_Rect *t, SDL_Surface *s)
 
   ts = ui->sprites[si].img;
 
-  if ( ts && t->h == SPRITE_H && t->w == SPRITE_W) 
+  if ( (ts && t->h == SPRITE_H && t->w == SPRITE_W) || zoom > 1) 
     SDL_BlitSurface(ts, NULL, s, t);
 }
 
@@ -775,7 +856,7 @@ ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer, Client *C)
 
   ui_init_sdl(ui, h, w, 32);
 
-  myPlayer_init(ui, myPlayer);
+  //myPlayer_init(ui, myPlayer);
  
   otherPlayers_init(ui, game);
   
@@ -919,10 +1000,19 @@ paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_
         this_player.current_state = state;
         ////////
         pthread_mutex_lock(&this_player.lock);
-        t->y = (this_player.cellposition.y - start_y) * (t->h/zoom); t->x = (this_player.cellposition.x - start_x) * (t->w/zoom);
-        ui_team1Players[i]->clip.x = ui_team1Players[i]->base_clip_x +
-          pxSpriteOffSet(this_player.team, this_player.current_state);
-        SDL_BlitSurface(ui_team1Players[i]->img, &(ui_team1Players[i]->clip), ui->screen, t);
+
+        if (zoom > 1){
+            t->y = (this_player.cellposition.y - start_y) * SMALL_SPRITE_SIZE; t->x = (this_player.cellposition.x - start_x) * SMALL_SPRITE_SIZE;
+            ui_team1Players[i]->small_clip.x = ui_team1Players[i]->small_base_clip_x +
+            small_pxSpriteOffSet(this_player.team, this_player.current_state);
+            SDL_BlitSurface(ui_team1Players[i]->small_img, &(ui_team1Players[i]->small_clip), ui->screen, t);
+        }else{
+            t->y = (this_player.cellposition.y - start_y) * (t->h/zoom); t->x = (this_player.cellposition.x - start_x) * (t->w/zoom);
+            ui_team1Players[i]->clip.x = ui_team1Players[i]->base_clip_x +
+            pxSpriteOffSet(this_player.team, this_player.current_state);
+            SDL_BlitSurface(ui_team1Players[i]->img, &(ui_team1Players[i]->clip), ui->screen, t);
+        }
+
         pthread_mutex_unlock(&this_player.lock);
       }
     }
@@ -955,10 +1045,19 @@ paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_
         this_player.current_state = state;
         ////////
         pthread_mutex_lock(&this_player.lock);
-        t->y = (this_player.cellposition.y - start_y) * (t->h/zoom); t->x = (this_player.cellposition.x - start_x) * (t->w/zoom);
-        ui_team2Players[i]->clip.x = ui_team2Players[i]->base_clip_x +
-          pxSpriteOffSet(this_player.team, this_player.current_state);
-        SDL_BlitSurface(ui_team2Players[i]->img, &(ui_team2Players[i]->clip), ui->screen, t);
+
+          if (zoom > 1){
+            t->y = (this_player.cellposition.y - start_y) * SMALL_SPRITE_SIZE; t->x = (this_player.cellposition.x - start_x) * SMALL_SPRITE_SIZE;
+            ui_team2Players[i]->small_clip.x = ui_team2Players[i]->small_base_clip_x +
+              small_pxSpriteOffSet(this_player.team, this_player.current_state);
+            SDL_BlitSurface(ui_team2Players[i]->small_img, &(ui_team2Players[i]->small_clip), ui->screen, t);
+          }else{
+            t->y = (this_player.cellposition.y - start_y) * (t->h/zoom); t->x = (this_player.cellposition.x - start_x) * (t->w/zoom);
+            ui_team2Players[i]->clip.x = ui_team2Players[i]->base_clip_x +
+              pxSpriteOffSet(this_player.team, this_player.current_state);
+            SDL_BlitSurface(ui_team2Players[i]->img, &(ui_team2Players[i]->clip), ui->screen, t);
+          }
+
         pthread_mutex_unlock(&this_player.lock);
       }
     }
@@ -971,20 +1070,42 @@ paint_objects(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_
   Game *gameState = (Game *)game;
 
   int i;
-  for (i = 0; i< NUMOFOBJECTS ; i++){
-    Object this_object = gameState->map.objects[i];
-    if(this_object.cellposition.x >= start_x && this_object.cellposition.x <= end_x && this_object.cellposition.y >= start_y && this_object.cellposition.y <= end_y){
 
-      t->y = (this_object.cellposition.y - start_y) * (t->h/zoom); t->x = (this_object.cellposition.x - start_x) * (t->w/zoom);
+  if (zoom > 1){
+    for (i = 0; i< NUMOFOBJECTS ; i++){
+      Object this_object = gameState->map.objects[i];
+      if(this_object.cellposition.x >= start_x && this_object.cellposition.x <= end_x && this_object.cellposition.y >= start_y && this_object.cellposition.y <= end_y){
 
-      if(this_object.type == JACKHAMMER1 || this_object.type == JACKHAMMER2){
-        draw_cell(ui, JACKHAMMER_S, t, ui->screen);
+        t->y = (this_object.cellposition.y - start_y) * SMALL_SPRITE_SIZE; t->x = (this_object.cellposition.x - start_x) * SMALL_SPRITE_SIZE;
+
+        if(this_object.type == JACKHAMMER1 || this_object.type == JACKHAMMER2){
+          draw_cell(ui, JACKHAMMER_XS, t, ui->screen);
+          fprintf(stderr, "PAINT HAMMER at: %d, %d\n", t->x, t->y);
+        }
+        if(this_object.type == FLAG_1){
+          draw_cell(ui, REDFLAG_XS, t, ui->screen);
+        }
+        if(this_object.type == FLAG_2){
+          draw_cell(ui, GREENFLAG_XS, t, ui->screen);
+        }
       }
-      if(this_object.type == FLAG_1){
-        draw_cell(ui, REDFLAG_S, t, ui->screen);
-      }
-      if(this_object.type == FLAG_2){
-        draw_cell(ui, GREENFLAG_S, t, ui->screen);
+    }
+  }else{  
+    for (i = 0; i< NUMOFOBJECTS ; i++){
+      Object this_object = gameState->map.objects[i];
+      if(this_object.cellposition.x >= start_x && this_object.cellposition.x <= end_x && this_object.cellposition.y >= start_y && this_object.cellposition.y <= end_y){
+
+        t->y = (this_object.cellposition.y - start_y) * (t->h/zoom); t->x = (this_object.cellposition.x - start_x) * (t->w/zoom);
+
+        if(this_object.type == JACKHAMMER1 || this_object.type == JACKHAMMER2){
+          draw_cell(ui, JACKHAMMER_S, t, ui->screen);
+        }
+        if(this_object.type == FLAG_1){
+          draw_cell(ui, REDFLAG_S, t, ui->screen);
+        }
+        if(this_object.type == FLAG_2){
+          draw_cell(ui, GREENFLAG_S, t, ui->screen);
+        }
       }
     }
   }
