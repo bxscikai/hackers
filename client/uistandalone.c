@@ -674,7 +674,7 @@ ui_pan(UI *ui, int xdir, int ydir, void *game, Player *myPlayer)
   fprintf(stderr, "%s:\n", __func__);
 
   int min = (WINDOW_SIZE/2) * zoom;
-  int max = dimension - ((WINDOW_SIZE/2) * zoom);
+  int max = dimension - ((WINDOW_SIZE/2) * zoom) + 1;
 
   int new_coord_x = pan_coords_x + xdir;
   int new_coord_y = pan_coords_y + ydir;
