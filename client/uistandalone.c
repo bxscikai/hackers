@@ -30,22 +30,23 @@
 
 /* A lot of this code comes from http://www.libsdl.org/cgi/docwiki.cgi */
 
-/* Forward declaration of some dummy player code */
-static void myPlayer_init(UI *ui, Player *myPlayer);
-
 static void paint_objects(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_y, void *game);
 
-static void otherPlayers_init(UI *ui, void *game);
+static void players_init(UI *ui, void *game);
 static void paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_y, void *game);
 
 #define SPRITE_H 32
 #define SPRITE_W 32
 #define SMALL_SPRITE_SIZE 16
 
-#define UI_FLOOR_BMP "floorGREEN.bmp"
-#define UI_FLOOR2_BMP "floorRED.bmp"
+#define UI_FLOOR_BMP "floorRED.bmp"
+#define UI_FLOOR_S_BMP "floorRED_s.bmp"
+#define UI_FLOOR2_BMP "floorGREEN.bmp"
+#define UI_FLOOR2_S_BMP "floorGREEN_s.bmp"
 #define UI_REDWALL_BMP "redwall.bmp"
+#define UI_REDWALL_S_BMP "redwall_s.bmp"
 #define UI_GREENWALL_BMP "greenwall.bmp"
+#define UI_GREENWALL_S_BMP "greenwall_s.bmp"
 #define UI_TEAMA_BMP "teama.bmp"
 #define UI_TEAMB_BMP "teamb.bmp"
 #define UI_TEAMA_S_BMP "teama_s.bmp"
@@ -400,7 +401,7 @@ load_sprites(UI *ui)
 
   temp = SDL_LoadBMP(UI_FLOOR_BMP);
   if (temp == NULL) {
-    fprintf(stderr, "ERROR: loading floor.bmp %s\n", SDL_GetError()); 
+    fprintf(stderr, "ERROR: loading floorRED.bmp %s\n", SDL_GetError()); 
     return -1;
   }
   ui->sprites[FLOOR_S].img = SDL_DisplayFormat(temp);
@@ -408,14 +409,34 @@ load_sprites(UI *ui)
   SDL_SetColorKey(ui->sprites[FLOOR_S].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
 		  colorkey);
 
+  temp = SDL_LoadBMP(UI_FLOOR_S_BMP);
+  if (temp == NULL) {
+    fprintf(stderr, "ERROR: loading floorRED_s.bmp %s\n", SDL_GetError()); 
+    return -1;
+  }
+  ui->sprites[FLOOR_XS].img = SDL_DisplayFormat(temp);
+  SDL_FreeSurface(temp);
+  SDL_SetColorKey(ui->sprites[FLOOR_XS].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
+      colorkey);
+
   temp = SDL_LoadBMP(UI_FLOOR2_BMP);
   if (temp == NULL) {
-    fprintf(stderr, "ERROR: loading floor2.bmp %s\n", SDL_GetError()); 
+    fprintf(stderr, "ERROR: loading floorGREEN.bmp %s\n", SDL_GetError()); 
     return -1;
   }
   ui->sprites[FLOOR2_S].img = SDL_DisplayFormat(temp);
   SDL_FreeSurface(temp);
   SDL_SetColorKey(ui->sprites[FLOOR2_S].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
+      colorkey);
+
+  temp = SDL_LoadBMP(UI_FLOOR2_S_BMP);
+  if (temp == NULL) {
+    fprintf(stderr, "ERROR: loading floorGREEN_s.bmp %s\n", SDL_GetError()); 
+    return -1;
+  }
+  ui->sprites[FLOOR2_XS].img = SDL_DisplayFormat(temp);
+  SDL_FreeSurface(temp);
+  SDL_SetColorKey(ui->sprites[FLOOR2_XS].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
       colorkey);
 
   temp = SDL_LoadBMP(UI_REDWALL_BMP);
@@ -428,6 +449,16 @@ load_sprites(UI *ui)
   SDL_SetColorKey(ui->sprites[REDWALL_S].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
 		  colorkey);
 
+  temp = SDL_LoadBMP(UI_REDWALL_S_BMP);
+  if (temp == NULL) { 
+    fprintf(stderr, "ERROR: loading redwall_s.bmp: %s\n", SDL_GetError());
+    return -1;
+  }
+  ui->sprites[REDWALL_XS].img = SDL_DisplayFormat(temp);
+  SDL_FreeSurface(temp);
+  SDL_SetColorKey(ui->sprites[REDWALL_XS].img, SDL_SRCCOLORKEY | SDL_RLEACCEL, 
+      colorkey);
+
   temp = SDL_LoadBMP(UI_GREENWALL_BMP);
   if (temp == NULL) {
     fprintf(stderr, "ERROR: loading greenwall.bmp: %s", SDL_GetError()); 
@@ -437,6 +468,16 @@ load_sprites(UI *ui)
   SDL_FreeSurface(temp);
   SDL_SetColorKey(ui->sprites[GREENWALL_S].img, SDL_SRCCOLORKEY | SDL_RLEACCEL,
 		  colorkey);
+
+  temp = SDL_LoadBMP(UI_GREENWALL_S_BMP);
+  if (temp == NULL) {
+    fprintf(stderr, "ERROR: loading greenwall_s.bmp: %s", SDL_GetError()); 
+    return -1;
+  }
+  ui->sprites[GREENWALL_XS].img = SDL_DisplayFormat(temp);
+  SDL_FreeSurface(temp);
+  SDL_SetColorKey(ui->sprites[GREENWALL_XS].img, SDL_SRCCOLORKEY | SDL_RLEACCEL,
+      colorkey);
 
   temp = SDL_LoadBMP(UI_REDFLAG_BMP);
   if (temp == NULL) {
@@ -549,9 +590,9 @@ ui_paintmap(UI *ui, void *game, Player *myPlayer, PAINT_TYPE type)
   int max = maze->dimension.x - ((WINDOW_SIZE/2) * zoom);
   int min_window_start = 0;
   int min_window_end = (WINDOW_SIZE - 1) * zoom;
-  int max_window_start = maze->dimension.x - ((WINDOW_SIZE - 1) * zoom) - 1;
+  int max_window_start = maze->dimension.x - (WINDOW_SIZE * zoom);
   int max_window_end = maze->dimension.x - 1;
-  int middle_to_end = ((WINDOW_SIZE/2 - 1) * zoom);
+  int middle_to_end = (WINDOW_SIZE/2) * zoom - 1;
 
   fprintf(stderr, "Painting map...\n");
 
@@ -603,24 +644,46 @@ ui_paintmap(UI *ui, void *game, Player *myPlayer, PAINT_TYPE type)
     end_x = player_x + middle_to_end;
   }
 
-  for (i= start_y, t.y=0; i<= end_y; i++) {
-    for (j= start_x, t.x=0; j<= end_x; j++) {
-      int cell_type = maze->mapBody[i][j].type;
+  if (zoom > 1){
+    for (i= start_y, t.y=0; i<= end_y; i++) {
+      for (j= start_x, t.x=0; j<= end_x; j++) {
+        int cell_type = maze->mapBody[i][j].type;
 
-      if(cell_type == FLOOR_1 || cell_type == HOME_1 || cell_type == JAIL_1){
-        draw_cell(ui, FLOOR_S, &t, ui->screen); 
-      }else if (cell_type == FLOOR_2 || cell_type == HOME_2 || cell_type == JAIL_2){
-        draw_cell(ui, FLOOR2_S, &t, ui->screen);
-      }else if (cell_type == WALL_FIXED){
-        draw_cell(ui, GREENWALL_S, &t, ui->screen);
-      }else if (cell_type == WALL_UNFIXED){
-        draw_cell(ui, REDWALL_S, &t, ui->screen);
-      } else{
-        draw_cell(ui, FLOOR_S, &t, ui->screen);
+        if(cell_type == FLOOR_1 || cell_type == HOME_1 || cell_type == JAIL_1){
+          draw_cell(ui, FLOOR_XS, &t, ui->screen); 
+        }else if (cell_type == FLOOR_2 || cell_type == HOME_2 || cell_type == JAIL_2){
+          draw_cell(ui, FLOOR2_XS, &t, ui->screen);
+        }else if (cell_type == WALL_FIXED){
+          draw_cell(ui, GREENWALL_XS, &t, ui->screen);
+        }else if (cell_type == WALL_UNFIXED){
+          draw_cell(ui, REDWALL_XS, &t, ui->screen);
+        } else{
+          draw_cell(ui, FLOOR_S, &t, ui->screen);
+        }
+        t.x += t.w;
       }
-      t.x += (t.w/zoom);
+      t.y += t.h;
     }
-    t.y += (t.h/zoom);
+  }else{
+    for (i= start_y, t.y=0; i<= end_y; i++) {
+      for (j= start_x, t.x=0; j<= end_x; j++) {
+        int cell_type = maze->mapBody[i][j].type;
+
+        if(cell_type == FLOOR_1 || cell_type == HOME_1 || cell_type == JAIL_1){
+          draw_cell(ui, FLOOR_S, &t, ui->screen); 
+        }else if (cell_type == FLOOR_2 || cell_type == HOME_2 || cell_type == JAIL_2){
+          draw_cell(ui, FLOOR2_S, &t, ui->screen);
+        }else if (cell_type == WALL_FIXED){
+          draw_cell(ui, GREENWALL_S, &t, ui->screen);
+        }else if (cell_type == WALL_UNFIXED){
+          draw_cell(ui, REDWALL_S, &t, ui->screen);
+        } else{
+          draw_cell(ui, FLOOR_S, &t, ui->screen);
+        }
+        t.x += (t.w/zoom);
+      }
+      t.y += (t.h/zoom);
+    }
   }
 
   fprintf(stderr, "start x: %d, end x: %d, start y: %d, end y: %d\n", start_x, end_x, start_y, end_y);
@@ -755,7 +818,7 @@ ui_pan(UI *ui, int xdir, int ydir, void *game, Player *myPlayer)
   fprintf(stderr, "%s:\n", __func__);
 
   int min = (WINDOW_SIZE/2) * zoom;
-  int max = dimension - ((WINDOW_SIZE/2) * zoom) + 1;
+  int max = dimension - ((WINDOW_SIZE/2) * zoom);
 
   int new_coord_x = pan_coords_x + xdir;
   int new_coord_y = pan_coords_y + ydir;
@@ -855,10 +918,8 @@ ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer, Client *C)
   assert(ui);
 
   ui_init_sdl(ui, h, w, 32);
-
-  //myPlayer_init(ui, myPlayer);
  
-  otherPlayers_init(ui, game);
+  players_init(ui, game);
   
   ui_paintmap(ui, game, myPlayer, NOT_PAN);
   
@@ -882,34 +943,8 @@ ui_init(UI **ui)
 
 }
 
-static void 
-myPlayer_init(UI *ui, Player *myPlayer) 
-{
-  int state = 0;
-  // set what state the player is
-  if (myPlayer->canMove == 1){
-    state = NORMAL;
-  }
-
-  if (myPlayer->canMove == 0){
-    state = JAIL;
-  }
-
-  if (myPlayer->inventory.type == FLAG_1){
-    state = RED_FLAG;
-  }
-
-  if (myPlayer->inventory.type == FLAG_2){
-    state = GREEN_FLAG;
-  }
-
-  myPlayer->current_state = state;
-  pthread_mutex_init(&(myPlayer->lock), NULL);
-  ui_uip_init(ui, &uiplayer, myPlayer->playerID, myPlayer->team);
-}
-
 static void
-otherPlayers_init(UI *ui, void *game)
+players_init(UI *ui, void *game)
 {
    Game *gameState = (Game *)game;
   
@@ -1080,7 +1115,6 @@ paint_objects(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_
 
         if(this_object.type == JACKHAMMER1 || this_object.type == JACKHAMMER2){
           draw_cell(ui, JACKHAMMER_XS, t, ui->screen);
-          fprintf(stderr, "PAINT HAMMER at: %d, %d\n", t->x, t->y);
         }
         if(this_object.type == FLAG_1){
           draw_cell(ui, REDFLAG_XS, t, ui->screen);
