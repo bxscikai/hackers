@@ -1,0 +1,3 @@
+#!/bin/sh
+#AddTest--Adds test to dummyfile
+echo test >> DUMMYFILE
