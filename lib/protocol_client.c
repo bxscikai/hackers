@@ -25,6 +25,8 @@
 #include <sys/types.h>
 #include <strings.h>
 #include <errno.h>
+#include <time.h>
+#include <sys/time.h>
 
 
 #include "protocol.h"
@@ -226,6 +228,7 @@ int
 proto_client_connect(Proto_Client_Handle ch, char *host, PortType port)
 {
   Proto_Client *c = (Proto_Client *)ch;
+
   c->rpc_session.client = c;
   c->event_session.client = c;
 
@@ -355,8 +358,7 @@ proto_client_pickup(Proto_Client_Handle ch)
 {
   Proto_Client *client = ch;
   
-
-    if (client->game.status != IN_PROGRESS) {
+  if (client->game.status != IN_PROGRESS) {
       fprintf(stderr, "The game hasn't started yet!\n");
       return 1;
   }
@@ -558,16 +560,6 @@ proto_server_mt_game_update_handler(Proto_Session *s)
   if (DISPLAYUI==1)
     Update_UI(player, &c->game);
 
-  // TIFFANY, THIS IS WHERE U UPDATE GAME UI FOR USER ///////////
-  // YOU CAN ACCESS THE GAME STRUCT IN c->game
-  // PLAYERS: c->game.Team1_Players, c->game.Team2_Players
-  // ITEMS:   c->game.map.objects
-  // Command instructions
-  // rh = hello, register yourself
-  // start = start game, must be host
-  // w,a,s,d = move up,left,down,right respectively
-  //////////////////////////////////////////////////////////////
-
   return 1;
 }
 
@@ -613,6 +605,12 @@ proto_server_mt_rep_start_game(Proto_Session *s)
     }
   }
 
+  // Game started, we can wander now
+  // if (STRESS_TEST==1) {
+  //   fprintf(stderr, "Starting to wonder\n");    
+  //   Wander(c->client,0);
+  // }
+
   return 1;
 }
 
@@ -631,6 +629,14 @@ proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
     fprintf(stderr, "Move failed, cannot move into another player\n");  
   else if (s->rhdr.returnCode==RPC_IN_JAIL)
     fprintf(stderr, "Move failed, cannot move while in jail\n");
+
+  struct timeval rpc_end;
+  gettimeofday(&rpc_end, NULL);
+
+  double difference = (rpc_end.tv_sec*1000000 + rpc_end.tv_usec) - (rpc_start.tv_sec*1000000 + rpc_start.tv_usec);
+
+  fprintf(stderr, "Time elapsed for move RPC: %.f microseconds\n", difference);
+
   return 1;
 }
 
@@ -648,6 +654,14 @@ proto_server_mt_rpc_rep_pickup_handler(Proto_Session *s)
     fprintf(stderr, "Pickup Fail: No item to pickup\n");
   else if (s->rhdr.returnCode==RPC_PICKUP_FLAGONSIDE)
     fprintf(stderr, "Pickup Fail: Cannot pick up your own flag when on your own side\n");
+
+  struct timeval rpc_pickup_end;
+  gettimeofday(&rpc_pickup_end, NULL);
+
+  double difference = (rpc_pickup_end.tv_sec*1000000 + rpc_pickup_end.tv_usec) - (rpc_pickup_start.tv_sec*1000000 + rpc_pickup_start.tv_usec);
+
+  fprintf(stderr, "Time elapsed for pickup RPC: %.f microseconds\n", difference);
+
   return 1;
 }
 

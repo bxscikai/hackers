@@ -13,6 +13,7 @@ typedef struct ClientState  {
 } Client;
 
 
+void Wander(Client *C, int direction);
 void Update_UI(Player *myPlayer, void *game);
 void launchUI(Client *client);
 #endif

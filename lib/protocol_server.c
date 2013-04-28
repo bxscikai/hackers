@@ -40,7 +40,6 @@ struct {
   FDType   RPCListenFD;
   PortType RPCPort;
 
-
   FDType             EventListenFD;
   PortType           EventPort;
   pthread_t          EventListenTid;
@@ -1337,14 +1336,12 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   proto_session_hdr_marshall(s, &h);
   proto_session_send_msg(s, 1);
 
-  // Timing Start
-  
-
   proto_server_post_event(PROTO_MT_EVENT_GAME_UPDATE);
 
-  // Timing End
 
-  fprintf(stderr, "Broadcasting took %f seconds\n", cend);
+  // Timing End
+  // fprintf(stderr, "Broadcasting took %f seconds\n", cend);
+
 
   return 1;
 }

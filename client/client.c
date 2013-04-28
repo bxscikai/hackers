@@ -21,6 +21,8 @@
 *****************************************************************************/
 
 #include <stdio.h>
+#include <time.h>
+#include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -40,6 +42,10 @@ UI *ui;
 #define INPUTSIZE 50 
 #define FASTINPUTMODE 1
 
+// For documenting speed of various game functions
+struct timeval rpc_start;
+struct timeval rpc_pickup_start;
+
 struct Globals {
   char host[STRLEN];
   PortType port;
@@ -47,19 +53,34 @@ struct Globals {
 
 extern void Update_UI(Player *myPlayer, void *game)
 {
+  struct timeval ui_start;
+  struct timeval ui_end;
+  gettimeofday(&ui_start, NULL);
+
   ui_repaint(ui, game, myPlayer);
+
+  gettimeofday(&ui_end, NULL);
+
+  double difference = (ui_end.tv_sec*1000 + ui_end.tv_usec*0.001) - (ui_start.tv_sec*1000 + ui_start.tv_usec*0.001);
+  fprintf(stderr, "Time elapsed for UI: %.f milliseconds\n", difference);
 }
 
 static int
 clientInit(Client *C)
 {
   bzero(C, sizeof(Client));
+  // Proto_Client *client = C->ph;
+
 
   // initialize the client protocol subsystem
   if (proto_client_init(&(C->ph))<0) {
     fprintf(stderr, "client: main: ERROR initializing proto system\n");
     return -1;
   }
+
+  Proto_Client *client = C->ph;
+  client->client = C;
+
   return 1;
 }
 
@@ -146,10 +167,12 @@ doRPCCmd(Client *C, char c)
     }
     break;
   case 'm':
+    gettimeofday(&rpc_start, NULL);
     if (PROTO_PRINT_DUMPS==1) printf("move: rc=%x\n", rc);
     rc = proto_client_move(C->ph, c);
     break;
   case 'f':
+    gettimeofday(&rpc_pickup_start, NULL);  
     if (PROTO_PRINT_DUMPS==1) printf("pickup: rc=%x\n", rc);
     rc = proto_client_pickup(C->ph);
     break;
@@ -561,7 +584,6 @@ main(int argc, char **argv)
     Player *me = getPlayer(&client->game, client->playerID);
 
     doRPCCmd(&c, 'q'); //query for the map
-
     ui_main_loop(ui, (32 * WINDOW_SIZE), (32 * WINDOW_SIZE), &client->game, me, &c);
 
   }
@@ -575,27 +597,27 @@ main(int argc, char **argv)
 void
 launchUI(Client *c) {
 
-  if (DISPLAYUI==1) {
+  // if (DISPLAYUI==1) {
 
-    //window will be consistently 20x20
-    pthread_t tid;
-    pthread_create(&tid, NULL, shell, NULL);
+  //   //window will be consistently 20x20
+  //   pthread_t tid;
+  //   pthread_create(&tid, NULL, shell, NULL);
 
-    // Init for UI stuff
-    tty_init(STDIN_FILENO);
+  //   // Init for UI stuff
+  //   tty_init(STDIN_FILENO);
 
-    ui_init(&(ui));
+  //   ui_init(&(ui));
 
-    // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
-    // SO JUMP THROW HOOPS :-(
-    Proto_Client *client = (Proto_Client *) c->ph;
-    Player *me = getPlayer(&client->game, client->playerID);
+  //   // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
+  //   // SO JUMP THROW HOOPS :-(
+  //   Proto_Client *client = (Proto_Client *) c->ph;
+  //   Player *me = getPlayer(&client->game, client->playerID);
 
-    doRPCCmd(c, 'q'); //query for the map
+  //   doRPCCmd(c, 'q'); //query for the map
 
-    ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me, &c);
+  //   ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me, &c);
 
-  }
+  // }
 
 }
 
@@ -629,6 +651,11 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       client->rpc_session.shdr.returnCode = UP;
     
       doRPCCmd(C, 'm');
+      return 2;
+    }
+    if (sym == SDLK_t && mod == KMOD_NONE)  {  
+      Wander(C, 0);
+
       return 2;
     }
     if (sym == SDLK_DOWN && mod == KMOD_NONE)  {
