@@ -26,6 +26,7 @@
 #include <strings.h>
 #include <errno.h>
 #include <pthread.h>
+#include <time.h>
 
 #include "net.h"
 #include "protocol.h"
@@ -229,7 +230,7 @@ proto_server_post_event(Proto_Msg_Types mt)
           Proto_Server.EventSubscribers[i]=-1;
           Proto_Server.EventNumSubscribers--;
           Proto_Server.session_lost_handler(&Proto_Server.EventSession);
-      } 
+      }
 
       // FIXME: add ack message here to ensure that game is updated 
       // correctly everywhere... at the risk of making server dependent
@@ -1052,7 +1053,7 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
 		int i = 0;
 		while (i < MAX_NUM_PLAYERS)
 		{
-			if (Proto_Server.game.Team2_Players[i].canMove == 1)
+			if (Proto_Server.game.Team2_Players[i].canMove == 1 && (Proto_Server.game.map.mapBody[Proto_Server.game.Team2_Players[i].cellposition.y][Proto_Server.game.Team2_Players[i].cellposition.x].type == FLOOR_1 || Proto_Server.game.map.mapBody[Proto_Server.game.Team2_Players[i].cellposition.y][Proto_Server.game.Team2_Players[i].cellposition.x].type == HOME_1))
 			{
 			//Up
 			if (Proto_Server.game.Team2_Players[i].cellposition.x == player->cellposition.x && Proto_Server.game.Team2_Players[i].cellposition.y == (player->cellposition.y - 1))
@@ -1167,7 +1168,7 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
                 int i = 0;
                 while (i < MAX_NUM_PLAYERS)
                 {
-			if (Proto_Server.game.Team1_Players[i].canMove == 1)
+			if (Proto_Server.game.Team1_Players[i].canMove == 1 && (Proto_Server.game.map.mapBody[Proto_Server.game.Team1_Players[i].cellposition.y][Proto_Server.game.Team1_Players[i].cellposition.x].type == FLOOR_2 || Proto_Server.game.map.mapBody[Proto_Server.game.Team1_Players[i].cellposition.y][Proto_Server.game.Team1_Players[i].cellposition.x].type == HOME_2))
 			{
 			//Up
                         if (Proto_Server.game.Team1_Players[i].cellposition.x == player->cellposition.x && Proto_Server.game.Team1_Players[i].cellposition.y == (player->cellposition.y - 1))
@@ -1336,7 +1337,14 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   proto_session_hdr_marshall(s, &h);
   proto_session_send_msg(s, 1);
 
+  // Timing Start
+  
+
   proto_server_post_event(PROTO_MT_EVENT_GAME_UPDATE);
+
+  // Timing End
+
+  fprintf(stderr, "Broadcasting took %f seconds\n", cend);
 
   return 1;
 }
