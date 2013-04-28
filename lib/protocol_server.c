@@ -1052,7 +1052,7 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
 		int i = 0;
 		while (i < MAX_NUM_PLAYERS)
 		{
-			if (Proto_Server.game.Team2_Players[i].canMove == 1)
+			if (Proto_Server.game.Team2_Players[i].canMove == 1 && (Proto_Server.game.map.mapBody[Proto_Server.game.Team2_Players[i].cellposition.y][Proto_Server.game.Team2_Players[i].cellposition.x].type == FLOOR_1 || Proto_Server.game.map.mapBody[Proto_Server.game.Team2_Players[i].cellposition.y][Proto_Server.game.Team2_Players[i].cellposition.x].type == HOME_1))
 			{
 			//Up
 			if (Proto_Server.game.Team2_Players[i].cellposition.x == player->cellposition.x && Proto_Server.game.Team2_Players[i].cellposition.y == (player->cellposition.y - 1))
@@ -1167,7 +1167,7 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
                 int i = 0;
                 while (i < MAX_NUM_PLAYERS)
                 {
-			if (Proto_Server.game.Team1_Players[i].canMove == 1)
+			if (Proto_Server.game.Team1_Players[i].canMove == 1 && (Proto_Server.game.map.mapBody[Proto_Server.game.Team1_Players[i].cellposition.y][Proto_Server.game.Team1_Players[i].cellposition.x].type == FLOOR_2 || Proto_Server.game.map.mapBody[Proto_Server.game.Team1_Players[i].cellposition.y][Proto_Server.game.Team1_Players[i].cellposition.x].type == HOME_2))
 			{
 			//Up
                         if (Proto_Server.game.Team1_Players[i].cellposition.x == player->cellposition.x && Proto_Server.game.Team1_Players[i].cellposition.y == (player->cellposition.y - 1))
