@@ -27,7 +27,10 @@
 #include "protocol_session.h"
 #include <pthread.h>
 
+
 typedef struct {
+
+  void *  client;   // Pointer to client
   Proto_Session rpc_session;
   Proto_Session event_session;
   pthread_t EventHandlerTid;

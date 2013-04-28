@@ -69,12 +69,18 @@ static int
 clientInit(Client *C)
 {
   bzero(C, sizeof(Client));
+  // Proto_Client *client = C->ph;
+
 
   // initialize the client protocol subsystem
   if (proto_client_init(&(C->ph))<0) {
     fprintf(stderr, "client: main: ERROR initializing proto system\n");
     return -1;
   }
+
+  Proto_Client *client = C->ph;
+  client->client = C;
+
   return 1;
 }
 
@@ -578,7 +584,6 @@ main(int argc, char **argv)
     Player *me = getPlayer(&client->game, client->playerID);
 
     doRPCCmd(&c, 'q'); //query for the map
-
     ui_main_loop(ui, (32 * WINDOW_SIZE), (32 * WINDOW_SIZE), &client->game, me, &c);
 
   }
@@ -592,27 +597,27 @@ main(int argc, char **argv)
 void
 launchUI(Client *c) {
 
-  if (DISPLAYUI==1) {
+  // if (DISPLAYUI==1) {
 
-    //window will be consistently 20x20
-    pthread_t tid;
-    pthread_create(&tid, NULL, shell, NULL);
+  //   //window will be consistently 20x20
+  //   pthread_t tid;
+  //   pthread_create(&tid, NULL, shell, NULL);
 
-    // Init for UI stuff
-    tty_init(STDIN_FILENO);
+  //   // Init for UI stuff
+  //   tty_init(STDIN_FILENO);
 
-    ui_init(&(ui));
+  //   ui_init(&(ui));
 
-    // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
-    // SO JUMP THROW HOOPS :-(
-    Proto_Client *client = (Proto_Client *) c->ph;
-    Player *me = getPlayer(&client->game, client->playerID);
+  //   // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
+  //   // SO JUMP THROW HOOPS :-(
+  //   Proto_Client *client = (Proto_Client *) c->ph;
+  //   Player *me = getPlayer(&client->game, client->playerID);
 
-    doRPCCmd(c, 'q'); //query for the map
+  //   doRPCCmd(c, 'q'); //query for the map
 
-    ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me, &c);
+  //   ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me, &c);
 
-  }
+  // }
 
 }
 
@@ -646,6 +651,11 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       client->rpc_session.shdr.returnCode = UP;
     
       doRPCCmd(C, 'm');
+      return 2;
+    }
+    if (sym == SDLK_t && mod == KMOD_NONE)  {  
+      Wander(C, 0);
+
       return 2;
     }
     if (sym == SDLK_DOWN && mod == KMOD_NONE)  {
