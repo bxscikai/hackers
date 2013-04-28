@@ -26,6 +26,7 @@
 #include <strings.h>
 #include <errno.h>
 #include <pthread.h>
+#include <time.h>
 
 #include "net.h"
 #include "protocol.h"
@@ -229,7 +230,7 @@ proto_server_post_event(Proto_Msg_Types mt)
           Proto_Server.EventSubscribers[i]=-1;
           Proto_Server.EventNumSubscribers--;
           Proto_Server.session_lost_handler(&Proto_Server.EventSession);
-      } 
+      }
 
       // FIXME: add ack message here to ensure that game is updated 
       // correctly everywhere... at the risk of making server dependent
@@ -1336,7 +1337,14 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   proto_session_hdr_marshall(s, &h);
   proto_session_send_msg(s, 1);
 
+  // Timing Start
+  
+
   proto_server_post_event(PROTO_MT_EVENT_GAME_UPDATE);
+
+  // Timing End
+
+  fprintf(stderr, "Broadcasting took %f seconds\n", cend);
 
   return 1;
 }
