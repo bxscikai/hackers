@@ -17,6 +17,7 @@
 
 // For documenting speed of various game functions
 extern struct timeval rpc_start;
+extern struct timeval rpc_pickup_start;
 
 // Defines data structures used for the game
 

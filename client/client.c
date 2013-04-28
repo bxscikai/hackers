@@ -44,6 +44,7 @@ UI *ui;
 
 // For documenting speed of various game functions
 struct timeval rpc_start;
+struct timeval rpc_pickup_start;
 
 struct Globals {
   char host[STRLEN];
@@ -57,7 +58,7 @@ extern void Update_UI(Player *myPlayer, void *game)
   gettimeofday(&ui_start, NULL);
 
   ui_repaint(ui, game, myPlayer);
-  
+
   gettimeofday(&ui_end, NULL);
 
   double difference = (ui_end.tv_sec*1000 + ui_end.tv_usec*0.001) - (ui_start.tv_sec*1000 + ui_start.tv_usec*0.001);
@@ -164,7 +165,8 @@ doRPCCmd(Client *C, char c)
     if (PROTO_PRINT_DUMPS==1) printf("move: rc=%x\n", rc);
     rc = proto_client_move(C->ph, c);
     break;
-  case 'f':  
+  case 'f':
+    gettimeofday(&rpc_pickup_start, NULL);  
     if (PROTO_PRINT_DUMPS==1) printf("pickup: rc=%x\n", rc);
     rc = proto_client_pickup(C->ph);
     break;
