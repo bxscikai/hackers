@@ -8,7 +8,7 @@
 #define NUMOFOBJECTS 4
 #define DISPLAYUI 1
 // Help debug game by turning off collision detection
-#define CANMOVE_THROUGH_WALL 1  
+#define CANMOVE_THROUGH_WALL 1 
 // Control size of UI window
 #define WINDOW_SIZE 20
 
