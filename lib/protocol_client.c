@@ -25,6 +25,8 @@
 #include <sys/types.h>
 #include <strings.h>
 #include <errno.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "protocol.h"
 #include "protocol_utils.h"
@@ -557,16 +559,6 @@ proto_server_mt_game_update_handler(Proto_Session *s)
   if (DISPLAYUI==1)
     Update_UI(player, &c->game);
 
-  // TIFFANY, THIS IS WHERE U UPDATE GAME UI FOR USER ///////////
-  // YOU CAN ACCESS THE GAME STRUCT IN c->game
-  // PLAYERS: c->game.Team1_Players, c->game.Team2_Players
-  // ITEMS:   c->game.map.objects
-  // Command instructions
-  // rh = hello, register yourself
-  // start = start game, must be host
-  // w,a,s,d = move up,left,down,right respectively
-  //////////////////////////////////////////////////////////////
-
   return 1;
 }
 
@@ -630,6 +622,14 @@ proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
     fprintf(stderr, "Move failed, cannot move into another player\n");  
   else if (s->rhdr.returnCode==RPC_IN_JAIL)
     fprintf(stderr, "Move failed, cannot move while in jail\n");
+
+  struct timeval rpc_end;
+  gettimeofday(&rpc_end, NULL);
+
+  double difference = (rpc_end.tv_sec*1000000 + rpc_end.tv_usec) - (rpc_start.tv_sec*1000000 + rpc_start.tv_usec);
+
+  fprintf(stderr, "Time elapsed for RPC: %.f microseconds\n", difference);
+
   return 1;
 }
 

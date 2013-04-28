@@ -1,6 +1,9 @@
 
 /////////////////// maze.h /////////////////// 
 
+#include <time.h>
+#include <sys/time.h>
+
 // Define constants
 #define MAX_MAP_DIMENSIONS 200   
 #define MAX_NUM_PLAYERS 10
@@ -11,6 +14,9 @@
 #define CANMOVE_THROUGH_WALL 1  
 // Control size of UI window
 #define WINDOW_SIZE 20
+
+// For documenting speed of various game functions
+extern struct timeval rpc_start;
 
 // Defines data structures used for the game
 

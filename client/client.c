@@ -21,6 +21,8 @@
 *****************************************************************************/
 
 #include <stdio.h>
+#include <time.h>
+#include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -40,6 +42,9 @@ UI *ui;
 #define INPUTSIZE 50 
 #define FASTINPUTMODE 1
 
+// For documenting speed of various game functions
+struct timeval rpc_start;
+
 struct Globals {
   char host[STRLEN];
   PortType port;
@@ -47,7 +52,16 @@ struct Globals {
 
 extern void Update_UI(Player *myPlayer, void *game)
 {
+  struct timeval ui_start;
+  struct timeval ui_end;
+  gettimeofday(&ui_start, NULL);
+
   ui_repaint(ui, game, myPlayer);
+  
+  gettimeofday(&ui_end, NULL);
+
+  double difference = (ui_end.tv_sec*1000 + ui_end.tv_usec*0.001) - (ui_start.tv_sec*1000 + ui_start.tv_usec*0.001);
+  fprintf(stderr, "Time elapsed for UI: %.f milliseconds\n", difference);
 }
 
 static int
@@ -146,10 +160,11 @@ doRPCCmd(Client *C, char c)
     }
     break;
   case 'm':
+    gettimeofday(&rpc_start, NULL);
     if (PROTO_PRINT_DUMPS==1) printf("move: rc=%x\n", rc);
     rc = proto_client_move(C->ph, c);
     break;
-  case 'f':
+  case 'f':  
     if (PROTO_PRINT_DUMPS==1) printf("pickup: rc=%x\n", rc);
     rc = proto_client_pickup(C->ph);
     break;
