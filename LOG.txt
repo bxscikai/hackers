@@ -61,3 +61,7 @@ However, a few issues were discoverd:
 - Movement is laggy on the machine that is not running the server, is this an optimization issue and we need to find the bottleneck
 
 -April 28th
+
+
+*Note
+After we split up the work on April 2nd, much of the work is done individually. We communicated via Facebook, email, and github commit messages to keep eachother up to date with project progress. We coordinated on deadlines and project pace when a piece of the project depended on another piece (for example, we must have a functional UI to do stress testing because we need to see where the player is)
