@@ -228,6 +228,7 @@ int
 proto_client_connect(Proto_Client_Handle ch, char *host, PortType port)
 {
   Proto_Client *c = (Proto_Client *)ch;
+
   c->rpc_session.client = c;
   c->event_session.client = c;
 
@@ -357,8 +358,7 @@ proto_client_pickup(Proto_Client_Handle ch)
 {
   Proto_Client *client = ch;
   
-
-    if (client->game.status != IN_PROGRESS) {
+  if (client->game.status != IN_PROGRESS) {
       fprintf(stderr, "The game hasn't started yet!\n");
       return 1;
   }
@@ -604,6 +604,12 @@ proto_server_mt_rep_start_game(Proto_Session *s)
       fprintf(stderr, "May the force be with you.\n");
     }
   }
+
+  // Game started, we can wander now
+  // if (STRESS_TEST==1) {
+  //   fprintf(stderr, "Starting to wonder\n");    
+  //   Wander(c->client,0);
+  // }
 
   return 1;
 }
