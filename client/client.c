@@ -364,6 +364,18 @@ docmd(Client *C, char *cmd)
   else if (strcmp(cmd, "start\n")==0) {
       doRPCCmd(C, 's');  // query map 
   }
+  else if (strcmp(cmd, "test\n")==0)  {
+      if (STRESS_TEST == 1)
+      {
+          pid_t myChild;
+          myChild = fork();
+	  if (myChild == 0)
+          {
+	      Wander(C, 0);
+          }
+          else{} 
+      }
+  }
   // MOVEMENT
   else if (strcmp(cmd, "w\n")==0) {
       Proto_Client *client = C->ph;
@@ -398,7 +410,7 @@ docmd(Client *C, char *cmd)
     proto_debug_on();  
   else if (strcmp(cmd, "o\n")==0) 
     proto_debug_off();
-  else if (strcmp(cmd, "rh\n")==0) 
+  else if (strcmp(cmd, "rh\n")==0)
     rc = proto_client_hello(C->ph);
   else if (strcmp(cmd, "q\n")==0) {
     fprintf(stderr, "Game Over: You Quit\n");    
@@ -684,4 +696,39 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
   return 1;
 }
 
+void Wander(Client *C, int direction)
+{
+    if (direction == 0)
+    {
+        Proto_Client *client = (Proto_Client *) C->ph;
+        client->rpc_session.shdr.returnCode = RIGHT;
+        doRPCCmd(C, 'm');  // query map    
+    }
+    else if (direction == 1)
+    {
+        Proto_Client *client = (Proto_Client *) C->ph;
+        client->rpc_session.shdr.returnCode = DOWN;
+        doRPCCmd(C, 'm');  // query map
+    }
+    else if (direction == 2)
+    {
+        Proto_Client *client = (Proto_Client *) C->ph;
+        client->rpc_session.shdr.returnCode = LEFT;
+        doRPCCmd(C, 'm');  // query map
+    }
+    else if (direction == 3)
+    {
+        Proto_Client *client = (Proto_Client *) C->ph;
+        client->rpc_session.shdr.returnCode = UP;
+        doRPCCmd(C, 'm');  // query map
+        direction = -1; //Resets direction
+    }
 
+    struct timespec tim, tim2;
+    tim.tv_sec = 0;
+    tim.tv_nsec = 5000000000L;//Change speed of requests here
+
+    nanosleep(&tim , &tim2);
+    direction++;
+    Wander(C, direction);
+}
