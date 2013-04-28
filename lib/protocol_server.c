@@ -1337,12 +1337,6 @@ proto_server_mt_rpc_move_handler(Proto_Session *s) {
   proto_session_send_msg(s, 1);
 
   proto_server_post_event(PROTO_MT_EVENT_GAME_UPDATE);
-
-
-  // Timing End
-  // fprintf(stderr, "Broadcasting took %f seconds\n", cend);
-
-
   return 1;
 }
 
