@@ -560,31 +560,45 @@ main(int argc, char **argv)
   if (FASTINPUTMODE) {
     startConnection(&c, globals.host, globals.port, update_event_handler);
     doRPCCmd(&c, 'q'); //query for the map
+    if (STRESS_TEST==1)
+      proto_client_hello(c.ph);
   }    
 
   shell(&c);
   // Cannot put shell on a separate thread because fget() function doesn't work for some reason
   // pthread_t tid;
   // pthread_create(&tid, NULL, shell, &c);
+  Proto_Client *proto_client = c.ph;
+  Player *me = getPlayer(&proto_client->game, proto_client->playerID);
+
   if (DISPLAYUI==1) {
 
+    // If I am not the host and we are stress testing, I should be wandering
+    if (me->isHost==0 && STRESS_TEST==1) {
+         // Wander(&c, 0);
+        docmd(&c, "test\n");
 
-    //window will be consistently 20x20
-    // pthread_t tid;
-    // pthread_create(&tid, NULL, shell, NULL);
+    }
+    // The host will be the only ones that has UI showing, other players just wonder
+    else 
+    {
+      //window will be consistently 20x20
+      // pthread_t tid;
+      // pthread_create(&tid, NULL, shell, NULL);
 
-    // Init for UI stuff
-    tty_init(STDIN_FILENO);
+      // Init for UI stuff
+      tty_init(STDIN_FILENO);
 
-    ui_init(&(ui));
+      ui_init(&(ui));
 
-    // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
-    // SO JUMP THROW HOOPS :-(
-    Proto_Client *client = (Proto_Client *) c.ph;
-    Player *me = getPlayer(&client->game, client->playerID);
+      // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
+      // SO JUMP THROW HOOPS :-(
+      Proto_Client *client = (Proto_Client *) c.ph;
+      Player *me = getPlayer(&client->game, client->playerID);
 
-    doRPCCmd(&c, 'q'); //query for the map
-    ui_main_loop(ui, (32 * WINDOW_SIZE), (32 * WINDOW_SIZE), &client->game, me, &c);
+      doRPCCmd(&c, 'q'); //query for the map
+      ui_main_loop(ui, (32 * WINDOW_SIZE), (32 * WINDOW_SIZE), &client->game, me, &c);
+    }
 
   }
 
@@ -753,7 +767,7 @@ void Wander(Client *C, int direction)
 
     struct timespec tim, tim2;
     tim.tv_sec = 0;
-    tim.tv_nsec = 5000000000L;//Change speed of requests here
+    tim.tv_nsec = 500000000L;//Change speed of requests here
 
     nanosleep(&tim , &tim2);
     direction++;
