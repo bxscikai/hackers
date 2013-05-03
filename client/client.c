@@ -21,225 +21,762 @@
 *****************************************************************************/
 
 #include <stdio.h>
-#include <unistd.h>
+#include <time.h>
+#include <sys/time.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
+#include <assert.h>
+#include <unistd.h>
+#include <pthread.h>
 
-#include "../lib/net.h"
+#include "../lib/types.h"
+#include "client.h"
+#include "../lib/protocol_utils.h"
+#include "tty.h"
+#include "uistandalone.h"
 
-#define TEAMNAME Hackers 
+UI *ui;
 
-#define BUFLEN 16384
-#define STRLEN 80
-#define XSTR(s) STR(s)
-#define STR(s) #s
+#define STRLEN    81
+#define INPUTSIZE 50 
+#define FASTINPUTMODE 1
 
-struct LineBuffer {
-  char data[BUFLEN];
-  int  len;
-  int  newline;
-};
+// For documenting speed of various game functions
+struct timeval rpc_start;
+struct timeval rpc_pickup_start;
 
 struct Globals {
-  struct LineBuffer in;
-  char server[STRLEN];
+  char host[STRLEN];
   PortType port;
-  FDType serverFD;
-  int connected;
-  int verbose;
 } globals;
 
-#define VPRINTF(fmt, ...)					  \
-  {								  \
-    if (globals.verbose==1) fprintf(stderr, "%s: " fmt,           \
-				    __func__, ##__VA_ARGS__);	  \
-  }
-
-int 
-getInput()
+extern void Update_UI(Player *myPlayer, void *game)
 {
-  int len;
-  char *ret;
+  struct timeval ui_start;
+  struct timeval ui_end;
+  gettimeofday(&ui_start, NULL);
 
-  //STUDY THIS CODE AND EXPLAIN WHAT IT DOES AND WHY IN YOUR LOG FILE
+  ui_repaint(ui, game, myPlayer);
 
-  // to make debugging easier we zero the data of the buffer
-  bzero(globals.in.data, sizeof(globals.in.data));
-  globals.in.newline = 0;
+  gettimeofday(&ui_end, NULL);
 
-  ret = fgets(globals.in.data, sizeof(globals.in.data), stdin);
-  // remove newline if it exists
-  len = (ret != NULL) ? strlen(globals.in.data) : 0;
-  if (len && globals.in.data[len-1] == '\n') {
-    globals.in.data[len-1]=0;
-    globals.in.newline=1;
-  } 
-  globals.in.len = len;
-  return len;
+  double difference = (ui_end.tv_sec*1000 + ui_end.tv_usec*0.001) - (ui_start.tv_sec*1000 + ui_start.tv_usec*0.001);
+  fprintf(stderr, "Time elapsed for UI: %.f milliseconds\n", difference);
 }
 
-int
-prompt(int menu) 
+static int
+clientInit(Client *C)
 {
-  static char MenuString[] = "\n" XSTR(TEAMNAME) "$ ";
-  int len;
+  bzero(C, sizeof(Client));
+  // Proto_Client *client = C->ph;
+
+
+  // initialize the client protocol subsystem
+  if (proto_client_init(&(C->ph))<0) {
+    fprintf(stderr, "client: main: ERROR initializing proto system\n");
+    return -1;
+  }
+
+  Proto_Client *client = C->ph;
+  client->client = C;
+
+  return 1;
+}
+
+
+static int
+update_event_handler(Proto_Session *s)
+{
+  Client *C = proto_session_get_data(s);
+
+  fprintf(stderr, "%s: called", __func__);
+  return 1;
+}
+
+
+int 
+startConnection(Client *C, char *host, PortType port, Proto_MT_Handler h)
+{
+  if (globals.host[0]!=0 && globals.port!=0) {
+    if (proto_client_connect(C->ph, host, port)!=0) {
+      fprintf(stderr, "failed to connect\n");
+      return -1;
+    }
+    proto_session_set_data(proto_client_event_session(C->ph), C);
+#if 0
+    if (h != NULL) {
+      proto_client_set_event_handler(C->ph, PROTO_MT_EVENT_BASE_UPDATE, 
+             h);
+    }
+#endif
+    return 1;
+  }
+  return 0;
+}
+
+
+void
+prompt(int menu, char *result) 
+{
+
+  char *MenuString = "?>";
+  
+  int ret;
+  int c=0;
 
   if (menu) printf("%s", MenuString);
-  fflush(stdout);
 
-  len = getInput();
+  // OLD PROMPT
+  // fflush(stdout);
+  // c = getchar();
 
-  return (len) ? 1 : -1;
+  // NEW PROMPT
+
+  fgets(result, INPUTSIZE, stdin);  // Get string from user
+
 }
 
+
+// FIXME:  this is ugly maybe the speration of the proto_client code and
+//         the game code is dumb
 int
-doVerbose(void)
+game_process_reply(Client *C)
 {
-  globals.verbose = (globals.verbose) ? 0 : 1;
+  Proto_Session *s;
+
+  s = proto_client_rpc_session(C->ph);
+
+  fprintf(stderr, "%s: do something %p\n", __func__, s);
+
   return 1;
 }
 
-int
-doConnect(void)
+
+int 
+doRPCCmd(Client *C, char c) 
 {
-  globals.port=0;
-  globals.server[0]=0;
-  int i, len = strlen(globals.in.data);
+  int rc=-1;
 
-  VPRINTF("BEGIN: %s\n", globals.in.data);
-
-  if (globals.connected==1) {
-    fprintf(stderr, "Connected");
-  } else {
-    // be sure you understand what the next two lines are doing
-    for (i=0; i<len; i++) if (globals.in.data[i]==':') globals.in.data[i]=' ';
-    sscanf(globals.in.data, "%*s %" XSTR(STRLEN) "s %d", globals.server,
-     &globals.port);
-    
-    if (strlen(globals.server)==0 || globals.port==0) {
-      fprintf(stderr, "Unable to connect to server");
-    } else {
-      VPRINTF("connecting to: server=%s port=%d...", 
-        globals.server, globals.port);
-      if (net_setup_connection(&globals.serverFD, globals.server ,globals.port)<0) {
-        fprintf(stderr, " failed NOT connected server=%s port=%d\n", 
-          globals.server, globals.port);
-      } else {
-  globals.connected=1;
-  VPRINTF("connected serverFD=%d\n", globals.serverFD);
-      }
+  switch (c) {
+  case 'h':  
+    {
+      if (PROTO_PRINT_DUMPS==1) printf("hello: rc=%x\n", rc);
+      rc = proto_client_hello(C->ph);
+      if (rc > 0) game_process_reply(C);
     }
+    break;
+  case 'm':
+    gettimeofday(&rpc_start, NULL);
+    if (PROTO_PRINT_DUMPS==1) printf("move: rc=%x\n", rc);
+    rc = proto_client_move(C->ph, c);
+    break;
+  case 'f':
+    gettimeofday(&rpc_pickup_start, NULL);  
+    if (PROTO_PRINT_DUMPS==1) printf("pickup: rc=%x\n", rc);
+    rc = proto_client_pickup(C->ph);
+    break;
+  case 'g':
+    if (PROTO_PRINT_DUMPS==1) printf("goodbye: rc=%x\n", rc);
+    rc = proto_client_goodbye(C->ph);
+    // We are done, exit the client
+    exit(1);
+    rc = -1;
+
+    break;
+  case 's':
+    if (PROTO_PRINT_DUMPS==1) printf("start: rc=%x\n", rc);
+    rc = proto_client_startgame(C->ph);
+    break;    
+  case 'q':
+    if (PROTO_PRINT_DUMPS==1) printf("query map: rc=%x\n", rc);
+    rc = proto_client_querymap(C->ph);
+    break;
+
+  default:
+    printf("%s: unknown command %c\n", __func__, c);
   }
-
-  VPRINTF("END: %s %d %d\n", globals.server, globals.port, globals.serverFD);
-  return 1;
-}
-
-int 
-sendStr(char *str, int fd)
-{
-  int len=0, nlen=0;
-  char *buf;
-  
-  //STUDY THIS FUNCTION AND EXPAIN IN YOUR LOG FILE WHAT IT DOES AND HOW
-
-  len = strlen(str);
-  if (len==0) return 1;
-  nlen = htonl(len);
-
-  if (net_writen(fd, &nlen, sizeof(int)) != sizeof(int)) return -1;
-
-  if (net_writen(fd, str, len) != len) return -1;
-
-  buf = (char *)malloc(len);
-  if (net_readn(fd, buf, len) != len) {
-    free(buf); 
-    return -1; 
-  }
-  write(STDOUT_FILENO, buf, len);
-
-  free(buf);
-  return 1;
-}
-
-int
-doSend(void)
-{
-  int len=0, nlen=0;
-
-  // HACK
-  int n = sizeof(int);
-  char *str, buf[BUFLEN];
- 
-  VPRINTF("BEGIN %d\n", globals.connected);
- 
-  if (globals.connected) {
-    if (strlen(globals.in.data)<=strlen("send")+1) {
-      fprintf(stderr, "ERROR: send <string>\n");
-    } else {
-	str = &(globals.in.data[strlen("send")+1]);
-    send:	
-	if (sendStr(str, globals.serverFD)<0) {
-	  fprintf(stderr, "send failed %d!=%ld... lost connection\n",
-		  n, sizeof(int));
-	  globals.connected = 0;
-	  close(globals.serverFD);
-	} else if (!globals.in.newline) {
-	  getInput();
-	  str = globals.in.data;
-	  goto send;
-	}
-    } 
-  }
-
-  VPRINTF("END %d\n", len);
-  return 1;  
-}
-
-int
-doQuit(void)
-{
-  return -1;
-}
-
-int 
-doCmd(void)
-{
-  int rc = 1;
-
-  if (strlen(globals.in.data)==0) return rc;
-  else if (strncmp(globals.in.data, "connect", 
-		   sizeof("connect")-1)==0) rc = doConnect();
-  else if (strncmp(globals.in.data, "send", 
-		   sizeof("send")-1)==0) rc = doSend();
-  else if (strncmp(globals.in.data, "quit", 
-		   sizeof("quit")-1)==0) rc = doQuit();
-  else if (strncmp(globals.in.data, "verbose", 
-		   sizeof("verbose")-1)==0) rc = doVerbose();
-  else printf("Unknown Command\n");
-
+  // NULL MT OVERRIDE ;-)
+  if (PROTO_PRINT_DUMPS==1) printf("%s: rc=0x%x\n", __func__, rc);
+  if (rc == 0xdeadbeef) rc=1;
   return rc;
 }
 
 int
-main(int argc, char **argv)
+doRPC(Client *C)
 {
-  int rc, menu=1;
+  int rc;
+  char c;
 
-  bzero(&globals, sizeof(globals));
+  // Enter command, h=hello, m<c> = move c steps, g = goodbye
+  if (PROTO_PRINT_DUMPS==1) printf("enter (h|m<c>|g): \n");
+  scanf("%c", &c);
+  rc=doRPCCmd(C,c);
 
-  while (1) {
-    if (prompt(menu)>=0) rc=doCmd(); else rc=-1;
-    if (rc<0) break;
-    //What do you think the next line is for
-    //The next line is for checking the user input and finding out which menu
-    //option the user chose
-    if (rc==1) menu=1; else menu=0;
+
+  if (PROTO_PRINT_DUMPS==1) printf("doRPC: rc=0x%x\n", rc);
+
+  return rc;
+}
+
+void where() {
+  if (globals.port<=0)
+    fprintf(stderr, "Not Connected\n");
+  else
+    fprintf(stderr, "Connection: %s:%d\n", globals.host, globals.port);
+}
+
+// See if we have a connect code
+int
+check_if_connect(char *mystring){
+
+  char *first_part;
+  char *sec_part;
+  char *third_part;
+  char * pch;
+
+  // printf ("Splitting string \"%s\" into tokens:\n", mystring);
+  pch = strtok (mystring," :");
+  int i =0;
+  while (pch != NULL)
+  {
+    if (i==0 && (strcmp(pch, "connect") != 0)) 
+        return -1;
+    else if (i==1) 
+      strncpy(globals.host, pch, strlen(pch));    
+    else if (i==2) 
+      globals.port = atoi(pch);        
+    i++;
+    pch = strtok (NULL, " :");
   }
 
-  VPRINTF("Exiting\n");
-  fflush(stdout);
+  // first_part = strtok(mystring, " ");
+  return 1;
+}
 
+int containsString(char *source, char *substr) {
+
+  char str1[50];
+  strcpy(str1, source);
+  char * pch = strtok (str1," ");
+  int i =0;
+  while (pch != NULL)
+  {
+    if (strcmp(pch, substr)==0)  
+      return 1;    
+
+    pch = strtok (NULL, " ");
+
+  }
+  return -1;
+}
+
+void cinfo(char *string, Client *C) {
+
+// cinfo <x,y>
+  Proto_Client *client = (Proto_Client *) C->ph;
+  char *pch;
+  pch = strtok (string," ");  
+  int segmentNumber=0;
+  int innersegmentNumber=0;
+  int row = 0;
+  int column=0;
+
+  // Parse input to get row and column for cinfo command
+  while (pch != NULL)
+  {
+    if (segmentNumber==1)  {      
+      pch = strtok(pch, ",");
+      while (pch != NULL) {
+        if (innersegmentNumber==0)
+          row = atoi(pch);
+        else if (innersegmentNumber==1) {
+          column = atoi(pch);
+          break;
+        }
+        pch = strtok (NULL, ",");
+        innersegmentNumber++;
+      }   
+    }
+    segmentNumber++;        
+    pch = strtok (NULL, " ");
+
+  }
+
+  Cell mycell = client->game.map.mapBody[row][column];
+  fprintf(stderr, "%s\n", cellTypeNameFromType(mycell.type));
+
+}
+
+int 
+docmd(Client *C, char *cmd)
+{
+  int rc = 1;
+  Proto_Client *client = (Proto_Client *) C->ph;
+
+  // If this is a connect attempt
+  char input[50];
+  strcpy(input, cmd);
+  int connectAttempt = check_if_connect(input);
+
+  fprintf(stderr, "Connect: %d\n", connectAttempt);
+
+  if (connectAttempt==1) {
+  // Ok startup our connection to the server
+      if (startConnection(C, globals.host, globals.port, update_event_handler)<0) {
+        fprintf(stderr, "ERROR: startConnection failed\n");
+        return -1;
+      }
+      else  {
+        fprintf(stderr, "Successfully connected to <%s:%d>\n", globals.host, globals.port);      
+        proto_client_hello(C->ph);
+        doRPCCmd(C, 'q'); //query for the map
+
+        return 1;
+      }
+      return 1;
+  }
+  strcpy(input,cmd);
+  if (strcmp(cmd, "disconnect\n")==0) {
+    doRPCCmd(C, 'g');
+    rc=-1;
+  }
+  else if (strcmp(cmd, "where\n")==0) 
+    where();
+  else if (strcmp(cmd, "numhome 1\n")==0) {
+    doRPCCmd(C, 'q');  // query map
+    if (client->game.map.numHome1!=0)
+      fprintf(stderr, "%d\n", client->game.map.numHome1);
+  }
+  else if (strcmp(cmd, "numhome 2\n")==0) {
+    doRPCCmd(C, 'q');  // query map
+    if (client->game.map.numHome2!=0)
+      fprintf(stderr, "%d\n", client->game.map.numHome2);    
+  }
+  else if (strcmp(cmd, "numjail 1\n")==0) {
+    doRPCCmd(C, 'q');  // query map
+    if (client->game.map.numJail1!=0)
+      fprintf(stderr, "%d\n", client->game.map.numJail1);    
+  }
+  else if (strcmp(cmd, "numjail 2\n")==0) {
+    doRPCCmd(C, 'q');  // query map
+    if (client->game.map.numHome2!=0)
+      fprintf(stderr, "%d\n", client->game.map.numJail2);    
+  }
+  else if (strcmp(cmd, "numwall\n")==0) {
+    doRPCCmd(C, 'q');  // query map
+    if (client->game.map.numFixedWall!=0 && client->game.map.numNonfixedWall!=0)
+      fprintf(stderr, "%d\n", client->game.map.numFixedWall + client->game.map.numNonfixedWall);    
+  }
+  else if (strcmp(cmd, "numfloor\n")==0) {
+    doRPCCmd(C, 'q');  // query map       
+    if (client->game.map.numFloor1!=0 && client->game.map.numFloor2!=0)
+      fprintf(stderr, "%d\n", client->game.map.numFloor1+client->game.map.numFloor2);    
+  }       
+  else if (strcmp(cmd, "dim\n")==0) {
+    doRPCCmd(C, 'q');  // query map  
+    if (client->game.map.dimension.x!=0 && client->game.map.dimension.y!=0)
+      fprintf(stderr, "%dx%d\n", client->game.map.dimension.x, client->game.map.dimension.y);    
+  }                  
+  else if (strcmp(cmd, "dump\n")==0) {
+    doRPCCmd(C, 'q');  // query map   
+    printMap(&client->game.map);
+    if (DISPLAYUI==1)
+      ui_update(ui);
+  }                 
+  else if (containsString(input, "cinfo")>0) {
+    doRPCCmd(C, 'q');  // query map     
+    cinfo(cmd, C);
+  }
+  else if (strcmp(cmd, "start\n")==0) {
+      doRPCCmd(C, 's');  // query map 
+  }
+  else if (strcmp(cmd, "test\n")==0)  {
+      if (STRESS_TEST == 1)
+      {
+          pid_t myChild;
+          myChild = fork();
+	  if (myChild == 0)
+          {
+	      Wander(C, 0);
+          }
+          else{} 
+      }
+  }
+  // MOVEMENT
+  else if (strcmp(cmd, "w\n")==0) {
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      doRPCCmd(C, 'm');  // query map   
+  }
+  else if (strcmp(cmd, "a\n")==0) {
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = LEFT;
+      doRPCCmd(C, 'm');  // query map   
+  }
+  else if (strcmp(cmd, "d\n")==0) {
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = RIGHT;
+      doRPCCmd(C, 'm');  // query map   
+  }
+  else if (strcmp(cmd, "s\n")==0) {
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = DOWN;
+      doRPCCmd(C, 'm');  // query map   
+  }
+  // END OF MOVEMENT  
+  
+  //PICKUP
+  else if (strcmp(cmd, "f\n")==0){
+      Proto_Client *client = C->ph;
+      doRPCCmd(C, 'f');
+  }
+  
+  //END PICKUP
+  else if (strcmp(cmd, "O\n")==0)     
+    proto_debug_on();  
+  else if (strcmp(cmd, "o\n")==0) 
+    proto_debug_off();
+  else if (strcmp(cmd, "rh\n")==0)
+    rc = proto_client_hello(C->ph);
+  else if (strcmp(cmd, "q\n")==0) {
+    fprintf(stderr, "Game Over: You Quit\n");    
+    doRPCCmd(C, 'g');
+    rc=-1;
+  }  
+  else if (strcmp(cmd, "quit\n")==0) {
+    doRPCCmd(C, 'g');
+    fprintf(stderr, "Game Over: You Quit\n");
+    rc=-1;
+  }    
+  else if (strcmp(cmd, "\n")==0) {
+    rc = proto_client_update(C->ph);
+    rc=1;
+  }
+  else {
+    fprintf(stderr, "Unknown command\n");
+  }
+    
+  return rc;
+}
+
+void *
+shell(void *arg)
+{
+
+  Client *C = arg;
+  char input[INPUTSIZE];
+  int rc;
+  int menu=1;
+  //the following is done in order to change the prompt for the user to X or O
+  
+  while (1) {
+
+    // Clear input each time
+    bzero(&input, INPUTSIZE);
+    
+    prompt(menu, input);
+
+    if (strlen(input)>0) {
+
+      rc=docmd(C, input);
+      menu = 1;
+    }
+
+
+    if (rc<0) {
+      killConnection(C->ph);
+      break;
+    }
+    if (rc==1) 
+    {
+       menu=1;       
+       // Proto_Game_State *gs = proto_client_game_state(C->ph);
+    }
+    if (((Proto_Client *) C->ph)->game.status == IN_PROGRESS && DISPLAYUI == 1)
+    {
+      // launchUI(C);
+      return NULL;
+    }
+    else menu=1;
+  }
+
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "terminating\n");
+  fflush(stdout);
+  return NULL;
+}
+
+
+void 
+usage(char *pgm)
+{
+  fprintf(stderr, "USAGE: %s <port|<<host port> [shell] [gui]>>\n"
+           "  port     : rpc port of a game server if this is only argument\n"
+           "             specified then host will default to localhost and\n"
+     "             only the graphical user interface will be started\n"
+           "  host port: if both host and port are specifed then the game\n"
+     "examples:\n" 
+           " %s 12345 : starts client connecting to localhost:12345\n"
+    " %s localhost 12345 : starts client connecting to locaalhost:12345\n",
+     pgm, pgm, pgm);
+ 
+}
+
+void
+initGlobals(int argc, char **argv)
+{
+  bzero(&globals, sizeof(globals));
+
+  if (FASTINPUTMODE==1) {
+    if (argc==1) {
+      usage(argv[0]);
+      exit(-1);
+    }
+  }
+
+  if (argc==2) {
+    strncpy(globals.host, "localhost", STRLEN);
+    globals.port = atoi(argv[1]);
+  }
+
+  if (argc>=3) {
+    strncpy(globals.host, argv[1], STRLEN);
+    globals.port = atoi(argv[2]);
+  }
+
+}
+
+int 
+main(int argc, char **argv)
+{
+  Client c;  
+  
+  if (!FASTINPUTMODE)
+      fprintf(stderr, "Type 'connect <host:port>' to connect to a game.\n");
+
+  if (clientInit(&c) < 0) {
+    fprintf(stderr, "ERROR: clientInit failed\n");
+    return -1;
+  }    
+
+  initGlobals(argc, argv);
+
+  if (FASTINPUTMODE) {
+    startConnection(&c, globals.host, globals.port, update_event_handler);
+    doRPCCmd(&c, 'q'); //query for the map
+    if (STRESS_TEST==1)
+      proto_client_hello(c.ph);
+  }    
+
+  shell(&c);
+  // Cannot put shell on a separate thread because fget() function doesn't work for some reason
+  // pthread_t tid;
+  // pthread_create(&tid, NULL, shell, &c);
+  Proto_Client *proto_client = c.ph;
+  Player *me = getPlayer(&proto_client->game, proto_client->playerID);
+
+  if (DISPLAYUI==1) {
+
+    // If I am not the host and we are stress testing, I should be wandering
+    if (me->isHost==0 && STRESS_TEST==1) {
+         // Wander(&c, 0);
+        docmd(&c, "test\n");
+
+    }
+    // The host will be the only ones that has UI showing, other players just wonder
+    else 
+    {
+      //window will be consistently 20x20
+      // pthread_t tid;
+      // pthread_create(&tid, NULL, shell, NULL);
+
+      // Init for UI stuff
+      tty_init(STDIN_FILENO);
+
+      ui_init(&(ui));
+
+      // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
+      // SO JUMP THROW HOOPS :-(
+      Proto_Client *client = (Proto_Client *) c.ph;
+      Player *me = getPlayer(&client->game, client->playerID);
+
+      doRPCCmd(&c, 'q'); //query for the map
+      ui_main_loop(ui, (32 * WINDOW_SIZE), (32 * WINDOW_SIZE), &client->game, me, &c);
+    }
+
+  }
+
+
+  // launchUI(&c);
+    
   return 0;
+}
+
+void
+launchUI(Client *c) {
+
+  // if (DISPLAYUI==1) {
+
+  //   //window will be consistently 20x20
+  //   pthread_t tid;
+  //   pthread_create(&tid, NULL, shell, NULL);
+
+  //   // Init for UI stuff
+  //   tty_init(STDIN_FILENO);
+
+  //   ui_init(&(ui));
+
+  //   // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
+  //   // SO JUMP THROW HOOPS :-(
+  //   Proto_Client *client = (Proto_Client *) c->ph;
+  //   Player *me = getPlayer(&client->game, client->playerID);
+
+  //   doRPCCmd(c, 'q'); //query for the map
+
+  //   ui_main_loop(ui, (32 * client->game.map.dimension.x * 0.1), (32 * client->game.map.dimension.y * 0.1), &client->game, me, &c);
+
+  // }
+
+}
+
+
+extern sval
+ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
+{
+  SDLKey sym = e->keysym.sym;
+  SDLMod mod = e->keysym.mod;
+
+  if (e->type == SDL_KEYDOWN) {
+    if (sym == SDLK_LEFT && mod == KMOD_NONE) {
+      fprintf(stderr, "%s: move left\n", __func__);
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = LEFT;
+
+      doRPCCmd(C, 'm');
+      return 2;
+    }
+    if (sym == SDLK_RIGHT && mod == KMOD_NONE) {
+      fprintf(stderr, "%s: move right\n", __func__);
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = RIGHT;
+
+      doRPCCmd(C, 'm');
+      return 2;
+    }
+    if (sym == SDLK_UP && mod == KMOD_NONE)  {  
+      fprintf(stderr, "%s: move up\n", __func__);
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+    
+      doRPCCmd(C, 'm');
+      return 2;
+    }
+    if (sym == SDLK_t && mod == KMOD_NONE)  {  
+      Wander(C, 0);
+
+      return 2;
+    }
+    if (sym == SDLK_DOWN && mod == KMOD_NONE)  {
+      fprintf(stderr, "%s: move down\n", __func__);
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = DOWN;
+
+      doRPCCmd(C, 'm');
+      return 2;
+    }
+    if (sym == SDLK_f && mod == KMOD_NONE)  {   
+      fprintf(stderr, "%s: pickup \n", __func__);
+      doRPCCmd(C, 'f');
+      return 2;
+    }
+    if (sym == SDLK_q && mod == KMOD_NONE)  {   
+      doRPCCmd(C, 'g');
+      return -1;
+    }    
+    if (sym == SDLK_z && mod == KMOD_NONE){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+
+      return ui_zoom(ui, 1, &client->game, me);
+    }
+    if (sym == SDLK_z && mod & KMOD_SHIFT ){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+      
+      return ui_zoom(ui,-1, &client->game, me);
+    }
+    if (sym == SDLK_LEFT && mod & KMOD_SHIFT){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+
+      return ui_pan(ui,-1,0, &client->game, me);
+    }
+    if (sym == SDLK_RIGHT && mod & KMOD_SHIFT){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+
+      return ui_pan(ui,1,0, &client->game, me);
+    }
+    if (sym == SDLK_UP && mod & KMOD_SHIFT){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+
+      return ui_pan(ui, 0,-1, &client->game, me);
+    }
+    if (sym == SDLK_DOWN && mod & KMOD_SHIFT){
+      Proto_Client *client = C->ph;
+      client->rpc_session.shdr.returnCode = UP;
+      Player *me = getPlayer(&client->game, client->playerID);
+
+      return ui_pan(ui, 0,1, &client->game, me);
+    }
+    else {
+      fprintf(stderr, "%s: key pressed: %d\n", __func__, sym); 
+    }
+  } else {
+    fprintf(stderr, "%s: key released: %d\n", __func__, sym);
+  }
+  return 1;
+}
+
+void Wander(Client *C, int direction)
+{
+    if (direction == 0)
+    {
+        Proto_Client *client = (Proto_Client *) C->ph;
+        client->rpc_session.shdr.returnCode = RIGHT;
+        doRPCCmd(C, 'm');  // query map    
+    }
+    else if (direction == 1)
+    {
+        Proto_Client *client = (Proto_Client *) C->ph;
+        client->rpc_session.shdr.returnCode = DOWN;
+        doRPCCmd(C, 'm');  // query map
+    }
+    else if (direction == 2)
+    {
+        Proto_Client *client = (Proto_Client *) C->ph;
+        client->rpc_session.shdr.returnCode = LEFT;
+        doRPCCmd(C, 'm');  // query map
+    }
+    else if (direction == 3)
+    {
+        Proto_Client *client = (Proto_Client *) C->ph;
+        client->rpc_session.shdr.returnCode = UP;
+        doRPCCmd(C, 'm');  // query map
+        direction = -1; //Resets direction
+    }
+
+    //struct timespec tim, tim2;
+    //tim.tv_sec = 0;
+    //tim.tv_nsec = 5000000000L;//Change speed of requests here
+
+    //nanosleep(&tim , &tim2);
+    sleep(1);
+    direction++;
+    Wander(C, direction);
 }

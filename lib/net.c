@@ -22,15 +22,15 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <errno.h>
+#include "net.h"
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
 #include <string.h>
-#include "net.h"
 
 extern int
 net_listen(FDType fd) 

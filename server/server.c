@@ -22,113 +22,150 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <pthread.h>
+#include <sys/types.h>
+#include <poll.h>
+#include <time.h>
+#include "../lib/types.h"
+#include "../lib/protocol_server.h"
+#include "../lib/protocol_utils.h"
 
-#include "../lib/net.h"
-
-#define MAXLINE 80
-
-struct Globals {
-  int verbose;
-} globals;
-
-#define VPRINTF(fmt, ...)					  \
-  {								  \
-    if (globals.verbose==1) fprintf(stderr, "%s: " fmt,           \
-				    __func__, ##__VA_ARGS__);	  \
-  }
-
-void
-str_echo(int sockfd)
+int 
+doUpdateClients(void)
 {
-  int  n;
-  int  len;
-  char *buf;
-  
-  while (1) {
+  Proto_Session *s;
+  Proto_Msg_Hdr hdr;
 
-    // MISSING AND IMPORTANT LINE HERE HACK
-    n = net_readn(sockfd, &len, sizeof(int));
+  s = proto_server_event_session();
+  hdr.type = PROTO_MT_EVENT_BASE_UPDATE;
+  proto_session_hdr_marshall(s, &hdr);
+  proto_server_post_event(PROTO_MT_EVENT_BASE_UPDATE);  
+  return 1;
+}
 
-    // fprintf(stderr, "Our intSize: %d ourDataLength:%d\n", n, len);
+int 
+broadCastMessage(void)
+{
+  proto_server_post_event(PROTO_MT_EVENT_BASE_UPDATE);    
+  return 1;
+}
 
-    if (n != sizeof(int)) {
-      fprintf(stderr, "%s: ERROR failed to read len: %d!=%d"
-	      " ... closing connection\n", __func__, n, (int)sizeof(int));
-    fprintf(stderr, "Failed Length Test, Our intSize: %d", n);
-      break;
-    } 
-    
-    // The next line converts 16 and 32 bit between network byte order and
-    // host byte order.
-    len = ntohl(len);
-    fprintf(stderr, "Passed Length Test, Our intSize: %d ourDataLength: %d\n", n, len);
+char MenuString[] =
+  "d/D-debug on/off u-update clients q-quit";
 
-    if (len) {
-      buf = (char *)malloc(len);
-      n = net_readn(sockfd, buf, len);
-      if ( n != len ) {
-	fprintf(stderr, "%s: ERROR failed to read msg: %d!=%d"
-		" .. closing connection\n" , __func__, n, len);
-	break;
-      }
-      VPRINTF("got: %d '%s'\n", len, buf);
-      net_writen(sockfd, buf, len);
-      free(buf);
-    }
+int 
+docmd(char cmd)
+{
+  int rc = 1;
+
+  switch (cmd) {
+  case 'd':
+    proto_debug_on();
+    break;
+  case 'D':
+    proto_debug_off();
+    break;
+  case 'u':
+    rc = doUpdateClients();
+    break;
+  case 'b':
+    rc = broadCastMessage();
+    break;    
+  case 'q':
+    rc=-1;
+    break;
+  case '\n':
+  case ' ':
+    rc=1;
+    break;
+  default:
+    printf("Unkown Command\n");
   }
-  close(sockfd);
-  return;
+  return rc;
+}
+
+int
+prompt(int menu) 
+{
+  // fprintf(stderr, "Menu:%d\n", menu);
+  int ret;
+  int c=0;
+
+  if (menu) 
+    printf("%s:", MenuString);
+
+  fflush(stdout);
+  c=getchar();
+  return c;
 }
 
 void *
-doit(void *arg)
+shell(void *arg)
 {
-  long val = (long)arg;
-  pthread_detach(pthread_self());
-  str_echo(val);
-  close(val);
+  int c;
+  int rc=1;
+  int menu=1;
+
+  while (1) {
+    
+    if ((c=prompt(menu))!=0) rc=docmd(c);
+    if (rc<0) break;
+    if (rc==1) menu=1; else menu=0;
+  }
+  fprintf(stderr, "terminating\n");
+  fflush(stdout);
   return NULL;
+}
+
+
+// Reads the filename from std-in and tries to parse game map
+int
+readFile(int argc, char **argv)
+{
+
+  if (argc==1) {
+    fprintf(stderr, "No inputs\n");
+    return -1;
+  }
+  else if (argc==2) {
+
+    return proto_server_parse_map(argv[1]);    
+
+  }
+  else if (argc>=3) {
+    fprintf(stderr, "Too many inputs\n");
+    return -1;
+  }
+
+  return -1;
 }
 
 int
 main(int argc, char **argv)
-{
-  int listenfd, port=0;
-  long connfd;
-  pthread_t tid;
+{ 
+  // Set seed for our random number generator
+  srand(time(NULL));
 
-  bzero(&globals, sizeof(globals));
+  // Read in map from input
+  int rc = readFile(argc, argv);
 
-// extern int     net_setup_listen_socket(FDType *fd, PortType *port);
+  // Returns if map parsing failed
+  if (rc<0)
+    exit (-1);
 
-  if (!net_setup_listen_socket(&listenfd, &port)) {
-    fprintf(stderr, "net_setup_listen_socket FAILED!\n");
+  if (proto_server_init()<0) {
+    fprintf(stderr, "ERROR: failed to initialize proto_server subsystem\n");
     exit(-1);
   }
 
-  printf("listening on port=%d\n", port);
+  fprintf(stderr, "RPC Port: %d, Event Port: %d\n", proto_server_rpcport(), 
+    proto_server_eventport());
 
-  if (net_listen(listenfd) < 0) {
-    fprintf(stderr, "Error: server listen failed (%d)\n", errno);
+  if (proto_server_start_rpc_loop()<0) {
+    fprintf(stderr, "ERROR: failed to start rpc loop\n");
     exit(-1);
   }
+    
+  shell(NULL);
 
-  for (;;) {
-    connfd = net_accept(listenfd);
-    if (connfd < 0) {
-      fprintf(stderr, "Error: server accept failed (%d)\n", errno);
-    } else {
-
-      // We are creating a new pthread to do the processing of received data,
-      // since we do not want the main thread handling the port listening to block,
-      // we want to do this in the background      
-      pthread_create(&tid, NULL, &doit, (void *)connfd);
-    }
-  }
-
-  VPRINTF("Exiting\n");
+  return 0;
 }

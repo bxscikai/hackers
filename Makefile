@@ -18,27 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-targets = client
+all:
+	make -C lib
+	make -C server
+	make -C client
 
-include ../client/config.mk
-
-client_objs = $(objs)
-libs = $(DAGAMELIB) -lpthread
-
-# client: $(client_objs) $(DAGAMELIBARCHIVE)
-# 	gcc $(CFLAGS) -o $@ $(client_objs) $(libs) ${UILIBS}
-
-ttymodse.o: ttymodes.c
-	gcc $(CFLAGS) ttymodes.c -c
-
-tty.o: tty.c tty.h ttymodes.h
-	gcc $(CFLAGS) tty.c -c
-
-uistandalone.o: uistandalone.c uistandalone.h
-	gcc ${CFLAGS} uistandalone.c -c
-
-client.o: client.c uistandalone.h
-	gcc $(CFLAGS) client.c -c 
-
-client: uistandalone.o client.o tty.o ttymodes.o
-	gcc $(CFLAGS) uistandalone.o client.o tty.o ttymodes.o -o client $(libs) $(UILIBS)
+clean:
+	make -C lib clean
+	make -C server clean
+	make -C client clean

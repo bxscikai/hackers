@@ -1,0 +1,3 @@
+#!/bin/sh
+#CreateClients--Creates multiple clients
+./client 63491 < DUMMYFILE &
