@@ -650,7 +650,7 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       fprintf(stderr, "%s: move left\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = LEFT;
-
+      pan = 0;
       doRPCCmd(C, 'm');
       return 2;
     }
@@ -658,7 +658,7 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       fprintf(stderr, "%s: move right\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = RIGHT;
-
+      pan = 0;
       doRPCCmd(C, 'm');
       return 2;
     }
@@ -666,7 +666,7 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       fprintf(stderr, "%s: move up\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = UP;
-    
+      pan = 0;
       doRPCCmd(C, 'm');
       return 2;
     }
@@ -676,6 +676,7 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       return 2;
     }
     if (sym == SDLK_DOWN && mod == KMOD_NONE)  {
+      pan = 0;
       fprintf(stderr, "%s: move down\n", __func__);
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = DOWN;
@@ -683,7 +684,8 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       doRPCCmd(C, 'm');
       return 2;
     }
-    if (sym == SDLK_f && mod == KMOD_NONE)  {   
+    if (sym == SDLK_f && mod == KMOD_NONE)  {  
+      pan = 0; 
       fprintf(stderr, "%s: pickup \n", __func__);
       doRPCCmd(C, 'f');
       return 2;

@@ -9,7 +9,7 @@
 #define MAX_NUM_PLAYERS 10
 #define MAX_LINE_LEN 500
 #define NUMOFOBJECTS 4
-#define DISPLAYUI 0
+#define DISPLAYUI 1
 // Help debug game by turning off collision detection
 #define CANMOVE_THROUGH_WALL 0
 #define STRESS_TEST 0
@@ -20,6 +20,9 @@
 // For documenting speed of various game functions
 extern struct timeval rpc_start;
 extern struct timeval rpc_pickup_start;
+
+// For marking whether or not we're panning
+extern int pan;
 
 // Defines data structures used for the game
 

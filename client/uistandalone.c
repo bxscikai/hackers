@@ -35,6 +35,8 @@ static void paint_objects(UI *ui, SDL_Rect *t, int start_x, int start_y, int end
 static void players_init(UI *ui, void *game);
 static void paint_players(UI *ui, SDL_Rect *t, int start_x, int start_y, int end_x, int end_y, void *game);
 
+int pan; //For panning logic
+
 #define SPRITE_H 32
 #define SPRITE_W 32
 #define SMALL_SPRITE_SIZE 16
@@ -556,7 +558,7 @@ draw_cell(UI *ui, SPRITE_INDEX si, SDL_Rect *t, SDL_Surface *s)
 }
 
 static sval
-ui_paintmap(UI *ui, void *game, Player *myPlayer, PAINT_TYPE type) 
+ui_paintmap(UI *ui, void *game, Player *myPlayer) 
 {
   Game *gameState = (Game *)game;
   Maze *maze = &gameState->map;
@@ -564,7 +566,7 @@ ui_paintmap(UI *ui, void *game, Player *myPlayer, PAINT_TYPE type)
   int player_x;
   int player_y;
 
-  if(type == PAN){
+  if(pan == 1){
     player_x = pan_coords_x;
     player_y = pan_coords_y;
   }else{
@@ -808,7 +810,7 @@ ui_zoom(UI *ui, sval fac, void *game, Player *myPlayer)
     zoom = new_value;
   }
 
-  ui_paintmap(ui, game, myPlayer, NOT_PAN); 
+  ui_paintmap(ui, game, myPlayer); 
   return 2;
 }
 
@@ -817,6 +819,7 @@ ui_pan(UI *ui, int xdir, int ydir, void *game, Player *myPlayer)
 {
   fprintf(stderr, "%s:\n", __func__);
 
+  pan = 1;
   int min = (WINDOW_SIZE/2) * zoom;
   int max = dimension - ((WINDOW_SIZE/2) * zoom);
 
@@ -846,7 +849,7 @@ ui_pan(UI *ui, int xdir, int ydir, void *game, Player *myPlayer)
     pan_coords_y = new_coord_y;
   }
   
-  ui_paintmap(ui, game, myPlayer, PAN);  
+  ui_paintmap(ui, game, myPlayer);  
   return 2;
 }
 
@@ -883,7 +886,7 @@ ui_quit(UI *ui)
 extern void
 ui_repaint(UI *ui, void *game, Player *myPlayer)
 {
-  ui_paintmap(ui, game, myPlayer, NOT_PAN);
+  ui_paintmap(ui, game, myPlayer);
   SDL_UpdateRect(ui->screen, 0, 0, ui->screen->w, ui->screen->h);
   Game *gameState = (Game *)game;
   if (gameState->status == TEAM_1_WON){
@@ -912,6 +915,8 @@ ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer, Client *C)
   dimension = maze->dimension.x;
   // init zoom functionality
   zoom = 1;
+  // init panning functionality
+  pan = 0;
 
   sval rc;
   
@@ -921,7 +926,7 @@ ui_main_loop(UI *ui, uval h, uval w, void *game, Player *myPlayer, Client *C)
  
   players_init(ui, game);
   
-  ui_paintmap(ui, game, myPlayer, NOT_PAN);
+  ui_paintmap(ui, game, myPlayer);
   
   while (1) {
     if (ui_process(ui, C)<0) break;
