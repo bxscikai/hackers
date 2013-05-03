@@ -6,10 +6,10 @@
 
 // Define constants
 #define MAX_MAP_DIMENSIONS 200   
-#define MAX_NUM_PLAYERS 10
+#define MAX_NUM_PLAYERS 20
 #define MAX_LINE_LEN 500
 #define NUMOFOBJECTS 4
-#define DISPLAYUI 0
+#define DISPLAYUI 1
 // Help debug game by turning off collision detection
 #define CANMOVE_THROUGH_WALL 0
 #define STRESS_TEST 0

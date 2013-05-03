@@ -39,7 +39,7 @@ UI *ui;
 
 #define STRLEN    81
 #define INPUTSIZE 50 
-#define FASTINPUTMODE 1
+#define FASTINPUTMODE 0
 
 // For documenting speed of various game functions
 struct timeval rpc_start;
@@ -317,8 +317,6 @@ docmd(Client *C, char *cmd)
   char input[50];
   strcpy(input, cmd);
   int connectAttempt = check_if_connect(input);
-
-  fprintf(stderr, "Connect: %d\n", connectAttempt);
 
   if (connectAttempt==1) {
   // Ok startup our connection to the server
