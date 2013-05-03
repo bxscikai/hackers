@@ -751,11 +751,12 @@ void Wander(Client *C, int direction)
         direction = -1; //Resets direction
     }
 
-    struct timespec tim, tim2;
-    tim.tv_sec = 0;
-    tim.tv_nsec = 5000000000L;//Change speed of requests here
+    //struct timespec tim, tim2;
+    //tim.tv_sec = 0;
+    //tim.tv_nsec = 5000000000L;//Change speed of requests here
 
-    nanosleep(&tim , &tim2);
+    //nanosleep(&tim , &tim2);
+    sleep(1);
     direction++;
     Wander(C, direction);
 }

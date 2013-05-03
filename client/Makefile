@@ -42,6 +42,3 @@ client.o: client.c uistandalone.h
 
 client: uistandalone.o client.o tty.o ttymodes.o
 	gcc $(CFLAGS) uistandalone.o client.o tty.o ttymodes.o -o client $(libs) $(UILIBS)
-
-
-

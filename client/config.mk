@@ -28,7 +28,7 @@ else
   UILIBS = -lSDL
 endif
 
-CFLAGS := -g $(UIINCDIR) -std=c99
+CFLAGS := -g $(UIINCDIR)
 
 MODULE := $(shell basename $CURDIR)
 
