@@ -22,3 +22,15 @@ client/client
 lib/protocol_server.c.orig
 
 lib/protocol_utils.h.orig
+
+client/CreateClients.BACKUP.83504
+
+client/CreateClients.BASE.83504
+
+client/CreateClients.REMOTE.83504
+
+client/CreateClients.LOCAL.83504
+
+client/CreateClients.orig
+
+client/client.c.orig
