@@ -24,6 +24,9 @@
 
 #include <SDL/SDL.h>   /* All SDL apps need this */
 
+
+
+
 typedef enum { 
   TEAMA_S=0, 
   TEAMB_S, 

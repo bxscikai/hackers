@@ -367,10 +367,13 @@ proto_server_start_rpc_loop(void)
 static int 
 proto_session_lost_default_handler(Proto_Session *s)
 {
-  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Session lost...:\n");
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Session lost or disconnected...:\n");
 
   // Session lost with client, remove player associated with this client
   Player *disconnectedPlayer = getPlayer(&Proto_Server.game, s->fd);
+
+  if (disconnectedPlayer==NULL) goto remove_subscriber;
+
   disconnectedPlayer->inventory.type=NONE;
 
   // Remove the player from the struct
@@ -390,6 +393,7 @@ proto_session_lost_default_handler(Proto_Session *s)
     }
   }
 
+remove_subscriber:
   // Remove the subscriber
   for (i=0; i< PROTO_SERVER_MAX_EVENT_SUBSCRIBERS; i++) {
     if (Proto_Server.EventSubscribers[i]==s->fd) {
@@ -446,7 +450,7 @@ proto_server_init(void)
        i<PROTO_MT_EVENT_BASE_RESERVED_LAST; i++) {
 
     if (i==PROTO_MT_REQ_BASE_GOODBYE)
-      proto_server_set_req_handler(i, proto_server_mt_rpc_goodbye_handler);
+      proto_server_set_req_handler(i, proto_session_lost_default_handler);
     else if (i==PROTO_MT_REQ_BASE_HELLO)
       proto_server_set_req_handler(i, proto_server_mt_rpc_hello_handler);
     else if (i==PROTO_MT_REQ_BASE_MOVE)
@@ -1446,7 +1450,6 @@ spawnObject(ObjectType obj) {
           }
         }
     }
-
   }
 
   else if (obj==FLAG_2) {

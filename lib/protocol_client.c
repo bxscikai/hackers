@@ -541,6 +541,13 @@ proto_server_mt_game_update_handler(Proto_Session *s)
 {
   // Update game states
     Proto_Client *c = s->client;
+    Player *player = getPlayer(&c->game, c->playerID);
+
+    // If the game haven't started yet or the current player isn't in the game, ignore the update
+
+  if (player==NULL || s->rhdr.game.status!=IN_PROGRESS) {
+    return 1;
+  }
 
   // Copy player states to local state
   int i;
@@ -552,7 +559,6 @@ proto_server_mt_game_update_handler(Proto_Session *s)
     c->game.map.objects[i] = s->rhdr.game.map.objects[i];
   c->game.status = s->rhdr.game.status;
 
-  Player *player = getPlayer(&c->game, c->playerID);
 
   // Right now simply prints out all new player locations
   printUpdate(&c->game);
@@ -630,12 +636,12 @@ proto_server_mt_rpc_rep_move_handler(Proto_Session *s)
   else if (s->rhdr.returnCode==RPC_IN_JAIL)
     fprintf(stderr, "Move failed, cannot move while in jail\n");
 
+  if (TIMING_FUNCTIONS==1) {
   struct timeval rpc_end;
   gettimeofday(&rpc_end, NULL);
-
   double difference = (rpc_end.tv_sec*1000000 + rpc_end.tv_usec) - (rpc_start.tv_sec*1000000 + rpc_start.tv_usec);
-
   fprintf(stderr, "Time elapsed for move RPC: %.f microseconds\n", difference);
+  }
 
   return 1;
 }
@@ -655,12 +661,13 @@ proto_server_mt_rpc_rep_pickup_handler(Proto_Session *s)
   else if (s->rhdr.returnCode==RPC_PICKUP_FLAGONSIDE)
     fprintf(stderr, "Pickup Fail: Cannot pick up your own flag when on your own side\n");
 
+  if (TIMING_FUNCTIONS==1) {
   struct timeval rpc_pickup_end;
   gettimeofday(&rpc_pickup_end, NULL);
-
   double difference = (rpc_pickup_end.tv_sec*1000000 + rpc_pickup_end.tv_usec) - (rpc_pickup_start.tv_sec*1000000 + rpc_pickup_start.tv_usec);
+  fprintf(stderr, "Time elapsed for pickup RPC: %.f microseconds\n", difference);  
+  }
 
-  fprintf(stderr, "Time elapsed for pickup RPC: %.f microseconds\n", difference);
 
   return 1;
 }

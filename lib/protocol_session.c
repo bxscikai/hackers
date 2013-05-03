@@ -27,6 +27,12 @@
 #include <errno.h>
 #include <pthread.h>
 
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
+
 #include "net.h"
 #include "protocol.h"
 #include "protocol_utils.h"
@@ -423,7 +429,7 @@ proto_session_send_msg(Proto_Session *s, int reset)
 
   if (s->slen>0) {
     net_writen(s->fd, &s->sbuf, (int)s->slen);
-    fprintf(stderr, "Sending extra bytes: %d\n", s->slen);
+     if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Sending extra bytes: %d\n", s->slen);
   }
   
   if (proto_debug()) {
@@ -431,7 +437,22 @@ proto_session_send_msg(Proto_Session *s, int reset)
     proto_session_dump(s);
   }
 
-  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Sending message...\n");
+  if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Sent message...\n");
+
+// ////////////
+
+//   struct sockaddr_in sinadd;
+//   socklen_t len = sizeof(sinadd);
+//   if (getsockname(s->fd, (struct sockaddr *)&sinadd, &len) == -1)
+//       perror("getsockname");
+//   else
+//       printf("port number %d\n", ntohs(sinadd.sin_port));
+
+//     char hostname[128];
+
+// gethostname(hostname, sizeof hostname);
+// printf("My hostname: %s\n", hostname);
+// ////////////
 
   // communication was successfull 
   if (reset) proto_session_reset_send(s);
@@ -442,12 +463,14 @@ proto_session_send_msg(Proto_Session *s, int reset)
 extern int
 proto_session_rcv_msg(Proto_Session *s)
 {
-  
   proto_session_reset_receive(s);
 
   // read reply
   ////////// ADD CODE //////////
+   if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Waiting to receive message\n");  
   int bytesRead = net_readn(s->fd, &s->rhdr, sizeof(Proto_Msg_Hdr)); // Read the reply header from received message
+
+   if (PROTO_PRINT_DUMPS==1) fprintf(stderr, "Received %d bytes\n", bytesRead);
 
   // Make sure we read the # of bytes we expect
   if (bytesRead<(int)sizeof(Proto_Msg_Hdr)) {

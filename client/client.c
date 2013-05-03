@@ -31,7 +31,6 @@
 
 #include "../lib/types.h"
 #include "client.h"
-//#include "../lib/protocol_client.h"
 #include "../lib/protocol_utils.h"
 #include "tty.h"
 #include "uistandalone.h"
@@ -179,7 +178,10 @@ doRPCCmd(Client *C, char c)
   case 'g':
     if (PROTO_PRINT_DUMPS==1) printf("goodbye: rc=%x\n", rc);
     rc = proto_client_goodbye(C->ph);
+    // We are done, exit the client
+    exit(1);
     rc = -1;
+
     break;
   case 's':
     if (PROTO_PRINT_DUMPS==1) printf("start: rc=%x\n", rc);
@@ -209,6 +211,7 @@ doRPC(Client *C)
   if (PROTO_PRINT_DUMPS==1) printf("enter (h|m<c>|g): \n");
   scanf("%c", &c);
   rc=doRPCCmd(C,c);
+
 
   if (PROTO_PRINT_DUMPS==1) printf("doRPC: rc=0x%x\n", rc);
 
@@ -560,31 +563,45 @@ main(int argc, char **argv)
   if (FASTINPUTMODE) {
     startConnection(&c, globals.host, globals.port, update_event_handler);
     doRPCCmd(&c, 'q'); //query for the map
+    if (STRESS_TEST==1)
+      proto_client_hello(c.ph);
   }    
 
   shell(&c);
   // Cannot put shell on a separate thread because fget() function doesn't work for some reason
   // pthread_t tid;
   // pthread_create(&tid, NULL, shell, &c);
+  Proto_Client *proto_client = c.ph;
+  Player *me = getPlayer(&proto_client->game, proto_client->playerID);
+
   if (DISPLAYUI==1) {
 
+    // If I am not the host and we are stress testing, I should be wandering
+    if (me->isHost==0 && STRESS_TEST==1) {
+         // Wander(&c, 0);
+        docmd(&c, "test\n");
 
-    //window will be consistently 20x20
-    // pthread_t tid;
-    // pthread_create(&tid, NULL, shell, NULL);
+    }
+    // The host will be the only ones that has UI showing, other players just wonder
+    else 
+    {
+      //window will be consistently 20x20
+      // pthread_t tid;
+      // pthread_create(&tid, NULL, shell, NULL);
 
-    // Init for UI stuff
-    tty_init(STDIN_FILENO);
+      // Init for UI stuff
+      tty_init(STDIN_FILENO);
 
-    ui_init(&(ui));
+      ui_init(&(ui));
 
-    // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
-    // SO JUMP THROW HOOPS :-(
-    Proto_Client *client = (Proto_Client *) c.ph;
-    Player *me = getPlayer(&client->game, client->playerID);
+      // WITH OSX ITS IS EASIEST TO KEEP UI ON MAIN THREAD
+      // SO JUMP THROW HOOPS :-(
+      Proto_Client *client = (Proto_Client *) c.ph;
+      Player *me = getPlayer(&client->game, client->playerID);
 
-    doRPCCmd(&c, 'q'); //query for the map
-    ui_main_loop(ui, (32 * WINDOW_SIZE), (32 * WINDOW_SIZE), &client->game, me, &c);
+      doRPCCmd(&c, 'q'); //query for the map
+      ui_main_loop(ui, (32 * WINDOW_SIZE), (32 * WINDOW_SIZE), &client->game, me, &c);
+    }
 
   }
 
@@ -671,7 +688,10 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       doRPCCmd(C, 'f');
       return 2;
     }
-    if (sym == SDLK_q) return -1;
+    if (sym == SDLK_q && mod == KMOD_NONE)  {   
+      doRPCCmd(C, 'g');
+      return -1;
+    }    
     if (sym == SDLK_z && mod == KMOD_NONE){
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = UP;
