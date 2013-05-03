@@ -541,6 +541,13 @@ proto_server_mt_game_update_handler(Proto_Session *s)
 {
   // Update game states
     Proto_Client *c = s->client;
+    Player *player = getPlayer(&c->game, c->playerID);
+
+    // If the game haven't started yet or the current player isn't in the game, ignore the update
+
+  if (player==NULL || s->rhdr.game.status!=IN_PROGRESS) {
+    return 1;
+  }
 
   // Copy player states to local state
   int i;
@@ -552,7 +559,6 @@ proto_server_mt_game_update_handler(Proto_Session *s)
     c->game.map.objects[i] = s->rhdr.game.map.objects[i];
   c->game.status = s->rhdr.game.status;
 
-  Player *player = getPlayer(&c->game, c->playerID);
 
   // Right now simply prints out all new player locations
   printUpdate(&c->game);

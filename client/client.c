@@ -31,7 +31,6 @@
 
 #include "../lib/types.h"
 #include "client.h"
-//#include "../lib/protocol_client.h"
 #include "../lib/protocol_utils.h"
 #include "tty.h"
 #include "uistandalone.h"
@@ -179,7 +178,10 @@ doRPCCmd(Client *C, char c)
   case 'g':
     if (PROTO_PRINT_DUMPS==1) printf("goodbye: rc=%x\n", rc);
     rc = proto_client_goodbye(C->ph);
+    // We are done, exit the client
+    exit(1);
     rc = -1;
+
     break;
   case 's':
     if (PROTO_PRINT_DUMPS==1) printf("start: rc=%x\n", rc);
@@ -209,6 +211,7 @@ doRPC(Client *C)
   if (PROTO_PRINT_DUMPS==1) printf("enter (h|m<c>|g): \n");
   scanf("%c", &c);
   rc=doRPCCmd(C,c);
+
 
   if (PROTO_PRINT_DUMPS==1) printf("doRPC: rc=0x%x\n", rc);
 
@@ -324,9 +327,13 @@ docmd(Client *C, char *cmd)
         return -1;
       }
       else  {
-        fprintf(stderr, "Successfully connected to <%s:%d>\n", globals.host, globals.port);      
+        fprintf(stderr, "Successfully connected to <%s:%d>\n", globals.host, globals.port);  
+        fprintf(stderr, "Before RH\n");    
         proto_client_hello(C->ph);
+        fprintf(stderr, "Done with RH\n");
+
         doRPCCmd(C, 'q'); //query for the map
+        fprintf(stderr, "Got Map\n");
 
         return 1;
       }
@@ -685,7 +692,10 @@ ui_keypress(UI *ui, SDL_KeyboardEvent *e, Client *C)
       doRPCCmd(C, 'f');
       return 2;
     }
-    if (sym == SDLK_q) return -1;
+    if (sym == SDLK_q && mod == KMOD_NONE)  {   
+      doRPCCmd(C, 'g');
+      return -1;
+    }    
     if (sym == SDLK_z && mod == KMOD_NONE){
       Proto_Client *client = C->ph;
       client->rpc_session.shdr.returnCode = UP;
