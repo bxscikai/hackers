@@ -6,7 +6,7 @@
 
 // Define constants
 #define MAX_MAP_DIMENSIONS 200   
-#define MAX_NUM_PLAYERS 10
+#define MAX_NUM_PLAYERS 20
 #define MAX_LINE_LEN 500
 #define NUMOFOBJECTS 4
 #define DISPLAYUI 1
