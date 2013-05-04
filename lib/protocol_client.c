@@ -451,11 +451,6 @@ proto_server_mt_map_update_handler(Proto_Session *s) {
   }
   else 
     fprintf(stderr, "Invalid map update\n");
-  
-
-  ////// TIFFANY ///////////
-  ///// UPDATE MAP HERE ////
-  //////////////////////////
 
   // Let the server know it received the update
   sendACK(s, PROTO_MT_EVENT_MAP_UPDATE);
@@ -463,6 +458,10 @@ proto_server_mt_map_update_handler(Proto_Session *s) {
 
 static int 
 proto_server_mt_game_over_update_handler(Proto_Session *s) {
+
+Proto_Client *c = s->client;
+Player *player = getPlayer(&c->game, c->playerID);
+c->game.status = s->rhdr.game.status;
 
 fprintf(stderr, "!!!!!!!!!GAME OVER!!!!!!!!\n");
 
@@ -472,6 +471,10 @@ fprintf(stderr, "!!!!!!!!!GAME OVER!!!!!!!!\n");
     fprintf(stderr, "Team 2 won!\n");
 
 fprintf(stderr, "!!!!!!!!!GAME OVER!!!!!!!!\n");
+
+if (DISPLAYUI==1){
+    Update_UI(player, &c->game);
+}
 
   //////////////////////////////////////////////////
   //////////// HANDLE GAME WON CASE HERE ///////////
